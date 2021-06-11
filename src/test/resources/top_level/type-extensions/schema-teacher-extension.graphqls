@@ -1,0 +1,7 @@
+extend type Teacher {
+    subjects : [String]
+}
+
+extend input  InputTeacher {
+    subjects : [String]
+}

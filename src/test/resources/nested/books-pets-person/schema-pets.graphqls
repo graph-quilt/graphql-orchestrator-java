@@ -1,0 +1,29 @@
+type Query {
+    person : Person
+}
+
+type Person {
+    pets: [Pet]
+}
+
+type Mutation {
+    addPet(pet: InputPet!): Pet
+}
+
+type Pet{
+    id: ID!
+    name: String!
+    age: Int
+    weight: Float
+    purebred: Boolean
+    tag: String
+}
+
+input InputPet{
+    id: ID!
+    name: String!
+    age: Int
+    weight: Float
+    purebred: Boolean
+    tag: String
+}

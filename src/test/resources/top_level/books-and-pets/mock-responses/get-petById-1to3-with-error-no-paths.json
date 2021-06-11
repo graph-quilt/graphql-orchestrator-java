@@ -1,0 +1,55 @@
+{
+  "errors": [
+    {
+      "message": "Exception while fetching data (/pet_0) : Hello Error!",
+      "locations": [
+        {
+          "line": 5,
+          "column": 5
+        }
+      ],
+      "path": null,
+      "extensions": {
+        "classification": "DataFetchingException"
+      }
+    },
+    {
+      "message": "Exception while fetching data (/pet_1/age) : Null Pointer Exception",
+      "locations": [
+        {
+          "line": 8,
+          "column": 5
+        }
+      ],
+      "path": [],
+      "extensions": {
+        "classification": "DataFetchingException"
+      }
+    },
+    {
+      "message": "Exception while fetching data (/pet_2) : Hello Error!",
+      "locations": [
+        {
+          "line": 8,
+          "column": 5
+        }
+      ],
+      "path": null,
+      "extensions": {
+        "classification": "DataFetchingException"
+      }
+    }
+  ],
+  "data": {
+    "pet_0": null,
+    "pet_1" : {
+      "id": "pet-2",
+      "name": "Milo",
+      "age": null,
+      "weight": 20,
+      "purebred": false,
+      "type": "RABBIT"
+    },
+    "pet_2": null
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "data": {
+    "books": [
+      {
+        "pageCount": "2000",
+        "isFamilyFriendly": true,
+        "author": {
+          "id": "author-1",
+          "lastName": "AuthorOne",
+          "petId": "pet-1"
+        },
+        "name": "GraphQL Advanced Stitching",
+        "weight": 1.8,
+        "id": "book-1"
+      },
+      {
+        "pageCount": "100",
+        "isFamilyFriendly": true,
+        "author": {
+          "id": "author-2",
+          "lastName": "AuthorTwo",
+          "petId": "pet-2"
+        },
+        "name": "The Recursion",
+        "weight": 1.4,
+        "id": "book-2"
+      },
+      {
+        "pageCount": "223",
+        "isFamilyFriendly": false,
+        "author": {
+          "id": "author-3",
+          "lastName": "AuthorThree",
+          "petId": "pet-3"
+        },
+        "name": "Spring In Action",
+        "weight": 1.2,
+        "id": "book-3"
+      }
+    ]
+  }
+}

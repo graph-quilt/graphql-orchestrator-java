@@ -1,0 +1,22 @@
+type Query {
+  person : Person
+  personById(id: ID) : Person
+}
+
+type Person {
+  id: ID
+  name: String
+  address: Address
+  bookId: ID
+  income: Int
+  debt: Int
+}
+
+type Address {
+  id: ID
+  street: String
+  city: String
+  zip: String
+  state: String
+  country: String
+}

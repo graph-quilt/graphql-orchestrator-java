@@ -1,0 +1,32 @@
+{
+  "data": {
+    "person": {
+      "pets_0": [
+        {
+          "id": "pet-1",
+          "name": "Charlie",
+          "age": 2,
+          "weight": 200,
+          "purebred": true,
+          "tag": "DOG"
+        },
+        {
+          "id": "pet-2",
+          "name": "Milo",
+          "age": 2,
+          "weight": 20,
+          "purebred": false,
+          "tag": "RABBIT"
+        },
+        {
+          "id": "pet-3",
+          "name": "Poppy",
+          "age": 5,
+          "weight": 500,
+          "purebred": true,
+          "tag": "CAT"
+        }
+      ]
+    }
+  }
+}

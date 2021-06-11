@@ -1,0 +1,5 @@
+extend union EmployedPersonsUnion = Actor
+
+extend enum HobbyEnum {
+    BIKING
+}

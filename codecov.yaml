@@ -1,0 +1,11 @@
+# https://docs.codecov.io/docs/codecov-yaml
+codecov:
+  branch: master
+coverage:
+  status:
+    patch:
+      default:
+        target: 50%
+
+comment:
+  layout: "diff, flags, files:10, footer"

@@ -1,0 +1,16 @@
+type Query {
+    a : A
+}
+
+type A {
+    e : E
+}
+
+type E {
+    f : F
+}
+
+type F {
+    f1 : ID!
+    f2 : String
+}

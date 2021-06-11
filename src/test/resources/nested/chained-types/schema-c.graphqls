@@ -1,0 +1,17 @@
+type Query {
+    a : A
+}
+
+type A {
+    c : C
+}
+
+type C {
+    c1 : ID!
+    c2 : String
+    z : CZ
+}
+
+type CZ {
+    zc : String
+}

@@ -1,0 +1,7 @@
+# The Root Query for the application
+extend type Query {
+    # Get User Goals
+    userGoals : [UserGoal!]!
+    # Get Images associated to a User Goal
+    userGoalImages(userGoalId: Long): [Image!]
+}

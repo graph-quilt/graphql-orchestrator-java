@@ -1,0 +1,12 @@
+{
+  "data": {
+    "petById2_0": {
+      "__typename" : "Cat",
+      "id": "pet-2",
+      "name": "Garfield",
+      "milkPerDay": 3,
+      "catBreed": "PERSIAN"
+    }
+  }
+}
+

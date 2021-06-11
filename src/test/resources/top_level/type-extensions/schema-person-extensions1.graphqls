@@ -1,0 +1,28 @@
+union EmployedPersonsUnion = Teacher
+
+extend interface PersonInterface {
+    address: AddressBase
+}
+
+type AddressBase {
+    id: ID
+    street: String
+    city: String
+    zip: String
+    state: String
+    country: String
+}
+
+input InputAddressBase {
+    id: ID
+    street: String
+    city: String
+    zip: String
+    state: String
+    country: String
+}
+
+#directive @E164 on FIELD_DEFINITION | SCALAR
+#
+#extend scalar PhoneNumber @E164
+

@@ -1,0 +1,35 @@
+type Query {
+    petById1(id: ID!): CatOrDog
+    petById2(id: ID!): Pet
+}
+
+interface Pet {
+    id: ID!
+    name: String!
+}
+
+type Dog implements Pet {
+    id: ID!
+    name: String!
+    dogBreed: DogBreed
+}
+
+enum DogBreed {
+    BEAGLE,
+    COLLIE
+}
+
+type Cat implements Pet {
+    id: ID!
+    name: String!
+    milkPerDay: Int
+    catBreed: CatBreed
+}
+
+enum CatBreed {
+    PERSIAN,
+    SIAMESE
+}
+
+
+union CatOrDog = Dog | Cat

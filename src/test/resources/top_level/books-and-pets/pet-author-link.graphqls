@@ -1,0 +1,16 @@
+extend type Author {
+    pet : Pet @resolver(field: "pet" arguments: [{name : "id", value: "$petId"}])
+}
+
+type Pet {}
+
+
+# ================================
+# define this as built-in directive
+directive @resolver(field: String!, arguments: [ResolverArgument!]) on FIELD_DEFINITION
+
+# define this as built-in type
+input ResolverArgument {
+    name : String!
+    value : String!
+}

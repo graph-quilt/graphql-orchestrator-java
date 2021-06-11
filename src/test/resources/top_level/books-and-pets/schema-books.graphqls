@@ -1,0 +1,20 @@
+type Query {
+    bookById(id: ID): Book
+    books : [Book]
+}
+
+type Book {
+    id: ID
+    name: String
+    pageCount: Int
+    weight: Float
+    isFamilyFriendly: Boolean
+    author: Author
+}
+
+type Author {
+    id: ID
+    firstName: String
+    lastName: String
+    petId: String
+}

@@ -1,0 +1,15 @@
+{
+  "data": {
+    "person": {
+      "book": {
+        "pageCount": "2000",
+        "author": {
+          "id": "author-1",
+          "lastName": "AuthorOne"
+        },
+        "name": "GraphQL Advanced Stitching",
+        "id": "book-1"
+      }
+    }
+  }
+}

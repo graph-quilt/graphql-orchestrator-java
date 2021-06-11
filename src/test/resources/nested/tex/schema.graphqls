@@ -1,0 +1,149 @@
+# Directive for specifying custom name for mutator fields
+directive @update_mutator(name: String!) on FIELD_DEFINITION
+
+# Directives defined here: https://intuitcorp.quickbase.com/db/bg89d9ip9?from=myqb
+# All classifications should begin with 'classification_'
+directive @classification_public on FIELD_DEFINITION
+
+directive @classification_restricted on FIELD_DEFINITION
+
+directive @classification_sensitive on FIELD_DEFINITION
+
+directive @classification_highly_sensitive on FIELD_DEFINITION
+
+directive @classification_secret on FIELD_DEFINITION
+
+directive @merge(if: Boolean = true) on FIELD
+
+type CSGoalExperimentData {
+    cs_target: CSTarget!
+    notification: Notification
+    steps_complete: [Step]
+}
+
+type CSSimId {
+    id: String @classification_restricted
+    timestamp: Long @classification_restricted
+}
+
+type CSSimulationExperimentData {
+    hook: Hook!
+    simulation_reference: CSSimId!
+}
+
+type CSTarget {
+    goal: Int! @classification_restricted
+    timestamp: Long @classification_restricted
+}
+
+type ConsumerType {
+    experiences: Experiences
+}
+
+type Experiences {
+    CSGoalExperimentData: CSGoalExperimentData
+    CSSimulationExperimentData: CSSimulationExperimentData
+    TestExperienceData: TestExperience_TEST @update_mutator(name : "updateTestExperienceData")
+}
+
+type Hook {
+    discarded: Boolean @classification_restricted
+    timestamp: Long @classification_restricted
+}
+
+type Mutation {
+    updateCSGoalExperimentData(input: CSGoalExperimentData_Input): CSGoalExperimentData
+    updateCSSimulationExperimentData(input: CSSimulationExperimentData_Input): CSSimulationExperimentData
+    updateTestExperienceData(input: TestExperience_TEST_Input): TestExperience_TEST
+}
+
+type Notification {
+    opt_in: Boolean! @classification_restricted
+    timestamp: Long! @classification_restricted
+}
+
+type Query {
+    consumer: ConsumerType
+}
+
+type Step {
+    isComplete: Boolean! @classification_restricted
+    name: StepAction! @classification_restricted
+    timestamp: Long! @classification_restricted
+}
+
+type TestContent_TEST {
+    test_name: String! @classification_public
+    test_number: Int @classification_public
+    test_type: TestType_TEST @classification_public
+}
+
+type TestExperience_TEST {
+    test_content: TestContent_TEST!
+    test_values: [Int] @classification_public
+}
+
+type Turbo {
+    experiences: Experiences
+}
+
+enum StepAction {
+    CREDIT_UTILIZATION
+    REFUND_UTILIZATION
+}
+
+enum TestType_TEST {
+    FUNCTIONAL
+    INTEGRATION
+    OTHER
+    PERFORMANCE
+    UNIT
+}
+
+input CSGoalExperimentData_Input {
+    cs_target: CSTarget_Input!
+    notification: Notification_Input
+    steps_complete: [Step_Input]
+}
+
+input CSSimId_Input {
+    id: String
+    timestamp: Long
+}
+
+input CSSimulationExperimentData_Input {
+    hook: Hook_Input!
+    simulation_reference: CSSimId_Input!
+}
+
+input CSTarget_Input {
+    goal: Int!
+    timestamp: Long
+}
+
+input Hook_Input {
+    discarded: Boolean
+    timestamp: Long
+}
+
+input Notification_Input {
+    opt_in: Boolean!
+    timestamp: Long!
+}
+
+input Step_Input {
+    isComplete: Boolean!
+    name: StepAction!
+    timestamp: Long!
+}
+
+input TestContent_TEST_Input {
+    test_name: String!
+    test_number: Int
+    test_type: TestType_TEST
+}
+
+input TestExperience_TEST_Input {
+    test_content: TestContent_TEST_Input!
+    test_values: [Int]
+}

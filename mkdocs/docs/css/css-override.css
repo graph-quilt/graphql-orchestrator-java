@@ -1,0 +1,80 @@
+h1 {
+  color: black;
+}
+h2 {
+  color: #2E0000;
+}
+h3 {
+  color: #2C877C;
+  font-size: 21px;
+  font-weight: bold;
+}
+h4 {
+  color: #25387E;
+  font-size: 18px;
+}
+
+
+li {
+  font-size: 16px;
+}
+tr {
+  font-size: 16px;
+}
+
+img[alt$=">"] {
+  float:right;
+}
+
+img[alt$="<"] {
+  float:left;
+}
+
+img[alt$="<>"] {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: auto;
+  float: none!important;
+}
+
+div p {
+  text-align: justify;
+  text-justify: inter-word;
+  font-size: 16px;
+}
+
+.codehilite {
+  font-size: 14px;
+}
+
+/* div pre {
+    color: #EBECE4;
+} */
+
+/* ul .md-nav__item {
+  font-size: 14px;
+} */
+
+/* ul .md-nav__list {
+  color: red;
+} */
+
+/* li .md-nav__item {
+  color: red;
+} */
+
+/* Right Sidebar heading color */
+.md-nav--secondary > ul > li > a:first-child {
+  color: #0a0033;
+}
+
+/* Right sidebar list color */
+.md-nav--secondary > ul > li .md-nav__item {
+  font-size: 13px;
+}
+
+code{
+  color: red;
+}
+

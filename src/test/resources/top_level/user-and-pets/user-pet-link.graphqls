@@ -1,0 +1,19 @@
+extend type User {
+    pet1: CatOrDog @resolver(field: "petById1" arguments: [{name : "id", value: "$petId1"}])
+    pet2: Pet @resolver(field: "petById2" arguments: [{name : "id", value: "$petId2"}])
+}
+
+interface Pet
+
+union CatOrDog
+
+
+# ================================
+# define this as built-in directive
+directive @resolver(field: String!, arguments: [ResolverArgument!]) on FIELD_DEFINITION
+
+# define this as built-in type
+input ResolverArgument {
+    name : String!
+    value : String!
+}

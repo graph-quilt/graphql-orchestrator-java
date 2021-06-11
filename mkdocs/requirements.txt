@@ -1,0 +1,13 @@
+mkdocs
+mkdocs-material
+backports-abc
+Click
+Jinja2
+livereload
+Markdown
+MarkupSafe
+Pygments
+pymdown-extensions
+PyYAML
+singledispatch
+tornado

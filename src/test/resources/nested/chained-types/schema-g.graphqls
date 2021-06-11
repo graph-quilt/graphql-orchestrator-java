@@ -1,0 +1,20 @@
+type Query {
+    a : A
+}
+
+type A {
+    e : E
+}
+
+type E {
+    f : F
+}
+
+type F {
+    g : G
+}
+
+type G {
+    g1 : ID!
+    g2 : String
+}
