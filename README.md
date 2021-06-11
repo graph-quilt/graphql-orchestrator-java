@@ -16,7 +16,7 @@ Requirement:
     ```
     <dependency>
       <groupId>com.intuit.graphql</groupId>
-      <artifactId>stitching</artifactId>
+      <artifactId>graphql-orchestrator-java</artifactId>
       <version>${version}</version>
     </dependency>
     
