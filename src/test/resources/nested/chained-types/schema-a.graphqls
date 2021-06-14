@@ -1,8 +1,0 @@
-type Query {
-    a : A
-}
-
-type A {
-    a1 : ID!
-    a2 : String
-}
