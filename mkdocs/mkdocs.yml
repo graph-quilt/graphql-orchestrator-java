@@ -10,7 +10,7 @@ theme:
     code: Menlo
   favicon: img/graphql.ico
 extra_css: ["css/css-override.css"]
-repo_url: "https://github.intuit.com/data-orchestration/graphql-orchestrator-java"
+repo_url: "https://github.com/intuit/graphql-orchestrator-java"
 repo_name: 'graphql-orchestrator-java'
 copyright: 'Copyright &copy; 2021 Intuit'
 
