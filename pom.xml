@@ -7,6 +7,21 @@
   <name>graphql-orchestrator-java</name>
   <description>GraphQL Orchestrator combines multiple graphql services into a single unified schema</description>
 
+  <licenses>
+    <license>
+      <name>Apache 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Ashpak Shaikh</name>
+      <id>Shaikh</id>
+      <organization>Intuit, Inc.</organization>
+      <organizationUrl>http://www.intuit.com</organizationUrl>
+    </developer>
+  </developers>
   
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -23,6 +38,30 @@
     <xtextVersion>2.25.0</xtextVersion>
     <graphQLVersion>14.1</graphQLVersion>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.5</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>
@@ -240,26 +279,21 @@
     </plugins>
   </build>
   <scm>
-    <connection>scm:git:https://github.intuit.com/data-orchestration/graphql-orchestrator-java
+    <connection>scm:git:https://github.com/graphql-orchestrator-java
     </connection>
-    <url>https://github.intuit.com/data-orchestration/graphql-orchestrator-java</url>
+    <url>https://github.com//graphql-orchestrator-java</url>
     <tag>HEAD</tag>
   </scm>
 
   <distributionManagement>
-    <repository>
-      <!-- Don't change the ID of this repository (it's configured in the SCM settings.xml that gets passed into IBP environment variables) -->
-      <id>scm.int.rel.repo</id>
-      <name>SCM INT release repository</name>
-      <!-- This value will be passed in by the SCM build -->
-      <url>http://nexus.intuit.net/nexus/content/repositories/ENG.CTG.Intuit-Releases</url>
-    </repository>
     <snapshotRepository>
-      <!-- Don't change the ID of this repository (it's configured in the settings.xml that gets passed into IBP environment variables) -->
-      <id>scm.dev.snap.repo</id>
-      <name>SCM DEV snapshot release repository</name>
-      <url>http://nexus.intuit.net/nexus/content/repositories/ENG.CTG.Intuit-Snapshots</url>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+    </repository>
   </distributionManagement>
 
   <repositories>
@@ -267,18 +301,6 @@
       <id>ossrh</id>
       <name>Sonatype Repository</name>
       <url>https://oss.sonatype.org/content/repositories/releases</url>
-    </repository>
-    <repository>
-      <id>cg-central</id>
-      <name>CG Central Repo</name>
-      <url>http://nexus.intuit.net/nexus/content/groups/public</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-      </snapshots>
     </repository>
   </repositories>
 
@@ -288,12 +310,6 @@
       <name>Sonatype Repository</name>
       <url>https://oss.sonatype.org/content/repositories/releases</url>
     </pluginRepository>
-    <pluginRepository>
-      <id>cg-central</id>
-      <name>CG Central Repo</name>
-      <url>http://nexus.intuit.net/nexus/content/groups/public</url>
-    </pluginRepository>
-
   </pluginRepositories>
 
 </project>
