@@ -268,18 +268,6 @@
       <name>Sonatype Repository</name>
       <url>https://oss.sonatype.org/content/repositories/releases</url>
     </repository>
-    <repository>
-      <id>cg-central</id>
-      <name>CG Central Repo</name>
-      <url>http://nexus.intuit.net/nexus/content/groups/public</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-      </snapshots>
-    </repository>
   </repositories>
 
   <pluginRepositories>
@@ -288,12 +276,6 @@
       <name>Sonatype Repository</name>
       <url>https://oss.sonatype.org/content/repositories/releases</url>
     </pluginRepository>
-    <pluginRepository>
-      <id>cg-central</id>
-      <name>CG Central Repo</name>
-      <url>http://nexus.intuit.net/nexus/content/groups/public</url>
-    </pluginRepository>
-
   </pluginRepositories>
 
 </project>
