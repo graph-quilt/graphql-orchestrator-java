@@ -23,7 +23,7 @@ jobs:
           name: Test
           command: mvn test
       - store_test_results:
-          path: graphql-orchestrator-java/target/surefire-reports
+          path: target/surefire-reports
 
 workflows:
   # Below is the definition of your workflow.
