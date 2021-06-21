@@ -4,8 +4,6 @@
 
 </div>
 
-[LOGO.png]
-
 [Builds](https://circleci.com/gh/intuit/graphql-orchestrator-java)
 
 ### Overview
