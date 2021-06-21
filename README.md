@@ -1,4 +1,8 @@
-# graphql-orchestrator-java
+<div align="center">
+
+  ![graphql-orchestrator-java](./logo.png)
+
+</div>
 
 [Builds](https://circleci.com/gh/intuit/graphql-orchestrator-java)
 
