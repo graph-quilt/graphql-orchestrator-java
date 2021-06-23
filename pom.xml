@@ -279,9 +279,9 @@
     </plugins>
   </build>
   <scm>
-    <connection>scm:git:https://github.com/graphql-orchestrator-java
+    <connection>scm:git:https://github.com/intuit/graphql-orchestrator-java
     </connection>
-    <url>https://github.com//graphql-orchestrator-java</url>
+    <url>https://github.com/intuit/graphql-orchestrator-java</url>
     <tag>graphql-orchestrator-java-4.0.0</tag>
   </scm>
 
