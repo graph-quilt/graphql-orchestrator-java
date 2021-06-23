@@ -6,6 +6,7 @@
   <packaging>jar</packaging>
   <name>graphql-orchestrator-java</name>
   <description>GraphQL Orchestrator combines multiple graphql services into a single unified schema</description>
+  <url>https://github.com/intuit/graphql-orchestrator-java</url>
 
   <licenses>
     <license>
