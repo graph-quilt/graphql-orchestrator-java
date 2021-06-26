@@ -16,6 +16,7 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefini
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
+import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.List;
@@ -52,7 +53,9 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
                 .fieldResolverContext(fieldResolverContext)
                 .build();
 
-            addToCodeRegistry(fieldResolverContext.getFieldContext(), dataFetcherContext,
+            FieldContext fieldContext = new FieldContext(fieldResolverContext.getParentTypename(), fieldResolverContext.getFieldName());
+
+            addToCodeRegistry(fieldContext, dataFetcherContext,
                 sourceXtextGraph);
           }
         });

@@ -17,11 +17,20 @@ import lombok.Getter;
 @Getter
 public class FieldResolverContext {
 
-  private FieldContext fieldContext;
-  private boolean requiresTypeNameInjection;
   private FieldDefinition fieldDefinition;
   private TypeDefinition parentTypeDefinition;
-  private String serviceNamespace;
+
+  private boolean requiresTypeNameInjection;
   private ResolverDirectiveDefinition resolverDirectiveDefinition;
+
+  private String serviceNamespace;
+
+  public String getFieldName() {
+    return fieldDefinition.getName();
+  }
+
+  public String getParentTypename() {
+    return parentTypeDefinition.getName();
+  }
 
 }

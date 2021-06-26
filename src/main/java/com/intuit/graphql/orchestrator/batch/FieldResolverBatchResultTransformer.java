@@ -110,8 +110,8 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
   private GraphQLError mapErrorToPath(GraphQLError graphQLError, ExecutionPath dfeExecutionPath) {
     final Map<String, Object> extensions = new HashMap<>();
     extensions.put("serviceNamespace", fieldResolverContext.getServiceNamespace());
-    extensions.put("parentType", fieldResolverContext.getFieldContext().getParentType());
-    extensions.put("fieldName", fieldResolverContext.getFieldContext().getFieldName());
+    extensions.put("parentTypename", fieldResolverContext.getParentTypename());
+    extensions.put("fieldName", fieldResolverContext.getFieldName());
     extensions.put("downstreamErrors", graphQLError.toSpecification());
 
     return GraphqlErrorBuilder.newError()

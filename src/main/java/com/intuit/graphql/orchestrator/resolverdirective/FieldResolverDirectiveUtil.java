@@ -170,7 +170,7 @@ public class FieldResolverDirectiveUtil {
           }
 
           FieldResolverContext fieldResolverContext = FieldResolverContext.builder()
-              .fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
+              //.fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
               .fieldDefinition(childFieldDefinition)
               .parentTypeDefinition(typeDefinition)
               .requiresTypeNameInjection(xtextGraph.requiresTypenameInjection())

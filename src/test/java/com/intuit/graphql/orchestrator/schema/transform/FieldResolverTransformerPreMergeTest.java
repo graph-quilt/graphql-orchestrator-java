@@ -52,8 +52,6 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_IS_OBJECT_TYPE);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
@@ -62,8 +60,8 @@ public class FieldResolverTransformerPreMergeTest {
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
@@ -72,8 +70,6 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_TYPE_IS_NOT_NULL);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
@@ -82,8 +78,8 @@ public class FieldResolverTransformerPreMergeTest {
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
@@ -92,8 +88,6 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_TYPE_WRAPPED_IN_ARRAY);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
@@ -102,8 +96,8 @@ public class FieldResolverTransformerPreMergeTest {
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
@@ -112,8 +106,6 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_NOT_NULL_WRAPPED_IN_ARRAY);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
@@ -122,8 +114,8 @@ public class FieldResolverTransformerPreMergeTest {
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
