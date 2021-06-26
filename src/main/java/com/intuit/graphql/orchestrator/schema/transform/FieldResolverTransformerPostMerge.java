@@ -26,16 +26,16 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
 
   @Override
   public XtextGraph transform(XtextGraph sourceXtextGraph) {
-    sourceXtextGraph.getFieldWithResolverMetadatas()
-        .forEach(fieldWithResolverMetadata -> process(fieldWithResolverMetadata, sourceXtextGraph));
+    sourceXtextGraph.getFieldResolverContexts()
+        .forEach(fieldResolverContext -> process(fieldResolverContext, sourceXtextGraph));
 
     return sourceXtextGraph;
   }
 
-  private void process(FieldWithResolverMetadata fieldWithResolverMetadata, XtextGraph sourceXtextGraph) {
-    replacePlaceholderTypeWithActual(fieldWithResolverMetadata, sourceXtextGraph);
+  private void process(FieldResolverContext fieldResolverContext, XtextGraph sourceXtextGraph) {
+    replacePlaceholderTypeWithActual(fieldResolverContext, sourceXtextGraph);
 
-    fieldWithResolverMetadata.getFieldDefinition()
+    fieldResolverContext.getFieldDefinition()
         .getDirectives()
         .forEach(directive -> {
           if (StringUtils.equals(RESOLVER_DIRECTIVE_NAME, directive.getDefinition().getName())) {
@@ -43,16 +43,16 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
                 .from(directive);
 
               validateResolverArgumentsAreFieldsOfParent(resolverDirectiveDefinition.getArguments(),
-                fieldWithResolverMetadata.getParentTypeDefinition());
+                fieldResolverContext.getParentTypeDefinition());
 
             DataFetcherContext dataFetcherContext = DataFetcherContext
                 .newBuilder()
                 .dataFetcherType(DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION)
                 .fieldResolverDirectiveDefinition(resolverDirectiveDefinition)
-                .fieldWithResolverMetadata(fieldWithResolverMetadata)
+                .fieldResolverContext(fieldResolverContext)
                 .build();
 
-            addToCodeRegistry(fieldWithResolverMetadata.getFieldContext(), dataFetcherContext,
+            addToCodeRegistry(fieldResolverContext.getFieldContext(), dataFetcherContext,
                 sourceXtextGraph);
           }
         });
@@ -69,16 +69,16 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     });
   }
 
-  private void replacePlaceholderTypeWithActual(FieldWithResolverMetadata fieldWithResolverMetadata,
-      XtextGraph sourceXtextGraph) {
+  private void replacePlaceholderTypeWithActual(FieldResolverContext fieldResolverContext,
+                                                XtextGraph sourceXtextGraph) {
 
-    FieldDefinition fieldDefinition = fieldWithResolverMetadata.getFieldDefinition();
+    FieldDefinition fieldDefinition = fieldResolverContext.getFieldDefinition();
     NamedType fieldType = fieldDefinition.getNamedType();
 
     if (!XtextTypeUtils.isPrimitiveType(fieldType)) {
       TypeDefinition actualTypeDefinition = sourceXtextGraph.getType(fieldType);
       if (Objects.isNull(actualTypeDefinition)) {
-        String serviceName = fieldWithResolverMetadata.getServiceNamespace();
+        String serviceName = fieldResolverContext.getServiceNamespace();
         String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
         String fieldName = fieldDefinition.getName();
         String placeHolderTypeDescription = XtextUtils.toDescriptiveString(fieldType);

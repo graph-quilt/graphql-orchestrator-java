@@ -3,7 +3,7 @@ package com.intuit.graphql.orchestrator.batch;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createAlias;
 import static com.intuit.graphql.orchestrator.utils.ExecutionPathUtils.graphQLErrorPathStartsWith;
 
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
@@ -29,11 +29,11 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
 
   private final String[] resolverSelectedFields;
   private final ExecutionPath resolverExecutionPath;
-  private final FieldWithResolverMetadata fieldWithResolverMetadata;
+  private final FieldResolverContext fieldResolverContext;
 
 
   public FieldResolverBatchResultTransformer(String[] resolverSelectedFields,
-      FieldWithResolverMetadata fieldWithResolverMetadata) {
+      FieldResolverContext fieldResolverContext) {
 
     if (ArrayUtils.isEmpty(resolverSelectedFields)) {
       throw new IllegalArgumentException("resolverSelectedFields is empty");
@@ -42,7 +42,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     this.resolverSelectedFields = resolverSelectedFields;
     this.resolverExecutionPath = ExecutionPath.fromList(Arrays.asList(resolverSelectedFields));
 
-    this.fieldWithResolverMetadata = fieldWithResolverMetadata;
+    this.fieldResolverContext = fieldResolverContext;
   }
 
   @Override
@@ -109,9 +109,9 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
 
   private GraphQLError mapErrorToPath(GraphQLError graphQLError, ExecutionPath dfeExecutionPath) {
     final Map<String, Object> extensions = new HashMap<>();
-    extensions.put("serviceNamespace", fieldWithResolverMetadata.getServiceNamespace());
-    extensions.put("parentType", fieldWithResolverMetadata.getFieldContext().getParentType());
-    extensions.put("fieldName", fieldWithResolverMetadata.getFieldContext().getFieldName());
+    extensions.put("serviceNamespace", fieldResolverContext.getServiceNamespace());
+    extensions.put("parentType", fieldResolverContext.getFieldContext().getParentType());
+    extensions.put("fieldName", fieldResolverContext.getFieldContext().getFieldName());
     extensions.put("downstreamErrors", graphQLError.toSpecification());
 
     return GraphqlErrorBuilder.newError()

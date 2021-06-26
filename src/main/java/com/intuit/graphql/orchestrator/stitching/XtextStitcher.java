@@ -140,13 +140,13 @@ public class XtextStitcher implements Stitcher {
                 .batchLoaderExecutionHooks(batchLoaderHooks)
                 .build());
 
-        graph.getFieldWithResolverMetadatas().forEach(fieldWithResolverMetadata -> {
+        graph.getFieldResolverContexts().forEach(fieldResolverContext -> {
           FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
               .builder()
-              .fieldWithResolverMetadata(fieldWithResolverMetadata)
+              .fieldResolverContext(fieldResolverContext)
               .build();
 
-          String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldWithResolverMetadata);
+          String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldResolverContext);
           batchLoaderMap.put(batchLoaderKey, fieldResolverDataLoader);
 
         });

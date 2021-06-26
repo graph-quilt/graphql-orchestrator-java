@@ -3,7 +3,7 @@ package com.intuit.graphql.orchestrator.resolverdirective;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverOperationName;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createResolverQueryFieldArguments;
 
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.introspection.Introspection.DirectiveLocation;
 import graphql.language.Argument;
 import graphql.language.Field;
@@ -38,12 +38,12 @@ public class ResolverDirectiveQueryBuilder {
    *                            in array and the right-most is last element in array.
    * @param resolverDirectiveDefinition a reference to resolver directive definition
    * @param dataFetchingEnvironments 1 or more data fetching environment
-   * @param fieldWithResolverMetadata meta data for the resolver field
+   * @param fieldResolverContext meta data for the resolver field
    * @return OperationDefinition
    */
   public OperationDefinition buildFieldResolverQuery(String[] resolverSelectedFields,
       ResolverDirectiveDefinition resolverDirectiveDefinition,
-      FieldWithResolverMetadata fieldWithResolverMetadata,
+      FieldResolverContext fieldResolverContext,
       final List<DataFetchingEnvironment> dataFetchingEnvironments) {
 
     SelectionSet.Builder parentSelectionSetBuilder = SelectionSet.newSelectionSet();
@@ -57,7 +57,7 @@ public class ResolverDirectiveQueryBuilder {
           (GraphQLFieldsContainer) dataFetchingEnvironment.getParentType(),
           dataFetchingEnvironment.getSource(),
           resolverDirectiveDefinition,
-          fieldWithResolverMetadata.getServiceNamespace()
+          fieldResolverContext.getServiceNamespace()
       );
 
       final int lastIndex = resolverSelectedFields.length - 1;

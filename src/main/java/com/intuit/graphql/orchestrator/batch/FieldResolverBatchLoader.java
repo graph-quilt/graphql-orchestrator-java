@@ -6,7 +6,7 @@ import static graphql.language.AstPrinter.printAstCompact;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveQueryBuilder;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -46,22 +46,22 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
 
   private final String[] resolverSelectedFields;
 
-  private final FieldWithResolverMetadata fieldWithResolverMetadata;
+  private final FieldResolverContext fieldResolverContext;
 
   private final ResolverDirectiveDefinition resolverDirectiveDefinition;
 
   private final BatchResultTransformer batchResultTransformer;
 
   @Builder
-  public FieldResolverBatchLoader(FieldWithResolverMetadata fieldWithResolverMetadata) {
-    Objects.requireNonNull(fieldWithResolverMetadata, "fieldWithResolverMetadata is required");
-    Objects.requireNonNull(fieldWithResolverMetadata.getResolverDirectiveDefinition(),
+  public FieldResolverBatchLoader(FieldResolverContext fieldResolverContext) {
+    Objects.requireNonNull(fieldResolverContext, "fieldResolverContext is required");
+    Objects.requireNonNull(fieldResolverContext.getResolverDirectiveDefinition(),
         "resolverDirectiveDefinition is required");
 
-    this.fieldWithResolverMetadata = fieldWithResolverMetadata;
-    this.resolverDirectiveDefinition = fieldWithResolverMetadata.getResolverDirectiveDefinition();
+    this.fieldResolverContext = fieldResolverContext;
+    this.resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
     this.resolverSelectedFields = StringUtils.split(resolverDirectiveDefinition.getField(), '.');
-    this.batchResultTransformer = new FieldResolverBatchResultTransformer(resolverSelectedFields, fieldWithResolverMetadata);
+    this.batchResultTransformer = new FieldResolverBatchResultTransformer(resolverSelectedFields, fieldResolverContext);
   }
 
   @Override
@@ -70,11 +70,11 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
     OperationDefinition resolverQueryOpDef = resolverDirectiveQueryBuilder.buildFieldResolverQuery(
         resolverSelectedFields,
         resolverDirectiveDefinition,
-        fieldWithResolverMetadata,
+            fieldResolverContext,
         dataFetchingEnvironments
     );
 
-    if (this.fieldWithResolverMetadata.isRequiresTypeNameInjection()) {
+    if (this.fieldResolverContext.isRequiresTypeNameInjection()) {
       resolverQueryOpDef = queryOperationModifier.modifyQuery(
           dataFetchingEnvironments.get(0).getGraphQLSchema(),
           resolverQueryOpDef,

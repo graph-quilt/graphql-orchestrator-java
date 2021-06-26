@@ -15,7 +15,7 @@ import lombok.Getter;
  */
 @Builder
 @Getter
-public class FieldWithResolverMetadata {
+public class FieldResolverContext {
 
   private FieldContext fieldContext;
   private boolean requiresTypeNameInjection;

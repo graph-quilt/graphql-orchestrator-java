@@ -9,7 +9,7 @@ import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
@@ -149,11 +149,11 @@ public class FieldResolverDirectiveUtil {
     return fieldDefinition.getDirective(RESOLVER_DIRECTIVE_NAME) != null;
   }
 
-  public static boolean isInputTypeFieldContainer(TypeDefinition typeDefinition) {
+  public static boolean isObjectOrInterfaceType(TypeDefinition typeDefinition) {
     return typeDefinition instanceof ObjectTypeDefinition || typeDefinition instanceof InterfaceTypeDefinition;
   }
 
-  public static List<FieldWithResolverMetadata> createFieldWithResolverMetadatas(
+  public static List<FieldResolverContext> createFieldResolverContexts(
       TypeDefinition typeDefinition, XtextGraph xtextGraph) {
 
     List<FieldDefinition> childFields = getChildFields(typeDefinition);
@@ -166,10 +166,10 @@ public class FieldResolverDirectiveUtil {
           }
 
           if (CollectionUtils.size(directives) < 1) {
-            return Optional.<FieldWithResolverMetadata>empty();
+            return Optional.<FieldResolverContext>empty();
           }
 
-          FieldWithResolverMetadata fieldWithResolverMetadata = FieldWithResolverMetadata.builder()
+          FieldResolverContext fieldResolverContext = FieldResolverContext.builder()
               .fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
               .fieldDefinition(childFieldDefinition)
               .parentTypeDefinition(typeDefinition)
@@ -178,7 +178,7 @@ public class FieldResolverDirectiveUtil {
               .resolverDirectiveDefinition(ResolverDirectiveDefinition.from(directives.get(0)))
               .build();
 
-          return Optional.of(fieldWithResolverMetadata);
+          return Optional.of(fieldResolverContext);
         })
         .filter(Optional::isPresent)
         .map(Optional::get)

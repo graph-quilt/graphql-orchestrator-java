@@ -245,7 +245,7 @@ public class FieldResolverDirectiveUtilTest {
   }
 
   @Test(expected = MultipleResolverDirectiveDefinition.class)
-  public void createFieldWithResolverMetadatasThrowsExceptionForMultipleResolverDirectives() {
+  public void createFieldResolverContextsThrowsExceptionForMultipleResolverDirectives() {
 
     XtextGraph mockXtextGraph = Mockito.mock(XtextGraph.class);
 
@@ -265,7 +265,7 @@ public class FieldResolverDirectiveUtilTest {
     ObjectTypeDefinition objectTypeDefinition = buildObjectTypeDefinition("TestType", fieldDefinitions);
 
     FieldResolverDirectiveUtil
-        .createFieldWithResolverMetadatas(objectTypeDefinition, mockXtextGraph);
+        .createFieldResolverContexts(objectTypeDefinition, mockXtextGraph);
   }
 
   @Test
