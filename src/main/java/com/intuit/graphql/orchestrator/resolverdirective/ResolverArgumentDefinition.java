@@ -5,12 +5,12 @@ import lombok.ToString;
 
 @Getter
 @ToString
-public class ResolverArgument {
+public class ResolverArgumentDefinition {
 
   private String name;
   private String value;
 
-  public ResolverArgument(String name, String value) {
+  public ResolverArgumentDefinition(String name, String value) {
     this.name = name;
     this.value = value;
   }

@@ -39,17 +39,17 @@ public class FieldResolverDirectiveUtil {
   private FieldResolverDirectiveUtil() {
   }
 
-  public static List<Argument> createResolverQueryFieldArguments(List<ResolverArgument> resolverArguments,
+  public static List<Argument> createResolverQueryFieldArguments(List<ResolverArgumentDefinition> resolverArgumentDefinitions,
       GraphQLFieldsContainer parentType, Map<String, Object> parentSource,
       ResolverDirectiveDefinition resolverDirectiveDefinition, String serviceNameSpace) {
 
-    Objects.requireNonNull(resolverArguments);
+    Objects.requireNonNull(resolverArgumentDefinitions);
     Objects.requireNonNull(parentSource);
     Objects.requireNonNull(resolverDirectiveDefinition);
     Objects.requireNonNull(serviceNameSpace);
 
     List<Argument> arguments = new ArrayList<>();
-    resolverArguments.forEach(
+    resolverArgumentDefinitions.forEach(
         resolverArg -> {
           String resolverArgValue = resolverArg.getValue();
           if (isReferenceToFieldInParentType(resolverArgValue, parentType)) {

@@ -26,8 +26,8 @@ public class ResolverDirectiveDefinition {
   private static final String DIRECTIVE_ARG_FIELD = "field";
   private static final String DIRECTIVE_ARG_ARGUMENT = "arguments";
 
-  private String field;
-  private List<ResolverArgument> arguments;
+  private String field; // named after the schema definition
+  private List<ResolverArgumentDefinition> arguments; // named after the schema definition
 
   /**
    * Creates an instance of this class based on the given {@link Directive}
@@ -40,14 +40,14 @@ public class ResolverDirectiveDefinition {
     // it is guaranteed that field will not be null and entry in arguments will not be null
     Objects.requireNonNull(directive, "directive is null for ResolverDirectiveDefinition.from()");
     String resolverFieldName = null;
-    List<ResolverArgument> resolverArguments = new ArrayList<>();
+    List<ResolverArgumentDefinition> resolverArgumentDefinitions = new ArrayList<>();
     for (Argument argument : directive.getArguments()) {
       switch (argument.getName()) {
         case DIRECTIVE_ARG_FIELD:
           resolverFieldName = extractFieldValue(argument);
           break;
         case DIRECTIVE_ARG_ARGUMENT:
-          resolverArguments.addAll(extractArgumentsValue(argument));
+          resolverArgumentDefinitions.addAll(extractArgumentsValue(argument));
           break;
         default:
           throw new ResolverDirectiveException(String.format("'%s' argument is unexpected for resolver directive."
@@ -60,7 +60,7 @@ public class ResolverDirectiveDefinition {
           getResolverDirectiveParentTypeName(directive)));
     }
 
-    return new ResolverDirectiveDefinition(resolverFieldName, resolverArguments);
+    return new ResolverDirectiveDefinition(resolverFieldName, resolverArgumentDefinitions);
   }
 
   /**
@@ -74,17 +74,17 @@ public class ResolverDirectiveDefinition {
 
   /**
    *
-   * @param arguments the arguments part of resolver directive
+   * @param directiveArguments the arguments part of resolver directive
    * @return list of name-value mapping for directive argument 'arguments'
    */
-  private static List<ResolverArgument> extractArgumentsValue(Argument arguments) {
-    return arguments
+  private static List<ResolverArgumentDefinition> extractArgumentsValue(Argument directiveArguments) {
+    return directiveArguments
         .getValueWithVariable().getArrayValueWithVariable().getValueWithVariable().stream()
         .map(ValueWithVariable::getObjectValueWithVariable)
         .map(objectValueWithVariable -> objectValueWithVariable.getObjectFieldWithVariable()
             .stream().collect(Collectors.toMap(ObjectFieldWithVariable::getName,
-                ObjectFieldWithVariable::getValueWithVariable))
-        ).map(m ->new ResolverArgument(
+                ObjectFieldWithVariable::getValueWithVariable)))
+        .map(m -> new ResolverArgumentDefinition(
             StringUtils.remove(m.get("name").getStringValue(), '"'),
             StringUtils.remove(m.get("value").getStringValue(), '"')
             )

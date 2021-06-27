@@ -60,9 +60,9 @@ public class FieldResolverDirectiveUtilTest {
   @Test
   public void canCreateGraphQLArgumentsFromResolverArguments() {
     // GIVEN
-    List<ResolverArgument> resolverArguments = Arrays.asList(
-        new ResolverArgument("key1", "$field1"),
-        new ResolverArgument("key2", "$field2")
+    List<ResolverArgumentDefinition> resolverArgumentDefinitions = Arrays.asList(
+        new ResolverArgumentDefinition("key1", "$field1"),
+        new ResolverArgumentDefinition("key2", "$field2")
     );
 
     GraphQLFieldsContainer parentType = GraphQLObjectType.newObject()
@@ -77,7 +77,7 @@ public class FieldResolverDirectiveUtilTest {
 
     // WHEN
     List<Argument> arguments = FieldResolverDirectiveUtil
-        .createResolverQueryFieldArguments(resolverArguments, parentType, source,
+        .createResolverQueryFieldArguments(resolverArgumentDefinitions, parentType, source,
             resolverDirectiveDefinitionMock, SERVICE_NAMESPACE);
 
     // THEN
@@ -97,9 +97,9 @@ public class FieldResolverDirectiveUtilTest {
         + "parentTypeName=SomeType,  resolverDirectiveDefinition=testResolverDirectiveToString, "
         + "serviceNameSpace=testServiceNameSpace"));
 
-    List<ResolverArgument> resolverArguments = Arrays.asList(
-        new ResolverArgument("key1", "$field1"),
-        new ResolverArgument("key2", "$field2")
+    List<ResolverArgumentDefinition> resolverArgumentDefinitions = Arrays.asList(
+        new ResolverArgumentDefinition("key1", "$field1"),
+        new ResolverArgumentDefinition("key2", "$field2")
     );
 
     GraphQLFieldsContainer parentType = GraphQLObjectType.newObject()
@@ -113,7 +113,7 @@ public class FieldResolverDirectiveUtilTest {
 
     // WHEN
     FieldResolverDirectiveUtil
-        .createResolverQueryFieldArguments(resolverArguments, parentType, sourceWithoutField2,
+        .createResolverQueryFieldArguments(resolverArgumentDefinitions, parentType, sourceWithoutField2,
             resolverDirectiveDefinitionMock, SERVICE_NAMESPACE);
 
   }
@@ -127,9 +127,9 @@ public class FieldResolverDirectiveUtilTest {
         + "parentTypeName=SomeType,  resolverDirectiveDefinition=testResolverDirectiveToString, "
         + "serviceNameSpace=testServiceNameSpace"));
 
-    List<ResolverArgument> resolverArguments = Arrays.asList(
-        new ResolverArgument("key1", "$field1"),
-        new ResolverArgument("key2", "$field2")
+    List<ResolverArgumentDefinition> resolverArgumentsDefinitions = Arrays.asList(
+        new ResolverArgumentDefinition("key1", "$field1"),
+        new ResolverArgumentDefinition("key2", "$field2")
     );
 
     GraphQLFieldsContainer parentType = GraphQLObjectType.newObject()
@@ -144,7 +144,7 @@ public class FieldResolverDirectiveUtilTest {
 
     // WHEN
     FieldResolverDirectiveUtil
-        .createResolverQueryFieldArguments(resolverArguments, parentType, sourceField2ValueIsMissing,
+        .createResolverQueryFieldArguments(resolverArgumentsDefinitions, parentType, sourceField2ValueIsMissing,
             resolverDirectiveDefinitionMock, SERVICE_NAMESPACE);
 
   }
@@ -152,8 +152,8 @@ public class FieldResolverDirectiveUtilTest {
   @Test(expected = ResolverArgumentNotAFieldOfParentException.class)
   public void cannotCreateArgumentsDueToNotAFieldOfParentError() {
     // GIVEN
-    List<ResolverArgument> resolverArguments = Collections.singletonList(
-        new ResolverArgument("key1", "$field1")
+    List<ResolverArgumentDefinition> resolverArgumentDefinitions = Collections.singletonList(
+        new ResolverArgumentDefinition("key1", "$field1")
     );
 
     GraphQLFieldsContainer parentType = GraphQLObjectType.newObject()
@@ -162,7 +162,7 @@ public class FieldResolverDirectiveUtilTest {
 
     // WHEN.. THEN throws exception
     FieldResolverDirectiveUtil
-        .createResolverQueryFieldArguments(resolverArguments, parentType, new HashMap<>(),
+        .createResolverQueryFieldArguments(resolverArgumentDefinitions, parentType, new HashMap<>(),
             resolverDirectiveDefinitionMock, SERVICE_NAMESPACE);
 
   }
@@ -170,8 +170,8 @@ public class FieldResolverDirectiveUtilTest {
   @Test(expected = NotAValidFieldReference.class)
   public void cannotCreateArgumentsWrongFirstCharInFieldReference() {
     // GIVEN
-    List<ResolverArgument> resolverArguments = Collections.singletonList(
-        new ResolverArgument("key1", "SHOULD_START_WITH_$")
+    List<ResolverArgumentDefinition> resolverArgumentDefinitions = Collections.singletonList(
+        new ResolverArgumentDefinition("key1", "SHOULD_START_WITH_$")
     );
 
     GraphQLFieldsContainer parentType = GraphQLObjectType.newObject()
@@ -180,7 +180,7 @@ public class FieldResolverDirectiveUtilTest {
 
     // WHEN.. THEN throws exception
     FieldResolverDirectiveUtil
-        .createResolverQueryFieldArguments(resolverArguments, parentType, new HashMap<>(),
+        .createResolverQueryFieldArguments(resolverArgumentDefinitions, parentType, new HashMap<>(),
             resolverDirectiveDefinitionMock, SERVICE_NAMESPACE);
 
   }
@@ -188,8 +188,8 @@ public class FieldResolverDirectiveUtilTest {
   @Test(expected = NotAValidFieldReference.class)
   public void cannotCreateArgumentNoNameInFieldReference() {
     // GIVEN
-    List<ResolverArgument> resolverArguments = Collections.singletonList(
-        new ResolverArgument("key1", "$")
+    List<ResolverArgumentDefinition> resolverArgumentDefinitions = Collections.singletonList(
+        new ResolverArgumentDefinition("key1", "$")
     );
 
     GraphQLFieldsContainer parentType = GraphQLObjectType.newObject()
@@ -198,7 +198,7 @@ public class FieldResolverDirectiveUtilTest {
 
     // WHEN.. THEN throws exception
     FieldResolverDirectiveUtil
-        .createResolverQueryFieldArguments(resolverArguments, parentType, new HashMap<>(),
+        .createResolverQueryFieldArguments(resolverArgumentDefinitions, parentType, new HashMap<>(),
             resolverDirectiveDefinitionMock, SERVICE_NAMESPACE);
 
   }

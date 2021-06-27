@@ -10,7 +10,7 @@ import com.intuit.graphql.graphQL.ListType;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgument;
+import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
@@ -61,10 +61,10 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
         });
   }
 
-  private void validateResolverArgumentsAreFieldsOfParent(List<ResolverArgument> arguments,
+  private void validateResolverArgumentsAreFieldsOfParent(List<ResolverArgumentDefinition> resolverArgumentDefinitions,
       TypeDefinition parentTypeDefinition) {
 
-    arguments.forEach(resolverArgument -> {
+    resolverArgumentDefinitions.forEach(resolverArgument -> {
       String fieldName = resolverArgument.getValue();
       if (!isReferenceToFieldInParentType(resolverArgument.getValue(), parentTypeDefinition)) {
         throw new ResolverArgumentNotAFieldOfParentException(fieldName, parentTypeDefinition.getName());
