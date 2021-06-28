@@ -5,33 +5,17 @@ import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildField
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildInterfaceTypeDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildUnionTypeDefinition;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_EMPTY_OBJECT_TYPE;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_ENUM;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_INTERFACE;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_OBJECT_ARRAY;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_OBJECT_NOTNULL_ARRAY;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_OBJECT_TYPE;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_OBJECT_TYPE_NOTNULL;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_STRING_TYPE;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.SCHEMA_FIELD_RESOLVER_IS_UNION;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.createTestXtextGraph;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.getTypeFromFieldDefinitions;
+import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.*;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.intuit.graphql.graphQL.EnumTypeDefinition;
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.NamedType;
-import com.intuit.graphql.graphQL.ObjectType;
-import com.intuit.graphql.graphQL.ObjectTypeDefinition;
-import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.graphQL.UnionTypeDefinition;
+import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
+import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
@@ -95,7 +79,6 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(textGraphSpy);
 
     // THEN
-    assertThat(transformedSource).isSameAs(textGraphSpy);
     verify(textGraphSpy, never()).getType(any(NamedType.class));
 
     assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(0);
@@ -104,15 +87,35 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsScalarThenProcessingSucceedsNoTypeReplacementOccur() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_STRING_TYPE);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): String "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : String @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) @deprecated(reason: \"Use `newField`.\")"
+            + "} \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     XtextGraph textGraphSpy = Mockito.spy(xtextGraph);
 
     // WHEN
     XtextGraph transformedSource = transformer.transform(textGraphSpy);
 
     // THEN
-    assertThat(transformedSource).isSameAs(textGraphSpy);
     verify(textGraphSpy, never()).getType(any(NamedType.class));
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(1);
   }
@@ -120,7 +123,21 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsObjectTypeThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_OBJECT_TYPE);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): BObjectType "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BObjectType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -134,19 +151,39 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalObjectTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
   }
 
   @Test
-  public void transformResolvedFieldIsObjectTypeNotNullThenProcessingSucceeds() {
+  public void transformResolvedFieldObjectTypeWrappedNotNullThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_OBJECT_TYPE_NOTNULL);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): BObjectType! "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BObjectType! @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -160,10 +197,16 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalObjectTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
@@ -172,7 +215,20 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsObjectTypeArrayThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_OBJECT_ARRAY);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): [BObjectType] "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : [BObjectType] @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -186,10 +242,16 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalObjectTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
@@ -198,7 +260,21 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsObjectTypeNOtNullArrayThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_OBJECT_NOTNULL_ARRAY);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): [BObjectType!] "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : [BObjectType!] @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -212,10 +288,16 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalObjectTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
@@ -224,7 +306,21 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsInterfaceThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_INTERFACE);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): BInterfaceType "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BInterfaceType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "interface BInterfaceType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_INTERFACE_TYPENAME, externalInterfaceTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -239,11 +335,17 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
         EXTERNAL_INTERFACE_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalInterfaceTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
@@ -252,7 +354,21 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsUnionThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_UNION);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): BUnionType "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BUnionType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "union BUnionType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_UNION_TYPENAME, externalUnionTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -267,11 +383,17 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
         EXTERNAL_UNION_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalUnionTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
@@ -280,7 +402,20 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldIsEnumThenProcessingSucceeds() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_ENUM);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): BEnumType "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BEnumType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "enum BEnumType { } \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
@@ -295,11 +430,17 @@ public class FieldResolverTransformerPostMergeTest {
     XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource).isSameAs(xtextGraph);
-
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
         EXTERNAL_ENUM_TYPENAME, extendedType);
     assertThat(replacementTypeDefinition).isSameAs(externalEnumTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
@@ -308,7 +449,20 @@ public class FieldResolverTransformerPostMergeTest {
   @Test
   public void transformResolvedFieldExternalTypeNotFoundThrowsException() {
     // GIVEN
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_RESOLVER_IS_OBJECT_TYPE_NOTNULL);
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BObjectType! @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
 
     String expectedMessage = "External type not found.  serviceName=TEST_SVC, parentTypeName=AObjectType, "
         + "fieldName=a, placeHolderTypeDescription=[name:BObjectType, type:ObjectTypeDefinition, description:null";
@@ -323,12 +477,24 @@ public class FieldResolverTransformerPostMergeTest {
   public void transformResolverArgumentNotInParentTypeThrowsException() {
     // GIVEN
 
+    String schema =  ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): BEnumType "
+            + "} \n"
+            + "type AObjectType { } \n"
+            + "extend type AObjectType { "
+            + "  a : BEnumType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "enum BEnumType { } \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
     exceptionRule.expect(ResolverArgumentNotAFieldOfParentException.class);
     String expectedMessage = "Resolver argument value $af1 should be a reference to a field in "
         + "Parent Type AObjectType";
     exceptionRule.expectMessage(expectedMessage);
 
-    XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_EMPTY_OBJECT_TYPE);
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
     xtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
 
     ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(

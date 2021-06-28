@@ -3,7 +3,6 @@ package com.intuit.graphql.orchestrator.xtext;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import lombok.Getter;
 
@@ -15,7 +14,6 @@ public class DataFetcherContext {
 
   private final String namespace;
   private final DataFetcherType dataFetcherType;
-  private final ResolverDirectiveDefinition fieldResolverDirectiveDefinition;
   private final FieldResolverContext fieldResolverContext;
   private final ServiceType serviceType;
 
@@ -23,7 +21,6 @@ public class DataFetcherContext {
     namespace = builder.namespace;
     dataFetcherType = builder.dataFetcherType;
     this.serviceType = builder.serviceType;
-    this.fieldResolverDirectiveDefinition = builder.fieldResolverDirectiveDefinition;
     this.fieldResolverContext = builder.fieldResolverContext;
   }
 
@@ -35,14 +32,8 @@ public class DataFetcherContext {
     Builder builder = new Builder();
     builder.namespace = copy.getNamespace();
     builder.dataFetcherType = copy.getDataFetcherType();
-    builder.fieldResolverDirectiveDefinition = copy.getFieldResolverDirectiveDefinition();
     return builder;
   }
-
-  public ResolverDirectiveDefinition getFieldResolverDirectiveDefinition() {
-    return this.fieldResolverDirectiveDefinition;
-  }
-
 
   public enum DataFetcherType {
     STATIC, SERVICE, PROPERTY, RESOLVER_ARGUMENT, RESOLVER_ON_FIELD_DEFINITION
@@ -52,7 +43,6 @@ public class DataFetcherContext {
 
     private String namespace;
     private DataFetcherType dataFetcherType = DataFetcherType.PROPERTY;
-    private ResolverDirectiveDefinition fieldResolverDirectiveDefinition;
     private FieldResolverContext fieldResolverContext;
     private ServiceType serviceType;
 
@@ -67,11 +57,6 @@ public class DataFetcherContext {
 
     public Builder dataFetcherType(DataFetcherType val) {
       this.dataFetcherType = val;
-      return this;
-    }
-
-    public Builder fieldResolverDirectiveDefinition(ResolverDirectiveDefinition resolverDirectiveDefinition) {
-      this.fieldResolverDirectiveDefinition = resolverDirectiveDefinition;
       return this;
     }
 

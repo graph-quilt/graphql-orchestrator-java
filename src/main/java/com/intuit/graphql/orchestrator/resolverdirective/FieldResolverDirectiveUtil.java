@@ -1,32 +1,22 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getChildFields;
-import static graphql.language.AstValueHelper.astFromValue;
-
-import com.intuit.graphql.graphQL.Directive;
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.ObjectTypeDefinition;
-import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
-import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
-import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
-import graphql.language.Argument;
-import graphql.language.Value;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
-import graphql.schema.GraphQLType;
-import java.util.ArrayList;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
+
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getChildFields;
 
 public class FieldResolverDirectiveUtil {
 
@@ -39,38 +29,7 @@ public class FieldResolverDirectiveUtil {
   private FieldResolverDirectiveUtil() {
   }
 
-  public static List<Argument> createResolverQueryFieldArguments(List<ResolverArgumentDefinition> resolverArgumentDefinitions,
-      GraphQLFieldsContainer parentType, Map<String, Object> parentSource,
-      ResolverDirectiveDefinition resolverDirectiveDefinition, String serviceNameSpace) {
-
-    Objects.requireNonNull(resolverArgumentDefinitions);
-    Objects.requireNonNull(parentSource);
-    Objects.requireNonNull(resolverDirectiveDefinition);
-    Objects.requireNonNull(serviceNameSpace);
-
-    List<Argument> arguments = new ArrayList<>();
-    resolverArgumentDefinitions.forEach(
-        resolverArg -> {
-          String resolverArgValue = resolverArg.getValue();
-          if (isReferenceToFieldInParentType(resolverArgValue, parentType)) {
-            String fieldReferenceName = getNameFromFieldReference(resolverArgValue);
-
-            ifInvalidFieldReferenceThrowException(fieldReferenceName, parentType.getName(),
-                resolverDirectiveDefinition, serviceNameSpace, parentSource);
-
-            Object valueFromSource = parentSource.get(fieldReferenceName);
-            GraphQLType fieldReferenceType = parentType.getFieldDefinition(fieldReferenceName).getType();
-            Value<?> fieldRefSourceValue = astFromValue(valueFromSource, fieldReferenceType);
-            Argument argument = Argument.newArgument(resolverArg.getName(), fieldRefSourceValue).build();
-            arguments.add(argument);
-          } else {
-            throw new ResolverArgumentNotAFieldOfParentException(resolverArgValue, parentType.getName());
-          }
-        });
-    return arguments;
-  }
-
-  private static void ifInvalidFieldReferenceThrowException(String fieldReferenceName, String parentTypeName,
+  public static void ifInvalidFieldReferenceThrowException(String fieldReferenceName, String parentTypeName,
       ResolverDirectiveDefinition resolverDirectiveDefinition, String serviceNameSpace,
       Map<String, Object> parentSource) {
 
@@ -100,11 +59,11 @@ public class FieldResolverDirectiveUtil {
         && StringUtils.length(string) > FIELD_REFERENCE_PREFIX.length();
   }
 
-  private static String getNameFromFieldReference(String fieldReference) {
+  public static String getNameFromFieldReference(String fieldReference) {
     return StringUtils.substring(fieldReference, FIELD_REFERENCE_PREFIX.length());
   }
 
-  private static boolean isReferenceToFieldInParentType(String resolverArgValue, GraphQLFieldsContainer parentType) {
+  public static boolean isReferenceToFieldInParentType(String resolverArgValue, GraphQLFieldsContainer parentType) {
     if (isFieldReference(resolverArgValue)) {
       String fieldName = getNameFromFieldReference(resolverArgValue);
       return parentType.getFieldDefinition(fieldName) != null;

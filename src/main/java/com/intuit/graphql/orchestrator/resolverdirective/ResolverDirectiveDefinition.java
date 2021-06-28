@@ -1,19 +1,21 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName;
-
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.ObjectFieldWithVariable;
 import com.intuit.graphql.graphQL.ValueWithVariable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Class to represent @resolver directive definition
@@ -26,8 +28,8 @@ public class ResolverDirectiveDefinition {
   private static final String DIRECTIVE_ARG_FIELD = "field";
   private static final String DIRECTIVE_ARG_ARGUMENT = "arguments";
 
-  private String field; // named after the schema definition
-  private List<ResolverArgumentDefinition> arguments; // named after the schema definition
+  private final String field; // named after the schema definition
+  private final List<ResolverArgumentDefinition> arguments; // named after the schema definition
 
   /**
    * Creates an instance of this class based on the given {@link Directive}
@@ -82,7 +84,7 @@ public class ResolverDirectiveDefinition {
         .getValueWithVariable().getArrayValueWithVariable().getValueWithVariable().stream()
         .map(ValueWithVariable::getObjectValueWithVariable)
         .map(objectValueWithVariable -> objectValueWithVariable.getObjectFieldWithVariable()
-            .stream().collect(Collectors.toMap(ObjectFieldWithVariable::getName,
+            .stream().collect(toMap(ObjectFieldWithVariable::getName,
                 ObjectFieldWithVariable::getValueWithVariable)))
         .map(m -> new ResolverArgumentDefinition(
             StringUtils.remove(m.get("name").getStringValue(), '"'),

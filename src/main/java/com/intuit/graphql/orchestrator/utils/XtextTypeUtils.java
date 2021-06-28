@@ -3,18 +3,10 @@ package com.intuit.graphql.orchestrator.utils;
 import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 
-import com.intuit.graphql.graphQL.EnumTypeDefinition;
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.ListType;
-import com.intuit.graphql.graphQL.NamedType;
-import com.intuit.graphql.graphQL.ObjectType;
-import com.intuit.graphql.graphQL.PrimitiveType;
-import com.intuit.graphql.graphQL.ScalarTypeDefinition;
-import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.graphQL.TypeExtensionDefinition;
-import com.intuit.graphql.graphQL.UnionTypeDefinition;
+import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
+
+import java.util.List;
 import java.util.Objects;
 import org.eclipse.emf.ecore.EObject;
 
@@ -80,5 +72,17 @@ public class XtextTypeUtils {
           || typeDefinition instanceof UnionTypeDefinition;
     }
     return false;
+  }
+
+  public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition) {
+    if (typeDefinition instanceof InterfaceTypeDefinition) {
+      return ((InterfaceTypeDefinition)typeDefinition).getFieldDefinition();
+    }
+    if (typeDefinition instanceof ObjectTypeDefinition) {
+      return ((ObjectTypeDefinition)typeDefinition).getFieldDefinition();
+    }
+    String errorMessage = String.format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
+            typeDefinition.getName(), typeDefinition.getClass().getName());
+    throw new IllegalArgumentException(errorMessage);
   }
 }

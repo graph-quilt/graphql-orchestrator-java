@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
+import com.intuit.graphql.graphQL.NamedType;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -12,9 +13,17 @@ public class ResolverArgumentDefinition {
   private final String name;
   private final String value;
 
+  @ToString.Exclude
+  private final NamedType namedType;
+
   public ResolverArgumentDefinition(String name, String value) {
+    this(name, value, null);
+  }
+
+  public ResolverArgumentDefinition(String name, String value, NamedType namedType) {
     this.name = name;
     this.value = value;
+    this.namedType = namedType;
   }
 
   public ResolverArgumentDefinition transform(Consumer<ResolverArgumentDefinition.Builder> consumer) {
@@ -27,6 +36,7 @@ public class ResolverArgumentDefinition {
 
     private String name;
     private String value;
+    private NamedType namedType;
 
     public Builder() {
     }
@@ -46,8 +56,13 @@ public class ResolverArgumentDefinition {
       return this;
     }
 
+    public ResolverArgumentDefinition.Builder namedType(NamedType namedType) {
+      this.namedType = namedType;
+      return this;
+    }
+
     public ResolverArgumentDefinition build() {
-      return new ResolverArgumentDefinition(name, value);
+      return new ResolverArgumentDefinition(name, value, namedType);
     }
   }
 

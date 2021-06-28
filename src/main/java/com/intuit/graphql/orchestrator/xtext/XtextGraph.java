@@ -357,6 +357,11 @@ public class XtextGraph implements ServiceMetadata {
       return this;
     }
 
+    public Builder clearFieldResolverContexts() {
+      this.fieldResolverContexts.clear();
+      return this;
+    }
+
     /**
      * Build runtime graph.
      *
