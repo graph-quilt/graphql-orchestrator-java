@@ -10,7 +10,7 @@ import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -38,7 +38,7 @@ public class XtextGraph implements ServiceMetadata {
   private final Map<FieldContext, ArgumentsDefinition> resolverArgumentFields;
   private final Set<DirectiveDefinition> directives;
   private final Map<String, TypeDefinition> types;
-  private final List<FieldWithResolverMetadata> fieldWithResolverMetadatas;
+  private final List<FieldResolverContext> fieldResolverContexts;
 
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
@@ -63,7 +63,7 @@ public class XtextGraph implements ServiceMetadata {
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
     resolverArgumentFields = builder.resolverArgumentFields;
-    fieldWithResolverMetadatas = builder.fieldWithResolverMetadatas;
+    fieldResolverContexts = builder.fieldResolverContexts;
   }
 
   /**
@@ -92,7 +92,7 @@ public class XtextGraph implements ServiceMetadata {
     builder.hasInterfaceOrUnion = copy.hasInterfaceOrUnion;
     builder.hasFieldResolverDefinition = copy.hasFieldResolverDefinition;
     builder.resolverArgumentFields = copy.resolverArgumentFields;
-    builder.fieldWithResolverMetadatas = copy.fieldWithResolverMetadatas;
+    builder.fieldResolverContexts = copy.fieldResolverContexts;
     return builder;
   }
 
@@ -226,7 +226,7 @@ public class XtextGraph implements ServiceMetadata {
     private Map<FieldContext, ArgumentsDefinition> resolverArgumentFields = new HashMap<>();
     private Set<DirectiveDefinition> directives = new HashSet<>();
     private Map<String, TypeDefinition> types = new HashMap<>();
-    private List<FieldWithResolverMetadata> fieldWithResolverMetadatas = new ArrayList<>();
+    private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -352,8 +352,13 @@ public class XtextGraph implements ServiceMetadata {
       return this;
     }
 
-    public Builder fieldWithResolverMetadatas(List<FieldWithResolverMetadata> fieldWithResolverMetadatas) {
-      this.fieldWithResolverMetadatas.addAll(fieldWithResolverMetadatas);
+    public Builder fieldResolverContexts(List<FieldResolverContext> fieldResolverContexts) {
+      this.fieldResolverContexts.addAll(fieldResolverContexts);
+      return this;
+    }
+
+    public Builder clearFieldResolverContexts() {
+      this.fieldResolverContexts.clear();
       return this;
     }
 

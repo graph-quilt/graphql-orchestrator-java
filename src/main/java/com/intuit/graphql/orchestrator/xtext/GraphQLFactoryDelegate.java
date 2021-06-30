@@ -1,26 +1,6 @@
 package com.intuit.graphql.orchestrator.xtext;
 
-import com.intuit.graphql.graphQL.Argument;
-import com.intuit.graphql.graphQL.ArgumentsDefinition;
-import com.intuit.graphql.graphQL.ArrayValueWithVariable;
-import com.intuit.graphql.graphQL.Directive;
-import com.intuit.graphql.graphQL.DirectiveDefinition;
-import com.intuit.graphql.graphQL.EnumTypeDefinition;
-import com.intuit.graphql.graphQL.EnumValueDefinition;
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.GraphQLFactory;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.ListType;
-import com.intuit.graphql.graphQL.ObjectFieldWithVariable;
-import com.intuit.graphql.graphQL.ObjectType;
-import com.intuit.graphql.graphQL.ObjectTypeDefinition;
-import com.intuit.graphql.graphQL.ObjectValueWithVariable;
-import com.intuit.graphql.graphQL.ScalarTypeDefinition;
-import com.intuit.graphql.graphQL.UnionMemberShip;
-import com.intuit.graphql.graphQL.UnionMembers;
-import com.intuit.graphql.graphQL.UnionTypeDefinition;
-import com.intuit.graphql.graphQL.Value;
-import com.intuit.graphql.graphQL.ValueWithVariable;
+import com.intuit.graphql.graphQL.*;
 
 /**
  * This class provides an easier-to-read pattern for Xtext GraphQL object generation using the instance {@code
@@ -46,6 +26,10 @@ public class GraphQLFactoryDelegate {
 
   public static ObjectTypeDefinition createObjectTypeDefinition() {
     return instance.createObjectTypeDefinition();
+  }
+
+  public static InputObjectTypeDefinition createInputObjectTypeDefinition() {
+    return instance.createInputObjectTypeDefinition();
   }
 
   public static InterfaceTypeDefinition createInterfaceTypeDefinition() {

@@ -395,7 +395,7 @@ public class FieldResolverDirectiveToplevelTest {
     // GIVEN
     String testContext = "fieldName=petId,  "
         + "parentTypeName=BOOKS_Author,  "
-        + "resolverDirectiveDefinition=ResolverDirectiveDefinition(field=pet, arguments=[ResolverArgument(name=id, value=$petId)]), "
+        + "resolverDirectiveDefinition=ResolverDirectiveDefinition(field=pet, arguments=[ResolverArgumentDefinition(name=id, value=$petId)]), "
         + "serviceNameSpace=BOOKS";
 
     String expectedError1 = "Field not found in parent's resolved value.  " + testContext;
