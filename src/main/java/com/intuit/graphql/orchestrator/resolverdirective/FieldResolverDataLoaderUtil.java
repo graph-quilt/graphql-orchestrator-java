@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import org.apache.commons.lang3.StringUtils;
 
 public class FieldResolverDataLoaderUtil {
@@ -13,10 +13,10 @@ public class FieldResolverDataLoaderUtil {
     return StringUtils.join(tokens, DELIMITER);
   }
 
-  public static String createDataLoaderKeyFrom(FieldWithResolverMetadata fieldWithResolverMetadata) {
-    String serviceNamespace = fieldWithResolverMetadata.getServiceNamespace();
-    String parentTypename = fieldWithResolverMetadata.getParentTypeDefinition().getName();
-    String fieldname = fieldWithResolverMetadata.getFieldDefinition().getName();
+  public static String createDataLoaderKeyFrom(FieldResolverContext fieldResolverContext) {
+    String serviceNamespace = fieldResolverContext.getServiceNamespace();
+    String parentTypename = fieldResolverContext.getParentTypeDefinition().getName();
+    String fieldname = fieldResolverContext.getFieldDefinition().getName();
     return createDataLoaderKey(serviceNamespace, parentTypename, fieldname);
   }
 

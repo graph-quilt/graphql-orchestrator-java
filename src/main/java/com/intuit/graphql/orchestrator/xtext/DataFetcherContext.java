@@ -3,8 +3,7 @@ package com.intuit.graphql.orchestrator.xtext;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import lombok.Getter;
 
 @Getter
@@ -15,16 +14,14 @@ public class DataFetcherContext {
 
   private final String namespace;
   private final DataFetcherType dataFetcherType;
-  private final ResolverDirectiveDefinition fieldResolverDirectiveDefinition;
-  private final FieldWithResolverMetadata fieldWithResolverMetadata;
+  private final FieldResolverContext fieldResolverContext;
   private final ServiceType serviceType;
 
   private DataFetcherContext(final Builder builder) {
     namespace = builder.namespace;
     dataFetcherType = builder.dataFetcherType;
     this.serviceType = builder.serviceType;
-    this.fieldResolverDirectiveDefinition = builder.fieldResolverDirectiveDefinition;
-    this.fieldWithResolverMetadata = builder.fieldWithResolverMetadata;
+    this.fieldResolverContext = builder.fieldResolverContext;
   }
 
   public static Builder newBuilder() {
@@ -35,14 +32,8 @@ public class DataFetcherContext {
     Builder builder = new Builder();
     builder.namespace = copy.getNamespace();
     builder.dataFetcherType = copy.getDataFetcherType();
-    builder.fieldResolverDirectiveDefinition = copy.getFieldResolverDirectiveDefinition();
     return builder;
   }
-
-  public ResolverDirectiveDefinition getFieldResolverDirectiveDefinition() {
-    return this.fieldResolverDirectiveDefinition;
-  }
-
 
   public enum DataFetcherType {
     STATIC, SERVICE, PROPERTY, RESOLVER_ARGUMENT, RESOLVER_ON_FIELD_DEFINITION
@@ -52,8 +43,7 @@ public class DataFetcherContext {
 
     private String namespace;
     private DataFetcherType dataFetcherType = DataFetcherType.PROPERTY;
-    private ResolverDirectiveDefinition fieldResolverDirectiveDefinition;
-    private FieldWithResolverMetadata fieldWithResolverMetadata;
+    private FieldResolverContext fieldResolverContext;
     private ServiceType serviceType;
 
     private Builder() {
@@ -70,13 +60,8 @@ public class DataFetcherContext {
       return this;
     }
 
-    public Builder fieldResolverDirectiveDefinition(ResolverDirectiveDefinition resolverDirectiveDefinition) {
-      this.fieldResolverDirectiveDefinition = resolverDirectiveDefinition;
-      return this;
-    }
-
-    public Builder fieldWithResolverMetadata(FieldWithResolverMetadata fieldWithResolverMetadata) {
-      this.fieldWithResolverMetadata = fieldWithResolverMetadata;
+    public Builder fieldResolverContext(FieldResolverContext fieldResolverContext) {
+      this.fieldResolverContext = fieldResolverContext;
       return this;
     }
 

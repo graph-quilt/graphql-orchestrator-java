@@ -34,11 +34,11 @@ public class ResolverDirectiveDefinitionTest {
     ResolverDirectiveDefinition resolverDirectiveDefinition = ResolverDirectiveDefinition.from(directive);
 
     assertThat(resolverDirectiveDefinition.getField()).isEqualTo(resolverFieldName);
-    ResolverArgument resolverArgumentEntry1 = resolverDirectiveDefinition.getArguments().get(0);
+    ResolverArgumentDefinition resolverArgumentEntry1 = resolverDirectiveDefinition.getArguments().get(0);
     assertThat(resolverArgumentEntry1.getName()).isEqualTo(resolverArgumentName1);
     assertThat(resolverArgumentEntry1.getValue()).isEqualTo(resolverArgumentValue1);
 
-    ResolverArgument resolverArgumentEntry2 = resolverDirectiveDefinition.getArguments().get(1);
+    ResolverArgumentDefinition resolverArgumentEntry2 = resolverDirectiveDefinition.getArguments().get(1);
     assertThat(resolverArgumentEntry2.getName()).isEqualTo(resolverArgumentName2);
     assertThat(resolverArgumentEntry2.getValue()).isEqualTo(resolverArgumentValue2);
   }

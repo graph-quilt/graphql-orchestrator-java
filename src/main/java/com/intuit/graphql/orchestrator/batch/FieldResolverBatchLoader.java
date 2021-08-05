@@ -1,12 +1,14 @@
 package com.intuit.graphql.orchestrator.batch;
 
 import static com.intuit.graphql.orchestrator.GraphQLOrchestrator.DATA_LOADER_REGISTRY_CONTEXT_KEY;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverOperationName;
 import static graphql.language.AstPrinter.printAstCompact;
 
+import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverBatchSelectionSetSupplier;
+import com.intuit.graphql.orchestrator.fieldresolver.QueryOperationFactory;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveQueryBuilder;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -38,43 +40,43 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
       .queryExecutionStrategy(new AsyncExecutionStrategy())
       .build();
 
-  private final ResolverDirectiveQueryBuilder resolverDirectiveQueryBuilder = new ResolverDirectiveQueryBuilder();
-
   private final QueryOperationModifier queryOperationModifier = new QueryOperationModifier();
 
   private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
 
   private final String[] resolverSelectedFields;
 
-  private final FieldWithResolverMetadata fieldWithResolverMetadata;
-
-  private final ResolverDirectiveDefinition resolverDirectiveDefinition;
+  private final FieldResolverContext fieldResolverContext;
 
   private final BatchResultTransformer batchResultTransformer;
 
+  private final QueryOperationFactory queryOperationFactory = new QueryOperationFactory();
+
   @Builder
-  public FieldResolverBatchLoader(FieldWithResolverMetadata fieldWithResolverMetadata) {
-    Objects.requireNonNull(fieldWithResolverMetadata, "fieldWithResolverMetadata is required");
-    Objects.requireNonNull(fieldWithResolverMetadata.getResolverDirectiveDefinition(),
+  public FieldResolverBatchLoader(FieldResolverContext fieldResolverContext) {
+    Objects.requireNonNull(fieldResolverContext, "fieldResolverContext is required");
+    Objects.requireNonNull(fieldResolverContext.getResolverDirectiveDefinition(),
         "resolverDirectiveDefinition is required");
 
-    this.fieldWithResolverMetadata = fieldWithResolverMetadata;
-    this.resolverDirectiveDefinition = fieldWithResolverMetadata.getResolverDirectiveDefinition();
+    this.fieldResolverContext = fieldResolverContext;
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+
     this.resolverSelectedFields = StringUtils.split(resolverDirectiveDefinition.getField(), '.');
-    this.batchResultTransformer = new FieldResolverBatchResultTransformer(resolverSelectedFields, fieldWithResolverMetadata);
+    this.batchResultTransformer = new FieldResolverBatchResultTransformer(resolverSelectedFields, fieldResolverContext);
   }
 
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> dataFetchingEnvironments) {
 
-    OperationDefinition resolverQueryOpDef = resolverDirectiveQueryBuilder.buildFieldResolverQuery(
-        resolverSelectedFields,
-        resolverDirectiveDefinition,
-        fieldWithResolverMetadata,
-        dataFetchingEnvironments
-    );
+    String originalOperationName = dataFetchingEnvironments.get(0).getOperationDefinition().getName();
+    String operationName = createFieldResolverOperationName(originalOperationName);
 
-    if (this.fieldWithResolverMetadata.isRequiresTypeNameInjection()) {
+    FieldResolverBatchSelectionSetSupplier fieldResolverBatchSelectionSetSupplier =
+            new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments, fieldResolverContext);
+
+    OperationDefinition resolverQueryOpDef = queryOperationFactory.create(operationName, fieldResolverBatchSelectionSetSupplier);
+
+    if (this.fieldResolverContext.isRequiresTypeNameInjection()) {
       resolverQueryOpDef = queryOperationModifier.modifyQuery(
           dataFetchingEnvironments.get(0).getGraphQLSchema(),
           resolverQueryOpDef,

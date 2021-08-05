@@ -52,18 +52,16 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_IS_OBJECT_TYPE);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
     assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
-    assertThat(transformedSource.getFieldWithResolverMetadatas().size()).isEqualTo(1);
+    assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
-    FieldWithResolverMetadata actualFieldResolverContext = transformedSource.getFieldWithResolverMetadatas().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
@@ -72,18 +70,16 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_TYPE_IS_NOT_NULL);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
     assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
-    assertThat(transformedSource.getFieldWithResolverMetadatas().size()).isEqualTo(1);
+    assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
-    FieldWithResolverMetadata actualFieldResolverContext = transformedSource.getFieldWithResolverMetadatas().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
@@ -92,18 +88,16 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_TYPE_WRAPPED_IN_ARRAY);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
     assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
-    assertThat(transformedSource.getFieldWithResolverMetadatas().size()).isEqualTo(1);
+    assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
-    FieldWithResolverMetadata actualFieldResolverContext = transformedSource.getFieldWithResolverMetadatas().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
@@ -112,22 +106,20 @@ public class FieldResolverTransformerPreMergeTest {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_NOT_NULL_WRAPPED_IN_ARRAY);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
-    FieldContext expectedFieldContext = new FieldContext("AObjectType", "b1");
-
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
     assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
-    assertThat(transformedSource.getFieldWithResolverMetadatas().size()).isEqualTo(1);
+    assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
-    FieldWithResolverMetadata actualFieldResolverContext = transformedSource.getFieldWithResolverMetadatas().get(0);
-    assertThat(actualFieldResolverContext.getFieldContext()).isEqualTo(expectedFieldContext);
-    assertThat(actualFieldResolverContext.getFieldDefinition().getName()).isEqualTo("b1");
+    FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(actualFieldResolverContext.getParentTypename()).isEqualTo("AObjectType");
+    assertThat(actualFieldResolverContext.getFieldName()).isEqualTo("b1");
   }
 
   @Test
-  public void transformWithTwoFieldResolversYieldsTwoFieldWithResolverMetadata() {
+  public void transformWithTwoFieldResolversYieldsTwoFieldResolverContext() {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_WITH_TWO__FIELD_RESOLVERS);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
@@ -136,11 +128,11 @@ public class FieldResolverTransformerPreMergeTest {
 
     // THEN
     assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
-    assertThat(transformedSource.getFieldWithResolverMetadatas().size()).isEqualTo(2);
+    assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(2);
   }
 
   @Test
-  public void transformTwoTypesWithFieldWithResolverYieldsTwoFieldWithResolverMetadata() {
+  public void transformTwoTypesWithFieldWithResolverYieldsTwoFieldResolverContexts() {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_AND_C_WITH_WITH_FIELD_RESOLVER);
     assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
 
@@ -149,7 +141,7 @@ public class FieldResolverTransformerPreMergeTest {
 
     // THEN
     assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
-    assertThat(transformedSource.getFieldWithResolverMetadatas().size()).isEqualTo(2);
+    assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(2);
   }
 
   @Test

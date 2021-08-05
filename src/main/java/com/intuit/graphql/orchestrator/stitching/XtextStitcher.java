@@ -107,6 +107,17 @@ public class XtextStitcher implements Stitcher {
     //Executable RuntimeGraph with BatchLoaders and DataFetchers
     final Map<String, BatchLoader> batchLoaders = getBatchLoaders(xtextGraphMap);
 
+    stitchedTransformedGraph.getFieldResolverContexts().forEach(fieldResolverContext -> {
+      FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
+              .builder()
+              .fieldResolverContext(fieldResolverContext)
+              .build();
+
+      String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldResolverContext);
+      batchLoaders.put(batchLoaderKey, fieldResolverDataLoader);
+
+    });
+
     final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
 
     final RuntimeGraph.Builder runtimeGraphBuilder = createRuntimeGraph(stitchedTransformedGraph);
@@ -139,17 +150,6 @@ public class XtextStitcher implements Stitcher {
                 .serviceMetadata(graph)
                 .batchLoaderExecutionHooks(batchLoaderHooks)
                 .build());
-
-        graph.getFieldWithResolverMetadatas().forEach(fieldWithResolverMetadata -> {
-          FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
-              .builder()
-              .fieldWithResolverMetadata(fieldWithResolverMetadata)
-              .build();
-
-          String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldWithResolverMetadata);
-          batchLoaderMap.put(batchLoaderKey, fieldResolverDataLoader);
-
-        });
       }
     });
     return batchLoaderMap;
