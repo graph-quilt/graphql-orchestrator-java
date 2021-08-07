@@ -16,16 +16,12 @@ public class JsonTemplate {
     VelocityEngine engine = new VelocityEngine();
 
     public JsonTemplate(String stringTemplate) {
-        engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.Log4JLogChute");
-        //engine.setProperty("runtime.log.logsystem.log4j.logger", LOGGER.getName());
+        engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.NullLogChute");
         engine.setProperty(Velocity.RESOURCE_LOADER, "string");
         engine.addProperty("string.resource.loader.class", StringResourceLoader.class.getName());
         engine.addProperty("string.resource.loader.repository.static", "false");
-        //  engine.addProperty("string.resource.loader.modificationCheckInterval", "1");
         engine.init();
 
-
-        // Initialize my template repository. You can replace the "Hello $w" with your String.
         StringResourceRepository repo = (StringResourceRepository) engine.getApplicationAttribute(StringResourceLoader.REPOSITORY_NAME_DEFAULT);
         repo.putStringResource("1", stringTemplate);
     }
