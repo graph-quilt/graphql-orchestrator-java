@@ -87,10 +87,15 @@ public class ResolverDirectiveDefinition {
             .stream().collect(toMap(ObjectFieldWithVariable::getName,
                 ObjectFieldWithVariable::getValueWithVariable)))
         .map(m -> new ResolverArgumentDefinition(
-            StringUtils.remove(m.get("name").getStringValue(), '"'),
-            StringUtils.remove(m.get("value").getStringValue(), '"')
+                cleanStringLiteralValue(m.get("name").getStringValue()),
+                cleanStringLiteralValue(m.get("value").getStringValue())
             )
         )
         .collect(Collectors.toList());
+  }
+
+  private static String cleanStringLiteralValue(String name) {
+    String s = StringUtils.removeStart(name, "\"");
+    return StringUtils.removeEnd(s, "\"");
   }
 }
