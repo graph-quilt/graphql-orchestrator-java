@@ -47,6 +47,7 @@ nav:
       - GraphQL Query Execution: key-concepts/graphql-query-execution.md
       - High Level Algorithm: key-concepts/algorithm.md
       - Interfaces and Unions: key-concepts/interface-union-types.md
+      - Field Links: key-concepts/field-links.md
   - Usage:
       - Getting Started: usage/getting_started.md
 
