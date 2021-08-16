@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import graphql.schema.visibility.NoIntrospectionGraphqlFieldVisibility;
 import lombok.extern.slf4j.Slf4j;
 import org.dataloader.BatchLoader;
 import org.dataloader.DataLoader;
@@ -38,15 +40,17 @@ public class GraphQLOrchestrator {
   private final ExecutionIdProvider executionIdProvider;
   private final ExecutionStrategy queryExecutionStrategy;
   private final ExecutionStrategy mutationExecutionStrategy;
+  private final boolean introspectionEnabled;
 
   private GraphQLOrchestrator(final RuntimeGraph runtimeGraph, final List<Instrumentation> instrumentations,
       final ExecutionIdProvider executionIdProvider, final ExecutionStrategy queryExecutionStrategy,
-      final ExecutionStrategy mutationExecutionStrategy) {
+      final ExecutionStrategy mutationExecutionStrategy, boolean introspectionEnabled) {
     this.runtimeGraph = runtimeGraph;
     this.instrumentations = instrumentations;
     this.executionIdProvider = executionIdProvider;
     this.queryExecutionStrategy = queryExecutionStrategy;
     this.mutationExecutionStrategy = mutationExecutionStrategy;
+    this.introspectionEnabled = introspectionEnabled;
   }
 
   public static GraphQLOrchestrator.Builder newOrchestrator() {
@@ -72,7 +76,14 @@ public class GraphQLOrchestrator {
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput) {
 
-    final GraphQL.Builder graphqlBuilder = GraphQL.newGraphQL(runtimeGraph.getExecutableSchema())
+    GraphQLSchema graphQLSchema = runtimeGraph.getExecutableSchema();
+    if (!introspectionEnabled) {
+      graphQLSchema = graphQLSchema.transform(builder -> {
+        builder.fieldVisibility(NoIntrospectionGraphqlFieldVisibility.NO_INTROSPECTION_FIELD_VISIBILITY);
+      });
+    }
+
+    final GraphQL.Builder graphqlBuilder = GraphQL.newGraphQL(graphQLSchema)
         .instrumentation(new ChainedInstrumentation(instrumentations))
         .executionIdProvider(executionIdProvider)
         .queryExecutionStrategy(queryExecutionStrategy);
@@ -113,6 +124,8 @@ public class GraphQLOrchestrator {
     private ExecutionStrategy mutationExecutionStrategy = null;
     private List<Instrumentation> instrumentations = new LinkedList<>(
         Arrays.asList(new DataLoaderDispatcherInstrumentation()));
+    private boolean introspectionEnabled;
+
 
     private Builder() {
     }
@@ -152,9 +165,14 @@ public class GraphQLOrchestrator {
       return this;
     }
 
+    public Builder introspectionEnabled(final boolean introspectionEnabled) {
+      this.introspectionEnabled = introspectionEnabled;
+      return this;
+    }
+
     public GraphQLOrchestrator build() {
       return new GraphQLOrchestrator(runtimeGraph, instrumentations, executionIdProvider, queryExecutionStrategy,
-          mutationExecutionStrategy);
+          mutationExecutionStrategy, introspectionEnabled);
     }
   }
 }

@@ -203,7 +203,7 @@ public class FieldResolverDirectiveToplevelTest {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
 
-    String queryString = "query GetQuery { __schema { types { name } } "
+    String queryString = "query GetQuery { "
         + "books { ... bookFragment } pets { ... petFragment type }  users { id firstName lastName } } "
         + "fragment bookFragment on BOOKS_Book { id name  author { __typename lastName petId pet { ... petFragment }} pageCount weight isFamilyFriendly } "
         + "fragment petFragment on Pet { id name }";
@@ -286,7 +286,7 @@ public class FieldResolverDirectiveToplevelTest {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
 
-    String queryString = "query GetQuery { __schema { types { name } } "
+    String queryString = "query GetQuery {  "
         + "books { ... bookFragment } pets { ... petFragment type }  users { id firstName lastName } } "
         + "fragment bookFragment on BOOKS_Book { id name  author { __typename lastName petId pet { ... petFragment }} pageCount weight isFamilyFriendly } "
         + "fragment petFragment on Pet { id name }";
@@ -339,7 +339,7 @@ public class FieldResolverDirectiveToplevelTest {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
 
-    String queryString = "query GetQuery { __schema { types { name } } "
+    String queryString = "query GetQuery { "
         + "books { ... bookFragment } pets { ... petFragment type }  users { id firstName lastName } } "
         + "fragment bookFragment on BOOKS_Book { id name  author { __typename lastName petId pet { ... petFragment }} pageCount weight isFamilyFriendly } "
         + "fragment petFragment on Pet { id name }";
