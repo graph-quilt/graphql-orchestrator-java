@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.authorization;
 
 import com.google.common.collect.ImmutableMap;
+import com.intuit.graphql.orchestrator.common.ArgumentValueResolver;
 import com.intuit.graphql.orchestrator.common.FieldPosition;
 import graphql.GraphQLContext;
 import graphql.language.*;
@@ -29,18 +30,25 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
     private final Pair<String, Object> claimData;
     private final AuthorizationContext<ClaimT> authorizationContext;
     private final GraphQLContext graphQLContext;
+    private final ArgumentValueResolver argumentValueResolver;
+    private final Map<String, Object> variables;
 
     private final List<SelectionSetPath> processedSelectionSetPaths = new ArrayList<>();
 
-    SelectionSetRedactor(GraphQLFieldsContainer rootFieldType, GraphQLFieldsContainer rootFieldParentType,
-                                            Pair<String, Object> claimData,
-                                            AuthorizationContext<ClaimT> authorizationContext,
-                                            GraphQLContext graphQLContext) {
+    SelectionSetRedactor(GraphQLFieldsContainer rootFieldType,
+                         GraphQLFieldsContainer rootFieldParentType,
+                         Pair<String, Object> claimData,
+                         AuthorizationContext<ClaimT> authorizationContext,
+                         GraphQLContext graphQLContext,
+                         ArgumentValueResolver argumentValueResolver,
+                         Map<String, Object> variables) {
         this.rootFieldType = rootFieldType;
         this.rootFieldParentType = rootFieldParentType;
         this.claimData = claimData;
         this.authorizationContext = authorizationContext;
         this.graphQLContext = graphQLContext;
+        this.argumentValueResolver = argumentValueResolver;
+        this.variables = variables;
     }
 
     @Override
@@ -50,7 +58,8 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
             context.setVar(GraphQLType.class, rootFieldType);
 
             FieldPosition fieldPosition = new FieldPosition(rootFieldParentType.getName(), node.getName());
-            if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node)) {
+            GraphQLFieldDefinition fieldDefinition = getFieldDefinition(node.getName(), this.rootFieldParentType);
+            if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node, fieldDefinition, variables)) {
                 return deleteNode(context);
             }
 
@@ -66,7 +75,7 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
             }
 
             FieldPosition fieldPosition = new FieldPosition(parentType.getName(), node.getName());
-            if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node)) {
+            if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node, fieldDefinition, variables)) {
                 SelectionSetPath parentSelectionSetPath = context.getParentContext().getVar(SelectionSetPath.class);
                 parentSelectionSetPath.decreaseRemainingSelection();
                 return deleteNode(context);
@@ -84,10 +93,11 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
         return authorizationContext.getFieldAuthorization().requiresAccessControl(fieldPosition);
     }
 
-    private boolean fieldAccessIsAllowed(FieldPosition fieldPosition, Field node) {
+    private boolean fieldAccessIsAllowed(FieldPosition fieldPosition, Field field, GraphQLFieldDefinition fieldDefinition,
+                                         Map<String, Object> variables) {
         Map<String, Object> authData = ImmutableMap.of(
                 claimData.getLeft(), claimData.getRight(),
-                "fieldArguments", node.getArguments() // TODO converte to Map
+                "fieldArguments", argumentValueResolver.resolve(field, fieldDefinition, variables)
         );
 
         FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()

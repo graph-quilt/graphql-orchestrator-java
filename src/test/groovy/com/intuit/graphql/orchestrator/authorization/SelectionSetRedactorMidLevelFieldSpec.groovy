@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.authorization
 
 import com.google.common.collect.ImmutableMap
+import com.intuit.graphql.orchestrator.common.ArgumentValueResolver
 import com.intuit.graphql.orchestrator.common.FieldPosition
 import com.intuit.graphql.orchestrator.testutils.SelectionSetUtil
 import graphql.GraphQLContext
@@ -41,12 +42,15 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
     AuthorizationContext mockAuthorizationContext = Mock()
     GraphQLContext mockGraphQLContext = Mock()
     FieldAuthorization mockFieldAuthorization = Mock()
+    ArgumentValueResolver argumentValueResolver = Mock()
 
     AstTransformer astTransformer = new AstTransformer()
 
     def setup() {
         mockAuthorizationContext.getFieldAuthorization() >> mockFieldAuthorization
         mockAuthorizationContext.getClientId() >> TEST_CLIENT_ID
+
+        argumentValueResolver.resolve(_, _, _) >> Collections.emptyMap()
     }
 
     def "redact query mid-level field with no sibling access is denied"() {
@@ -61,14 +65,14 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
                 .fieldPosition(new FieldPosition("A", "b1"))
                 .authData(ImmutableMap.of(
                         (String)TEST_CLAIM_DATA.getLeft(), TEST_CLAIM_DATA.getRight(),
-                        "fieldArguments", rootField.getArguments()
+                        "fieldArguments", Collections.emptyMap()
                 ))
                 .clientId(TEST_CLIENT_ID)
                 .graphQLContext(mockGraphQLContext)
                 .build()
 
         SelectionSetRedactor specUnderTest = new SelectionSetRedactor(rootFieldType, rootFieldParentType, TEST_CLAIM_DATA,
-                mockAuthorizationContext, mockGraphQLContext)
+                mockAuthorizationContext, mockGraphQLContext, argumentValueResolver, Collections.emptyMap())
 
         when:
         Field transformedField = (Field) astTransformer.transform(rootField, specUnderTest)
@@ -95,14 +99,14 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
                 .fieldPosition(new FieldPosition("A", "b1"))
                 .authData(ImmutableMap.of(
                         (String)TEST_CLAIM_DATA.getLeft(), TEST_CLAIM_DATA.getRight(),
-                        "fieldArguments", rootField.getArguments()
+                        "fieldArguments", Collections.emptyMap()
                 ))
                 .clientId(TEST_CLIENT_ID)
                 .graphQLContext(mockGraphQLContext)
                 .build()
 
         SelectionSetRedactor specUnderTest = new SelectionSetRedactor(rootFieldType, rootFieldParentType, TEST_CLAIM_DATA,
-                mockAuthorizationContext, mockGraphQLContext)
+                mockAuthorizationContext, mockGraphQLContext, argumentValueResolver, Collections.emptyMap())
 
         when:
         Field transformedField = (Field) astTransformer.transform(rootField, specUnderTest)
@@ -132,7 +136,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
 
         Map<String, Object> authData = ImmutableMap.of(
                 (String)TEST_CLAIM_DATA.getLeft(), TEST_CLAIM_DATA.getRight(),
-                "fieldArguments", rootField.getArguments()
+                "fieldArguments", Collections.emptyMap()
         )
 
         FieldAuthorizationRequest expectedB1AuthorizationRequest = FieldAuthorizationRequest.builder()
@@ -150,7 +154,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
                 .build()
 
         SelectionSetRedactor specUnderTest = new SelectionSetRedactor(rootFieldType, rootFieldParentType, TEST_CLAIM_DATA,
-                mockAuthorizationContext, mockGraphQLContext)
+                mockAuthorizationContext, mockGraphQLContext, argumentValueResolver, Collections.emptyMap())
 
         when:
         Field transformedField = (Field) astTransformer.transform(rootField, specUnderTest)

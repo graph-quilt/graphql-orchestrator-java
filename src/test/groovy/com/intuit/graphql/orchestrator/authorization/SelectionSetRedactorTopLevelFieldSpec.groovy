@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.authorization
 
 import com.google.common.collect.ImmutableMap
+import com.intuit.graphql.orchestrator.common.ArgumentValueResolver
 import com.intuit.graphql.orchestrator.common.FieldPosition
 import com.intuit.graphql.orchestrator.testutils.SelectionSetUtil
 import graphql.GraphQLContext
@@ -37,6 +38,7 @@ class SelectionSetRedactorTopLevelFieldSpec extends Specification {
     AuthorizationContext mockAuthorizationContext = Mock()
     GraphQLContext mockGraphQLContext = Mock()
     FieldAuthorization mockFieldAuthorization = Mock()
+    ArgumentValueResolver argumentValueResolver = Mock()
 
     Document document = new Parser().parseDocument("{ a { b { s } } }")
     OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
@@ -49,6 +51,8 @@ class SelectionSetRedactorTopLevelFieldSpec extends Specification {
     def setup() {
         mockAuthorizationContext.getFieldAuthorization() >> mockFieldAuthorization
         mockAuthorizationContext.getClientId() >> TEST_CLIENT_ID
+
+        argumentValueResolver.resolve(_, _, _) >> Collections.emptyMap()
     }
 
     def "top-level field access is not allowed"() {
@@ -57,14 +61,14 @@ class SelectionSetRedactorTopLevelFieldSpec extends Specification {
                 .fieldPosition(new FieldPosition("Query", "a"))
                 .authData(ImmutableMap.of(
                         (String)TEST_CLAIM_DATA.getLeft(), TEST_CLAIM_DATA.getRight(),
-                        "fieldArguments", rootField.getArguments()
+                        "fieldArguments",Collections.emptyMap()
                 ))
                 .clientId(TEST_CLIENT_ID)
                 .graphQLContext(mockGraphQLContext)
                 .build()
 
         SelectionSetRedactor specUnderTest = new SelectionSetRedactor(rootFieldType, rootFieldParentType, TEST_CLAIM_DATA,
-                mockAuthorizationContext, mockGraphQLContext)
+                mockAuthorizationContext, mockGraphQLContext, argumentValueResolver, Collections.emptyMap())
 
         when:
         Field transformedField = (Field) astTransformer.transform(rootField, specUnderTest)
@@ -83,7 +87,7 @@ class SelectionSetRedactorTopLevelFieldSpec extends Specification {
     def "top-level field access is allowed"() {
         given:
         SelectionSetRedactor specUnderTest = new SelectionSetRedactor(rootFieldType, rootFieldParentType, TEST_CLAIM_DATA,
-                mockAuthorizationContext, mockGraphQLContext)
+                mockAuthorizationContext, mockGraphQLContext, argumentValueResolver, Collections.emptyMap())
 
         when:
         Field transformedField = (Field) astTransformer.transform(rootField, specUnderTest)
