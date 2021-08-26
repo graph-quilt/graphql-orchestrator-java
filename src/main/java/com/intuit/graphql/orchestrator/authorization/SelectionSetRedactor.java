@@ -45,21 +45,12 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
 
     @Override
     public TraversalControl visitField(Field node, TraverserContext<Node> context) {
+
         if (context.visitedNodes().size() == 0) {
             context.setVar(GraphQLType.class, rootFieldType);
 
-            Map<String, Object> authData = ImmutableMap.of(
-                    claimData.getLeft(), claimData.getRight(),
-                    "fieldArguments", node.getArguments() // TODO converte to Map
-            );
-
-            FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
-                    .fieldPosition(new FieldPosition(rootFieldParentType.getName(), node.getName()))
-                    .clientId(this.authorizationContext.getClientId())
-                    .graphQLContext(graphQLContext)
-                    .authData(authData)
-                    .build();
-            if (!authorizationContext.getFieldAuthorization().isAccessAllowed(fieldAuthorizationRequest)) {
+            FieldPosition fieldPosition = new FieldPosition(rootFieldParentType.getName(), node.getName());
+            if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node)) {
                 return deleteNode(context);
             }
 
@@ -74,18 +65,10 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
                 return deleteNode(context);
             }
 
-            Map<String, Object> authData = ImmutableMap.of(
-                    claimData.getLeft(), claimData.getRight(),
-                    "fieldArguments", node.getArguments() // TODO converte to Map
-            );
-
-            FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
-                    .fieldPosition(new FieldPosition(parentType.getName(), node.getName()))
-                    .clientId(this.authorizationContext.getClientId())
-                    .graphQLContext(graphQLContext)
-                    .authData(authData)
-                    .build();
-            if (!authorizationContext.getFieldAuthorization().isAccessAllowed(fieldAuthorizationRequest)) {
+            FieldPosition fieldPosition = new FieldPosition(parentType.getName(), node.getName());
+            if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node)) {
+                SelectionSetPath parentSelectionSetPath = context.getParentContext().getVar(SelectionSetPath.class);
+                parentSelectionSetPath.decreaseRemainingSelection();
                 return deleteNode(context);
             }
 
@@ -95,6 +78,26 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
             }
             return TraversalControl.CONTINUE;
         }
+    }
+
+    private boolean requiresFieldAuthorization(FieldPosition fieldPosition) {
+        return authorizationContext.getFieldAuthorization().requiresAccessControl(fieldPosition);
+    }
+
+    private boolean fieldAccessIsAllowed(FieldPosition fieldPosition, Field node) {
+        Map<String, Object> authData = ImmutableMap.of(
+                claimData.getLeft(), claimData.getRight(),
+                "fieldArguments", node.getArguments() // TODO converte to Map
+        );
+
+        FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
+                .fieldPosition(fieldPosition)
+                .clientId(this.authorizationContext.getClientId())
+                .graphQLContext(graphQLContext)
+                .authData(authData)
+                .build();
+
+        return authorizationContext.getFieldAuthorization().isAccessAllowed(fieldAuthorizationRequest);
     }
 
     private GraphQLFieldDefinition getFieldDefinition(String name, GraphQLFieldsContainer parentType) {
