@@ -5,12 +5,6 @@ import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
 import static graphql.util.TreeTransformerUtil.deleteNode;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.collect.ImmutableMap;
-import com.intuit.graphql.orchestrator.authorization.AuthorizationContext;
-import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
-import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationRequest;
-import com.intuit.graphql.orchestrator.common.FieldPosition;
-import graphql.GraphQLContext;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
@@ -23,25 +17,13 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
-import org.apache.commons.lang3.tuple.Pair;
-
-import java.util.Map;
 
 public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
   private GraphQLFieldsContainer rootType;
-  private Pair claimData;
-  private AuthorizationContext authorizationContext;
-  private GraphQLContext graphQLContext;
 
-  NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType,
-                                          Pair claimData,
-                                          AuthorizationContext authorizationContext,
-                                          GraphQLContext graphQLContext) {
+  NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType) {
     this.rootType = rootType;
-    this.claimData = claimData;
-    this.authorizationContext = authorizationContext;
-    this.graphQLContext = graphQLContext;
   }
 
   @Override
@@ -56,21 +38,6 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
       GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, parentType);
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + fieldName);
       if (hasResolverDirective(fieldDefinition)) {
-        return deleteNode(context);
-      }
-
-      Map<String, Object> authData = ImmutableMap.of(
-              (String)claimData.getLeft(), claimData.getRight(),
-              "fieldArguments", node.getArguments() // TODO converte to Map
-      );
-
-      FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
-              .fieldPosition(new FieldPosition(parentType.getName(), node.getName()))
-              .clientId(this.authorizationContext.getClientId())
-              .graphQLContext(graphQLContext)
-              .authData(authData)
-              .build();
-      if (!authorizationContext.getFieldAuthorization().isAccessAllowed(fieldAuthorizationRequest)) {
         return deleteNode(context);
       }
 
