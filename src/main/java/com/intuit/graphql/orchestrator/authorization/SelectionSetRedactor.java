@@ -136,7 +136,7 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
         GraphQLType parentType = getParentType(context);
         if (context.getParentNode() instanceof Field) {
             Field parentField = (Field) context.getParentNode();
-            if (parentType == this.rootFieldType) {
+            if (context.getParentContext().getParentContext().isRootContext()) {
                 SelectionSetPath selectionSetPath = new SelectionSetPath(parentField.getSelectionSet());
                 selectionSetPath.add(parentField.getName());
                 context.setVar(SelectionSetPath.class, selectionSetPath);
@@ -144,6 +144,7 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
             } else {
                 SelectionSetPath parentSelectionSetPath = context.getParentContext().getParentContext().getVar(SelectionSetPath.class);
                 SelectionSetPath newSelectionSetPath = SelectionSetPath.createRelativePath(parentSelectionSetPath, parentField.getName(), parentField.getSelectionSet());
+                context.setVar(SelectionSetPath.class, newSelectionSetPath);
                 processedSelectionSetPaths.add(newSelectionSetPath);
             }
         }
