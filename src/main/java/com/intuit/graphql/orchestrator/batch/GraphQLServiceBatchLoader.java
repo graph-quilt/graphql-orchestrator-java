@@ -7,8 +7,12 @@ import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.authorization.AuthorizationContext;
+import com.intuit.graphql.orchestrator.authorization.DeclinedField;
 import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.FieldAccessDeniedGraphQLException;
+import com.intuit.graphql.orchestrator.authorization.SelectionSetRedactor;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
+import com.intuit.graphql.orchestrator.common.ArgumentValueResolver;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.ExecutionInput;
@@ -46,6 +50,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,6 +64,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private final QueryOperationModifier queryOperationModifier;
   private final ServiceMetadata serviceMetadata;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> hooks;
+
+  private final ArgumentValueResolver argumentValueResolver = new ArgumentValueResolver();
 
   private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
@@ -124,11 +131,11 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
-            .map(field -> serviceMetadata.hasFieldResolverDirective()
-                ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType())
+            .map(field -> serviceMetadata.hasFieldResolverDirective() || fieldAuthorizationEnabled
+                ? redactField(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(), (GraphQLFieldsContainer) key.getParentType(), claimData, authorizationContext, context, key.getVariables(), graphQLSchema)
                 : field
             )
-            .forEach(selectionSetBuilder::selection);
+            .forEach(field -> selectionSetBuilder.selection((Selection)field));
       }
 
       for (final FragmentDefinition fragmentDefinition : result.getFragmentDefinitions().values()) {
@@ -155,7 +162,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
-          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition, parentType);
+          FragmentDefinition transformedFragment = redactFragmentDefinition(fragmentDefinition, parentType, claimData, authorizationContext, context, key.getVariables(), graphQLSchema);
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
         mergedFragmentDefinitions.putAll(finalServiceFragmentDefinitions);
@@ -277,12 +284,22 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    *                      the root type for {@link NoExternalReferenceSelectionSetModifier}
    * @return a modified fragment definition
    */
-  private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
-      GraphQLType typeCondition) {
+  private FragmentDefinition redactFragmentDefinition(final FragmentDefinition origFragmentDefinition,
+      GraphQLType typeCondition, Pair<String, Object> claimData, AuthorizationContext<?> authorizationContext, GraphQLContext graphQLContext,
+      Map<String, Object> queryVariables, GraphQLSchema graphQLSchema) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(typeCondition)));
+    GraphQLFieldsContainer rootFieldType = (GraphQLFieldsContainer) unwrapAll(typeCondition);
 
+    SelectionSetRedactor selectionSetRedactor = new SelectionSetRedactor<>(rootFieldType, null, claimData, authorizationContext, graphQLContext, argumentValueResolver, queryVariables, graphQLSchema);
+
+    FragmentDefinition transformedFragmentDefinition = (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition, selectionSetRedactor);
+    List<DeclinedField> declinedFields = selectionSetRedactor.getDeclineFields();
+    if ( CollectionUtils.isNotEmpty(declinedFields)) {
+      throw FieldAccessDeniedGraphQLException.builder()
+        .declinedFields(declinedFields)
+        .build();
+    }
+    return transformedFragmentDefinition;
   }
 
   /**
@@ -312,10 +329,22 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    * NoExternalReferenceSelectionSetModifier}
    * @return a modified field
    */
-  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType) {
+  private Field redactField(Field origField, GraphQLOutputType fieldType, GraphQLFieldsContainer parentType,
+      Pair<String, Object> claimData, AuthorizationContext<?> authorizationContext, GraphQLContext graphQLContext,
+      Map<String, Object> queryVariables, GraphQLSchema graphQLSchema) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    return (Field) AST_TRANSFORMER.transform(origField,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType)));
+    GraphQLFieldsContainer rootFieldType = (GraphQLFieldsContainer) unwrapAll(fieldType);
+
+    SelectionSetRedactor selectionSetRedactor = new SelectionSetRedactor<>(rootFieldType, parentType, claimData, authorizationContext, graphQLContext, argumentValueResolver, queryVariables, graphQLSchema);
+
+    Field transformedField = (Field) AST_TRANSFORMER.transform(origField, selectionSetRedactor);
+    List<DeclinedField> declinedFields = selectionSetRedactor.getDeclineFields();
+    if ( CollectionUtils.isNotEmpty(declinedFields)) {
+      throw FieldAccessDeniedGraphQLException.builder()
+          .declinedFields(declinedFields)
+          .build();
+    }
+    return transformedField;
   }
 
   private GraphQLSchema getSchema(List<DataFetchingEnvironment> environments) {

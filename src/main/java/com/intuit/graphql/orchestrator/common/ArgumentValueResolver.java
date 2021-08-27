@@ -10,12 +10,12 @@ import java.util.Map;
 @AllArgsConstructor
 public class ArgumentValueResolver {
 
-  protected final ValuesResolver valuesResolver = new ValuesResolver();
-  protected final GraphQLSchema graphQLSchema;
+  public Map<String, Object> resolve(GraphQLSchema graphQLSchema, GraphQLFieldDefinition fieldDefinition,
+      Field field, Map<String, Object> queryVariables) {
 
-  public Map<String, Object> resolve(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> variables) {
+    ValuesResolver valuesResolver = new ValuesResolver();
     return valuesResolver.getArgumentValues(graphQLSchema.getCodeRegistry(), fieldDefinition.getArguments(),
-        field.getArguments(), variables
+        field.getArguments(), queryVariables
     );
   }
 }

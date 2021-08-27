@@ -39,4 +39,8 @@ public class SelectionSetPath {
     public int getRemainingSelectionsCount() {
         return this.remainingSelectionsCount;
     }
+
+    public List<String> getPathList() {
+        return pathList;
+    }
 }

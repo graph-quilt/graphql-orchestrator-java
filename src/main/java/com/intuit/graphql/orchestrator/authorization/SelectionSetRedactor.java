@@ -7,6 +7,7 @@ import graphql.GraphQLContext;
 import graphql.language.*;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
@@ -32,16 +33,20 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
     private final GraphQLContext graphQLContext;
     private final ArgumentValueResolver argumentValueResolver;
     private final Map<String, Object> variables;
+    private final GraphQLSchema graphQLSchema;
 
     private final List<SelectionSetPath> processedSelectionSetPaths = new ArrayList<>();
+    private List<DeclinedField> declinedFields = new ArrayList<>();
 
-    SelectionSetRedactor(GraphQLFieldsContainer rootFieldType,
+    public SelectionSetRedactor(GraphQLFieldsContainer rootFieldType,
                          GraphQLFieldsContainer rootFieldParentType,
                          Pair<String, Object> claimData,
                          AuthorizationContext<ClaimT> authorizationContext,
                          GraphQLContext graphQLContext,
                          ArgumentValueResolver argumentValueResolver,
-                         Map<String, Object> variables) {
+                         Map<String, Object> variables,
+                         GraphQLSchema graphQLSchema
+        ) {
         this.rootFieldType = rootFieldType;
         this.rootFieldParentType = rootFieldParentType;
         this.claimData = claimData;
@@ -49,6 +54,7 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
         this.graphQLContext = graphQLContext;
         this.argumentValueResolver = argumentValueResolver;
         this.variables = variables;
+        this.graphQLSchema = graphQLSchema;
     }
 
     @Override
@@ -78,6 +84,7 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
             if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, node, fieldDefinition, variables)) {
                 SelectionSetPath parentSelectionSetPath = context.getParentContext().getVar(SelectionSetPath.class);
                 parentSelectionSetPath.decreaseRemainingSelection();
+                this.declinedFields.add(new DeclinedField(node, parentSelectionSetPath.getPathList()));
                 return deleteNode(context);
             }
 
@@ -97,7 +104,7 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
                                          Map<String, Object> variables) {
         Map<String, Object> authData = ImmutableMap.of(
                 claimData.getLeft(), claimData.getRight(),
-                "fieldArguments", argumentValueResolver.resolve(field, fieldDefinition, variables)
+                "fieldArguments", argumentValueResolver.resolve(graphQLSchema, fieldDefinition, field, variables)
         );
 
         FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
@@ -164,5 +171,9 @@ public class SelectionSetRedactor<ClaimT> extends NodeVisitorStub {
     public Boolean isResultAnEmptySelection() {
         return this.processedSelectionSetPaths.stream()
                 .allMatch(selectionSetPath -> selectionSetPath.getRemainingSelectionsCount() == 0);
+    }
+
+    public List<DeclinedField> getDeclineFields() {
+        return this.declinedFields;
     }
 }
