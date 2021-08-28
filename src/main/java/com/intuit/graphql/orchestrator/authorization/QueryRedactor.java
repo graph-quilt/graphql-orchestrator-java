@@ -2,9 +2,7 @@ package com.intuit.graphql.orchestrator.authorization;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
 
-import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.orchestrator.common.FieldPosition;
-import graphql.GraphQLContext;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorStub;
 import graphql.language.Field;
@@ -16,14 +14,12 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
-import org.apache.commons.lang3.tuple.Pair;
 
 @Builder
-public class QueryRedactor<ClaimT> extends QueryVisitorStub {
+public class QueryRedactor extends QueryVisitorStub {
 
-  private Pair<String, Object> claimData;
-  private AuthorizationContext<ClaimT> authorizationContext;
-  private GraphQLContext graphQLContext;
+  private Object authData;
+  private FieldAuthorization fieldAuthorization;
 
   @Getter
   private final List<DeclinedField> declinedFields = new ArrayList<>();
@@ -75,23 +71,19 @@ public class QueryRedactor<ClaimT> extends QueryVisitorStub {
   }
 
   private boolean requiresFieldAuthorization(FieldPosition fieldPosition) {
-    return authorizationContext.getFieldAuthorization().requiresAccessControl(fieldPosition);
+    return fieldAuthorization.isFieldAuthorizationEnabled()
+        && this.fieldAuthorization.requiresAccessControl(fieldPosition);
   }
 
   private boolean fieldAccessIsAllowed(FieldPosition fieldPosition, Map<String, Object> fieldArguments) {
-    Map<String, Object> authData = ImmutableMap.of(
-            claimData.getLeft(), claimData.getRight(),
-            "fieldArguments", fieldArguments
-    );
 
     FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
             .fieldPosition(fieldPosition)
-            .clientId(this.authorizationContext.getClientId())
-            .graphQLContext(graphQLContext)
+            .fieldArguments(fieldArguments)
             .authData(authData)
             .build();
 
-    return authorizationContext.getFieldAuthorization().isAccessAllowed(fieldAuthorizationRequest);
+    return this.fieldAuthorization.isAccessAllowed(fieldAuthorizationRequest);
   }
 
 }

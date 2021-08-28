@@ -1,36 +1,23 @@
 package com.intuit.graphql.orchestrator.authorization
 
-
 import com.intuit.graphql.orchestrator.common.FieldPosition
-import graphql.GraphQLContext
 import graphql.analysis.QueryTransformer
 import graphql.language.Document
 import graphql.language.Field
 import graphql.parser.Parser
 import helpers.DocumentTestUtil
 import helpers.SchemaTestUtil
-import org.apache.commons.lang3.tuple.ImmutablePair
-import org.apache.commons.lang3.tuple.Pair
 import spock.lang.Specification
 
 class SelectionSetRedactorMidLevelFieldSpec extends Specification {
 
-    static final String TEST_CLIENT_ID = "testClientId"
-    static final Pair<String, Object> TEST_CLAIM_DATA = ImmutablePair.of("testClaimData", "ClaimDataValue")
+    static final String TEST_AUTH_DATA = "Can Be Any Object AuthData"
 
-    AuthorizationContext mockAuthorizationContext = Mock()
-    GraphQLContext mockGraphQLContext = Mock()
     FieldAuthorization mockFieldAuthorization = Mock()
 
-    def testAuthDataMap = [
-            testClaimData : TEST_CLAIM_DATA.getRight(),
-            fieldArguments : Collections.emptyMap()
-    ]
-
     QueryRedactor specUnderTest = QueryRedactor.builder()
-            .claimData(TEST_CLAIM_DATA)
-            .authorizationContext(mockAuthorizationContext)
-            .graphQLContext(mockGraphQLContext)
+            .authData(TEST_AUTH_DATA)
+            .fieldAuthorization(mockFieldAuthorization)
             .build()
 
     def testGraphQLSchema = SchemaTestUtil.createGraphQLSchema("""
@@ -51,8 +38,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
 
 
     def setup() {
-        mockAuthorizationContext.getFieldAuthorization() >> mockFieldAuthorization
-        mockAuthorizationContext.getClientId() >> TEST_CLIENT_ID
+        mockFieldAuthorization.isFieldAuthorizationEnabled() >> true
     }
 
 
@@ -62,7 +48,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
         FieldAuthorizationRequest expectedFieldAuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("Query", "a"), testAuthDataMap
+                new FieldPosition("Query", "a"), TEST_AUTH_DATA
         )
 
         and:
@@ -119,7 +105,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
         FieldAuthorizationRequest expectedFieldAuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("A", "b1"), testAuthDataMap
+                new FieldPosition("A", "b1"), TEST_AUTH_DATA
         )
 
         and:
@@ -151,11 +137,11 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
         FieldAuthorizationRequest expectedB1AuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("A", "b1"), testAuthDataMap
+                new FieldPosition("A", "b1"), TEST_AUTH_DATA
         )
 
         FieldAuthorizationRequest expectedB2AuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("A", "b2"), testAuthDataMap
+                new FieldPosition("A", "b2"), TEST_AUTH_DATA
         )
 
         and:
@@ -187,12 +173,11 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         1 * mockFieldAuthorization.isAccessAllowed(expectedB2AuthorizationRequest) >> false
     }
 
-    FieldAuthorizationRequest createFieldAuthorizationRequest(FieldPosition fieldPosition, Map<String, Object> authDataMap) {
+    FieldAuthorizationRequest createFieldAuthorizationRequest(FieldPosition fieldPosition, Object authData) {
         return FieldAuthorizationRequest.builder()
                 .fieldPosition(fieldPosition)
-                .authData(authDataMap)
-                .clientId(TEST_CLIENT_ID)
-                .graphQLContext(mockGraphQLContext)
+                .fieldArguments(Collections.emptyMap())
+                .authData(authData)
                 .build()
     }
 

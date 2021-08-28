@@ -20,13 +20,10 @@ public class FieldAuthorizationRequest {
 
     @NonNull
     @EqualsAndHashCode.Include
-    private String clientId;
+    Map<String, Object> fieldArguments;
 
     @NonNull
     @EqualsAndHashCode.Include
-    private Map<String, Object> authData;
-
-    @NonNull
-    private GraphQLContext graphQLContext;
+    private Object authData;
 
 }

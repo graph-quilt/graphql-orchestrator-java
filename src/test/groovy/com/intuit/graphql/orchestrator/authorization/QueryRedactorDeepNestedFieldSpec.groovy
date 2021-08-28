@@ -2,24 +2,18 @@ package com.intuit.graphql.orchestrator.authorization
 
 import com.intuit.graphql.orchestrator.common.FieldPosition
 import com.intuit.graphql.orchestrator.testutils.SelectionSetUtil
-import graphql.GraphQLContext
 import graphql.analysis.QueryTransformer
 import graphql.language.Document
 import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
 import helpers.SchemaTestUtil
-import org.apache.commons.lang3.tuple.ImmutablePair
-import org.apache.commons.lang3.tuple.Pair
 import spock.lang.Specification
 
 class QueryRedactorDeepNestedFieldSpec extends Specification {
 
-    static final String TEST_CLIENT_ID = "testClientId"
-    static final Pair<String, Object> TEST_CLAIM_DATA = ImmutablePair.of("testClaimData", "ClaimDataValue")
+    static final String TEST_AUTH_DATA = "Can Be Any Object AuthData"
 
-    AuthorizationContext mockAuthorizationContext = Mock()
-    GraphQLContext mockGraphQLContext = Mock()
     FieldAuthorization mockFieldAuthorization = Mock()
 
     def testGraphQLSchema = SchemaTestUtil.createGraphQLSchema("""
@@ -42,8 +36,7 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
     """)
 
     def setup() {
-        mockAuthorizationContext.getFieldAuthorization() >> mockFieldAuthorization
-        mockAuthorizationContext.getClientId() >> TEST_CLIENT_ID
+        mockFieldAuthorization.isFieldAuthorizationEnabled() >> true
     }
 
     def "redact query deepest level field access is denied"() {
@@ -62,25 +55,20 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
                 var2: ["svar1", "svar2", "svar3"]
         ]
 
-        Map<String, Object> authData = [
-            testClaimData: TEST_CLAIM_DATA.getRight(),
-            fieldArguments : [
-                p1: "StringValue1",
-                p2: true,
-                p3: ["svar1", "svar2", "svar3"]
-            ]
-        ]
-
         and:
         OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
         Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
 
-        FieldAuthorizationRequest expectedS1AuthorizationRequest = createFieldAuthorizationRequest(new FieldPosition("C1", "s1"), authData)
+        def fieldArguments = [
+                p1: "StringValue1",
+                p2: true,
+                p3: ["svar1", "svar2", "svar3"]
+        ]
+        FieldAuthorizationRequest expectedS1AuthorizationRequest = createFieldAuthorizationRequest(new FieldPosition("C1", "s1"), fieldArguments, TEST_AUTH_DATA)
 
         QueryRedactor specUnderTest = QueryRedactor.builder()
-                .claimData(TEST_CLAIM_DATA)
-                .authorizationContext(mockAuthorizationContext)
-                .graphQLContext(mockGraphQLContext)
+                .authData(TEST_AUTH_DATA)
+                .fieldAuthorization(mockFieldAuthorization)
                 .build()
 
         and:
@@ -107,12 +95,11 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
 
     }
 
-    FieldAuthorizationRequest createFieldAuthorizationRequest(FieldPosition fieldPosition,  Map<String, Object> authData) {
+    FieldAuthorizationRequest createFieldAuthorizationRequest(FieldPosition fieldPosition,  Map<String, Object> fieldArguments, Object authData) {
         FieldAuthorizationRequest.builder()
             .fieldPosition(fieldPosition)
+            .fieldArguments(fieldArguments)
             .authData(authData)
-            .clientId(TEST_CLIENT_ID)
-            .graphQLContext(mockGraphQLContext)
             .build()
     }
 }
