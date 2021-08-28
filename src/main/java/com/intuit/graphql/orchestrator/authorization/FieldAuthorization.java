@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface FieldAuthorization<AuthDataT> {
 
-    boolean isAccessAllowed(FieldAuthorizationRequest fieldAuthorizationRequest);
+    boolean isAccessAllowed(FieldAuthorizationRequest<AuthDataT> fieldAuthorizationRequest);
 
     boolean requiresAccessControl(FieldPosition fieldPosition);
 
