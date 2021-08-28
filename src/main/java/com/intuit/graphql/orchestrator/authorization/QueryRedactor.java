@@ -16,10 +16,10 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Builder
-public class QueryRedactor extends QueryVisitorStub {
+public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
 
-  private Object authData;
-  private FieldAuthorization fieldAuthorization;
+  private AuthDataT authData;
+  private FieldAuthorization<AuthDataT> fieldAuthorization;
 
   @Getter
   private final List<DeclinedField> declinedFields = new ArrayList<>();
@@ -71,13 +71,12 @@ public class QueryRedactor extends QueryVisitorStub {
   }
 
   private boolean requiresFieldAuthorization(FieldPosition fieldPosition) {
-    return fieldAuthorization.isFieldAuthorizationEnabled()
-        && this.fieldAuthorization.requiresAccessControl(fieldPosition);
+    return this.fieldAuthorization.requiresAccessControl(fieldPosition);
   }
 
   private boolean fieldAccessIsAllowed(FieldPosition fieldPosition, Map<String, Object> fieldArguments) {
 
-    FieldAuthorizationRequest fieldAuthorizationRequest = FieldAuthorizationRequest.builder()
+    FieldAuthorizationRequest<AuthDataT> fieldAuthorizationRequest = FieldAuthorizationRequest.<AuthDataT>builder()
             .fieldPosition(fieldPosition)
             .fieldArguments(fieldArguments)
             .authData(authData)

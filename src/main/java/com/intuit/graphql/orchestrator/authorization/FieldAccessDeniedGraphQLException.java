@@ -1,16 +1,13 @@
 package com.intuit.graphql.orchestrator.authorization;
 
-import com.intuit.graphql.orchestrator.utils.ExecutionPathUtils;
 import graphql.ErrorClassification;
 import graphql.ErrorType;
 import graphql.GraphqlErrorException;
-import graphql.execution.ExecutionPath;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.collections4.CollectionUtils;
 
 public class FieldAccessDeniedGraphQLException extends GraphqlErrorException {
@@ -33,7 +30,7 @@ public class FieldAccessDeniedGraphQLException extends GraphqlErrorException {
 
     {
       super.extensions = new HashMap<>();
-      super.sourceLocations = new ArrayList();
+      super.sourceLocations = new ArrayList<>();
     }
 
     public FieldAccessDeniedGraphQLException build() {
@@ -48,7 +45,7 @@ public class FieldAccessDeniedGraphQLException extends GraphqlErrorException {
     public FieldAccessDeniedGraphQLException.Builder declinedFields(List<DeclinedField> declinedFields) {
       if (CollectionUtils.isNotEmpty(declinedFields)) {
         List<String> fieldPaths = declinedFields.stream()
-            .map(declinedField -> declinedField.getPath())
+            .map(DeclinedField::getPath)
             .collect(Collectors.toList());
         extension("declinedFields", fieldPaths);
       }

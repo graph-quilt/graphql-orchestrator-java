@@ -12,7 +12,7 @@ import java.util.Map;
 @Builder
 @Getter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class FieldAuthorizationRequest {
+public class FieldAuthorizationRequest<AuthDataT> {
 
     @NonNull
     @EqualsAndHashCode.Include
@@ -24,6 +24,6 @@ public class FieldAuthorizationRequest {
 
     @NonNull
     @EqualsAndHashCode.Include
-    private Object authData;
+    private AuthDataT authData;
 
 }

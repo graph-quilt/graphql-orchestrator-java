@@ -46,13 +46,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 import org.apache.commons.collections4.CollectionUtils;
 import com.intuit.graphql.orchestrator.authorization.DeclinedField;
-import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.FieldAccessDeniedGraphQLException;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.QueryRedactor;
 import graphql.analysis.QueryTransformer;
 
-public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
+public class GraphQLServiceBatchLoader<AuthDataT> implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
   private final QueryExecutor queryExecutor;
   private final QueryResponseModifier queryResponseModifier;
@@ -77,18 +76,18 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> keys) {
     GraphQLContext graphQLContext = getContext(keys);
-    FieldAuthorization fieldAuthorization = getFieldAuthorizationFromOrDefault(graphQLContext);
-    CompletableFuture<Object> futureAuthData = fieldAuthorization.getFutureAuthData();
+    FieldAuthorization<AuthDataT> fieldAuthorization = getFieldAuthorizationFromOrDefault(graphQLContext);
+    CompletableFuture<AuthDataT> futureAuthData = requireNonNull(fieldAuthorization).getFutureAuthData();
     return futureAuthData.thenCompose(authData -> load(keys, authData, graphQLContext, fieldAuthorization));
   }
 
-  private FieldAuthorization getFieldAuthorizationFromOrDefault(GraphQLContext graphQLContext) {
-    FieldAuthorization fieldAuthorization = graphQLContext.get(FieldAuthorization.class);
-    return Objects.isNull(fieldAuthorization) ? new DefaultFieldAuthorization() : fieldAuthorization;
+  private FieldAuthorization<AuthDataT> getFieldAuthorizationFromOrDefault(GraphQLContext graphQLContext) {
+    FieldAuthorization<AuthDataT> fieldAuthorization = graphQLContext.get(FieldAuthorization.class);
+    return Objects.isNull(fieldAuthorization) ? null : fieldAuthorization;
   }
 
   private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
-      Object authData, GraphQLContext context, FieldAuthorization fieldAuthorization) {
+      AuthDataT authData, GraphQLContext context, FieldAuthorization<AuthDataT> fieldAuthorization) {
 
     hooks.onBatchLoadStart(context, keys);
 
@@ -112,7 +111,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
-            .map(field -> serviceMetadata.hasFieldResolverDirective() || fieldAuthorization.isFieldAuthorizationEnabled()
+            .map(field -> serviceMetadata.hasFieldResolverDirective() || Objects.nonNull(fieldAuthorization)
                 ? redactField(field, (GraphQLFieldsContainer) key.getParentType(), authData, fieldAuthorization, key)
                 : field
             )
@@ -138,7 +137,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
       Map<String, FragmentDefinition> svcFragmentDefinitions = filterFragmentDefinitionByService(
           key.getFragmentsByName());
-      if (serviceMetadata.hasFieldResolverDirective()) {
+      if (serviceMetadata.hasFieldResolverDirective() || Objects.nonNull(fieldAuthorization)) {
         Map<String, FragmentDefinition> finalServiceFragmentDefinitions = new HashMap<>();
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
@@ -258,11 +257,11 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   }
 
   private FragmentDefinition redactFragmentDefinition(final FragmentDefinition origFragmentDefinition,
-      GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
+      GraphQLType typeCondition, AuthDataT authData, FieldAuthorization<AuthDataT> fieldAuthorization,
      DataFetchingEnvironment dataFetchingEnvironment) {
     GraphQLFieldsContainer rootFieldType = (GraphQLFieldsContainer) unwrapAll(typeCondition);
 
-    QueryRedactor queryRedactor = QueryRedactor.builder()
+    QueryRedactor<AuthDataT> queryRedactor = QueryRedactor.<AuthDataT>builder()
         .authData(authData)
         .fieldAuthorization(fieldAuthorization)
         .build();
@@ -305,10 +304,10 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     return origFragmentDefinition;
   }
 
-  private Field redactField(Field origField, GraphQLFieldsContainer parentType, Object authData,
-      FieldAuthorization fieldAuthorization, DataFetchingEnvironment dataFetchingEnvironment) {
+  private Field redactField(Field origField, GraphQLFieldsContainer parentType, AuthDataT authData,
+      FieldAuthorization<AuthDataT> fieldAuthorization, DataFetchingEnvironment dataFetchingEnvironment) {
 
-    QueryRedactor queryRedactor = QueryRedactor.builder()
+    QueryRedactor queryRedactor = QueryRedactor.<AuthDataT>builder()
         .authData(authData)
         .fieldAuthorization(fieldAuthorization)
         .build();
