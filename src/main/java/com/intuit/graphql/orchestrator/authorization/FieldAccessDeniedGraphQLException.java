@@ -48,8 +48,7 @@ public class FieldAccessDeniedGraphQLException extends GraphqlErrorException {
     public FieldAccessDeniedGraphQLException.Builder declinedFields(List<DeclinedField> declinedFields) {
       if (CollectionUtils.isNotEmpty(declinedFields)) {
         List<String> fieldPaths = declinedFields.stream()
-            .map(declinedField -> ExecutionPath
-                .fromList(declinedField.getPathList()).toString() + declinedField.getField().getName())
+            .map(declinedField -> declinedField.getPath())
             .collect(Collectors.toList());
         extension("declinedFields", fieldPaths);
       }
