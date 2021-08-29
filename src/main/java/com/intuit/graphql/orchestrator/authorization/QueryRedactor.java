@@ -7,6 +7,7 @@ import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorStub;
 import graphql.language.Field;
 import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraverserContext;
 import graphql.util.TreeTransformerUtil;
 import java.util.ArrayList;
@@ -44,7 +45,8 @@ public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
 
   private FieldPosition createFieldPosition(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
     Field field = queryVisitorFieldEnvironment.getField();
-    GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) queryVisitorFieldEnvironment.getParentType();
+    GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) GraphQLTypeUtil
+        .unwrapAll(queryVisitorFieldEnvironment.getParentType());
     return new FieldPosition(parentType.getName(), field.getName());
   }
 
