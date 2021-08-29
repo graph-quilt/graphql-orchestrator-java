@@ -1,7 +1,6 @@
 package com.intuit.graphql.orchestrator.authorization;
 
 import com.intuit.graphql.orchestrator.common.FieldPosition;
-import graphql.GraphQLContext;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

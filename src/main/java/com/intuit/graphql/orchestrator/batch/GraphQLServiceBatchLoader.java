@@ -46,7 +46,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 import org.apache.commons.collections4.CollectionUtils;
 import com.intuit.graphql.orchestrator.authorization.DeclinedField;
-import com.intuit.graphql.orchestrator.authorization.FieldAccessDeniedGraphQLException;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.QueryRedactor;
 import graphql.analysis.QueryTransformer;
@@ -275,13 +274,9 @@ public class GraphQLServiceBatchLoader<AuthDataT> implements BatchLoader<DataFet
         .build();
 
     FragmentDefinition transformedFragmentDefinition = (FragmentDefinition) queryTransformer.transform(queryRedactor);
-    List<DeclinedField> declinedFields = queryRedactor.getDeclinedFields();
-    if (CollectionUtils.isNotEmpty(declinedFields)) {
-      throw FieldAccessDeniedGraphQLException.builder()
-          .declinedFields(declinedFields)
-          .build();
+    if (queryRedactor.isFieldAccessDeclined()) {
+      throw fieldAuthorization.getDeniedGraphQLErrorException();
     }
-
     return transformedFragmentDefinition;
   }
 
@@ -321,11 +316,8 @@ public class GraphQLServiceBatchLoader<AuthDataT> implements BatchLoader<DataFet
         .build();
 
     Field transformedField = (Field) queryTransformer.transform(queryRedactor);
-    List<DeclinedField> declinedFields = queryRedactor.getDeclinedFields();
-    if (CollectionUtils.isNotEmpty(declinedFields)) {
-      throw FieldAccessDeniedGraphQLException.builder()
-          .declinedFields(declinedFields)
-          .build();
+    if (queryRedactor.isFieldAccessDeclined()) {
+      throw fieldAuthorization.getDeniedGraphQLErrorException();
     }
     return transformedField;
   }

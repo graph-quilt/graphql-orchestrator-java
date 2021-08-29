@@ -8,10 +8,9 @@ import graphql.analysis.QueryVisitorStub;
 import graphql.language.Field;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLTypeUtil;
+import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
 import graphql.util.TreeTransformerUtil;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,10 +22,10 @@ public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
   private FieldAuthorization<AuthDataT> fieldAuthorization;
 
   @Getter
-  private final List<DeclinedField> declinedFields = new ArrayList<>();
+  private boolean fieldAccessDeclined;
 
   @Override
-  public void visitField(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
+  public TraversalControl visitFieldWithControl(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
     Field field = queryVisitorFieldEnvironment.getField();
     Map<String, Object> fieldArguments = queryVisitorFieldEnvironment.getArguments();
     FieldPath fieldPath = createFieldPath(queryVisitorFieldEnvironment);
@@ -36,18 +35,22 @@ public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
       TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
     }
 
-    FieldPosition fieldPosition = createFieldPosition(queryVisitorFieldEnvironment);
-    if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, fieldArguments)) {
+    FieldPosition fieldPosition = createFieldPosition(queryVisitorFieldEnvironment, fieldPath);
+    if (requiresFieldAuthorization(fieldPosition) && !isFieldAccessAllowed(fieldPosition, fieldArguments)) {
       TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
-      this.declinedFields.add(new DeclinedField(field, fieldPath));
+      this.fieldAccessDeclined = true;
+      return TraversalControl.QUIT;
     }
+
+    return TraversalControl.CONTINUE;
   }
 
-  private FieldPosition createFieldPosition(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
+  private FieldPosition createFieldPosition(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment,
+      FieldPath fieldPath) {
     Field field = queryVisitorFieldEnvironment.getField();
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) GraphQLTypeUtil
         .unwrapAll(queryVisitorFieldEnvironment.getParentType());
-    return new FieldPosition(parentType.getName(), field.getName());
+    return new FieldPosition(parentType.getName(), field.getName(), fieldPath);
   }
 
   private FieldPath createFieldPath(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
@@ -76,7 +79,7 @@ public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
     return this.fieldAuthorization.requiresAccessControl(fieldPosition);
   }
 
-  private boolean fieldAccessIsAllowed(FieldPosition fieldPosition, Map<String, Object> fieldArguments) {
+  private boolean isFieldAccessAllowed(FieldPosition fieldPosition, Map<String, Object> fieldArguments) {
 
     FieldAuthorizationRequest<AuthDataT> fieldAuthorizationRequest = FieldAuthorizationRequest.<AuthDataT>builder()
             .fieldPosition(fieldPosition)
