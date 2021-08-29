@@ -35,10 +35,6 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
             }
     """)
 
-    def setup() {
-        mockFieldAuthorization.isFieldAuthorizationEnabled() >> true
-    }
-
     def "redact query deepest level field access is denied"() {
         given:
         Document document = new Parser().parseDocument("""
@@ -85,7 +81,7 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
 
         then:
         transformedField.getName() == "a"
-        specUnderTest.getDeclinedFields().get(0).getPath() == "a/b1/c1/s1"
+        specUnderTest.getDeclinedFields().get(0).getFieldPath().toString() == "a/b1/c1/s1"
 
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> false

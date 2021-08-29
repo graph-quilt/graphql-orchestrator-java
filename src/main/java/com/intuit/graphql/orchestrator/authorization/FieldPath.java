@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.authorization;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public class FieldPath {
@@ -10,16 +11,24 @@ public class FieldPath {
 
   private final List<String> pathList = new ArrayList<>();
 
-  public FieldPath(String element) {
-    this.add(element);
+  public FieldPath() {
   }
 
-  private FieldPath(List<String> initialElements) {
-    this.pathList.addAll(initialElements);
+  public FieldPath(String initialElement) {
+    this.add(initialElement);
   }
 
-  private void add(String element) {
-    this.pathList.add(element);
+  public FieldPath createChildPath(String newElement) {
+    Objects.requireNonNull(newElement);
+    FieldPath newFieldPath = new FieldPath();
+    newFieldPath.pathList.addAll(this.pathList);
+    newFieldPath.pathList.add(newElement);
+    return newFieldPath;
+  }
+
+  private void add(String newElement) {
+    Objects.requireNonNull(newElement);
+    this.pathList.add(newElement);
   }
 
   @Override
@@ -27,9 +36,4 @@ public class FieldPath {
     return StringUtils.join(pathList, SEPARATOR);
   }
 
-  public FieldPath createChildPath(String name) {
-    FieldPath newFieldPath = new FieldPath(this.pathList);
-    newFieldPath.add(name);
-    return newFieldPath;
-  }
 }

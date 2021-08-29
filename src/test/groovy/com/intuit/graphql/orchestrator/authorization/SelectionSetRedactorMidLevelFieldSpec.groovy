@@ -37,11 +37,6 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
     """)
 
 
-    def setup() {
-        mockFieldAuthorization.isFieldAuthorizationEnabled() >> true
-    }
-
-
     def "top-level field access is not allowed"() {
         given:
         Document document = new Parser().parseDocument("{ a { b1 { s1 } } }")
@@ -122,7 +117,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
 
         then:
         transformedField.getName() == "a"
-        specUnderTest.getDeclinedFields().get(0).getPath() == "a/b1"
+        specUnderTest.getDeclinedFields().get(0).getFieldPath().toString() == "a/b1"
 
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> true
@@ -159,8 +154,8 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         then:
         transformedField.getName() == "a"
 
-        specUnderTest.getDeclinedFields().get(0).getPath() == "a/b1"
-        specUnderTest.getDeclinedFields().get(1).getPath() == "a/b2"
+        specUnderTest.getDeclinedFields().get(0).getFieldPath().toString() == "a/b1"
+        specUnderTest.getDeclinedFields().get(1).getFieldPath().toString() == "a/b2"
 
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
 

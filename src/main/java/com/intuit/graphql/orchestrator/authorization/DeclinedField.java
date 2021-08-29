@@ -13,6 +13,6 @@ public class DeclinedField {
   private Field field;
 
   @NonNull
-  private String path;
+  private FieldPath fieldPath;
 
 }

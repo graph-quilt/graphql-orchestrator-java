@@ -38,7 +38,7 @@ public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
     FieldPosition fieldPosition = createFieldPosition(queryVisitorFieldEnvironment);
     if (requiresFieldAuthorization(fieldPosition) && !fieldAccessIsAllowed(fieldPosition, fieldArguments)) {
       TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
-      this.declinedFields.add(new DeclinedField(field, fieldPath.toString()));
+      this.declinedFields.add(new DeclinedField(field, fieldPath));
     }
   }
 
