@@ -42,7 +42,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Document document = new Parser().parseDocument("{ a { b1 { s1 } } }")
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
-        FieldAuthorizationRequest expectedFieldAuthorizationRequest = createFieldAuthorizationRequest(
+        FieldAuthorizationEnvironment fieldAuthorizationEnvironment = createFieldAuthorizationRequest(
                 new FieldPosition("Query", "a"), TEST_AUTH_DATA
         )
 
@@ -64,7 +64,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> true
         0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> false
         0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B", "s1")) >> false
-        1 * mockFieldAuthorization.isAccessAllowed(expectedFieldAuthorizationRequest) >> false
+        1 * mockFieldAuthorization.isAccessAllowed(fieldAuthorizationEnvironment) >> false
     }
 
 
@@ -99,7 +99,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Document document = new Parser().parseDocument("{ a { b1 { s1 } } }")
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
-        FieldAuthorizationRequest expectedFieldAuthorizationRequest = createFieldAuthorizationRequest(
+        FieldAuthorizationEnvironment expectedFieldAuthorizationRequest = createFieldAuthorizationRequest(
                 new FieldPosition("A", "b1"), TEST_AUTH_DATA
         )
 
@@ -117,7 +117,6 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
 
         then:
         transformedField.getName() == "a"
-        specUnderTest.getDeclinedFields().get(0).getFieldPath().toString() == "a/b1"
 
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> true
@@ -131,11 +130,11 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Document document = new Parser().parseDocument("{ a { b1 { s1 } b2 { s2 } } }")
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
-        FieldAuthorizationRequest expectedB1AuthorizationRequest = createFieldAuthorizationRequest(
+        FieldAuthorizationEnvironment expectedB1AuthorizationRequest = createFieldAuthorizationRequest(
                 new FieldPosition("A", "b1"), TEST_AUTH_DATA
         )
 
-        FieldAuthorizationRequest expectedB2AuthorizationRequest = createFieldAuthorizationRequest(
+        FieldAuthorizationEnvironment expectedB2AuthorizationRequest = createFieldAuthorizationRequest(
                 new FieldPosition("A", "b2"), TEST_AUTH_DATA
         )
 
@@ -154,22 +153,19 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         then:
         transformedField.getName() == "a"
 
-        specUnderTest.getDeclinedFields().get(0).getFieldPath().toString() == "a/b1"
-        specUnderTest.getDeclinedFields().get(1).getFieldPath().toString() == "a/b2"
-
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
 
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> true
         0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B1", "s1")) >> false
         1 * mockFieldAuthorization.isAccessAllowed(expectedB1AuthorizationRequest) >> false
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b2")) >> true
+        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b2")) >> true
         0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B2", "s2")) >> false
-        1 * mockFieldAuthorization.isAccessAllowed(expectedB2AuthorizationRequest) >> false
+        0 * mockFieldAuthorization.isAccessAllowed(expectedB2AuthorizationRequest) >> false
     }
 
-    FieldAuthorizationRequest createFieldAuthorizationRequest(FieldPosition fieldPosition, Object authData) {
-        return FieldAuthorizationRequest.builder()
+    FieldAuthorizationEnvironment createFieldAuthorizationRequest(FieldPosition fieldPosition, Object authData) {
+        return FieldAuthorizationEnvironment.builder()
                 .fieldPosition(fieldPosition)
                 .fieldArguments(Collections.emptyMap())
                 .authData(authData)

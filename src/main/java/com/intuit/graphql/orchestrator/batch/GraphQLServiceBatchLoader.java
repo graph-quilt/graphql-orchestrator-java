@@ -44,8 +44,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
-import org.apache.commons.collections4.CollectionUtils;
-import com.intuit.graphql.orchestrator.authorization.DeclinedField;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.QueryRedactor;
 import graphql.analysis.QueryTransformer;

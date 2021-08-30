@@ -8,6 +8,7 @@ import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
 import helpers.SchemaTestUtil
+import org.apache.commons.lang3.BooleanUtils
 import spock.lang.Specification
 
 class QueryRedactorDeepNestedFieldSpec extends Specification {
@@ -60,7 +61,7 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
                 p2: true,
                 p3: ["svar1", "svar2", "svar3"]
         ]
-        FieldAuthorizationRequest expectedS1AuthorizationRequest = createFieldAuthorizationRequest(new FieldPosition("C1", "s1"), fieldArguments, TEST_AUTH_DATA)
+        FieldAuthorizationEnvironment s1FieldAuthorizationEnvironment = createFieldAuthorizationRequest(new FieldPosition("C1", "s1"), fieldArguments, TEST_AUTH_DATA)
 
         QueryRedactor specUnderTest = QueryRedactor.builder()
                 .authData(TEST_AUTH_DATA)
@@ -81,18 +82,18 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
 
         then:
         transformedField.getName() == "a"
-        specUnderTest.getDeclinedFields().get(0).getFieldPath().toString() == "a/b1/c1/s1"
+        BooleanUtils.isTrue(specUnderTest.isFieldAccessDeclined())
 
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> false
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B1", "c1")) >> false
         1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("C1", "s1")) >> true
-        1 * mockFieldAuthorization.isAccessAllowed(expectedS1AuthorizationRequest) >> false
+        1 * mockFieldAuthorization.isAccessAllowed(s1FieldAuthorizationEnvironment) >> false
 
     }
 
-    FieldAuthorizationRequest createFieldAuthorizationRequest(FieldPosition fieldPosition,  Map<String, Object> fieldArguments, Object authData) {
-        FieldAuthorizationRequest.builder()
+    FieldAuthorizationEnvironment createFieldAuthorizationRequest(FieldPosition fieldPosition, Map<String, Object> fieldArguments, Object authData) {
+        FieldAuthorizationEnvironment.builder()
             .fieldPosition(fieldPosition)
             .fieldArguments(fieldArguments)
             .authData(authData)
