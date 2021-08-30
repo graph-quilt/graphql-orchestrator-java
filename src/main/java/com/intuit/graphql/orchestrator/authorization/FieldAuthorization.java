@@ -1,14 +1,14 @@
 package com.intuit.graphql.orchestrator.authorization;
 
-import com.intuit.graphql.orchestrator.common.FieldPosition;
 import graphql.GraphqlErrorException;
+import graphql.schema.FieldCoordinates;
 import java.util.concurrent.CompletableFuture;
 
 public interface FieldAuthorization<AuthDataT> {
 
     boolean isAccessAllowed(FieldAuthorizationEnvironment<AuthDataT> fieldAuthorizationEnvironment);
 
-    boolean requiresAccessControl(FieldPosition fieldPosition);
+    boolean requiresAccessControl(FieldCoordinates fieldCoordinates);
 
     CompletableFuture<AuthDataT> getFutureAuthData();
 

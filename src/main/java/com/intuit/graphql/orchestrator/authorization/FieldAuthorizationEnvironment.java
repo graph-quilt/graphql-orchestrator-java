@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.authorization;
 
-import com.intuit.graphql.orchestrator.common.FieldPosition;
+import graphql.schema.FieldCoordinates;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -15,7 +15,7 @@ public class FieldAuthorizationEnvironment<AuthDataT> {
 
     @NonNull
     @EqualsAndHashCode.Include
-    private FieldPosition fieldPosition;
+    private FieldCoordinates fieldCoordinates;
 
     @NonNull
     @EqualsAndHashCode.Include

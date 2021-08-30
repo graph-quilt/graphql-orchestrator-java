@@ -1,6 +1,5 @@
 package com.intuit.graphql.orchestrator.authorization
 
-import com.intuit.graphql.orchestrator.common.FieldPosition
 import com.intuit.graphql.orchestrator.testutils.SelectionSetUtil
 import graphql.analysis.QueryTransformer
 import graphql.language.Document
@@ -10,6 +9,7 @@ import graphql.parser.Parser
 import helpers.SchemaTestUtil
 import org.apache.commons.lang3.BooleanUtils
 import spock.lang.Specification
+import graphql.schema.FieldCoordinates
 
 class QueryRedactorDeepNestedFieldSpec extends Specification {
 
@@ -61,7 +61,7 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
                 p2: true,
                 p3: ["svar1", "svar2", "svar3"]
         ]
-        FieldAuthorizationEnvironment s1FieldAuthorizationEnvironment = createFieldAuthorizationRequest(new FieldPosition("C1", "s1"), fieldArguments, TEST_AUTH_DATA)
+        FieldAuthorizationEnvironment s1FieldAuthorizationEnvironment = createFieldAuthorizationRequest(FieldCoordinates.coordinates("C1", "s1"), fieldArguments, TEST_AUTH_DATA)
 
         QueryRedactor specUnderTest = QueryRedactor.builder()
                 .authData(TEST_AUTH_DATA)
@@ -84,17 +84,17 @@ class QueryRedactorDeepNestedFieldSpec extends Specification {
         transformedField.getName() == "a"
         BooleanUtils.isTrue(specUnderTest.isFieldAccessDeclined())
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> false
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B1", "c1")) >> false
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("C1", "s1")) >> true
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("Query", "a")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("A", "b1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("B1", "c1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("C1", "s1")) >> true
         1 * mockFieldAuthorization.isAccessAllowed(s1FieldAuthorizationEnvironment) >> false
 
     }
 
-    FieldAuthorizationEnvironment createFieldAuthorizationRequest(FieldPosition fieldPosition, Map<String, Object> fieldArguments, Object authData) {
+    FieldAuthorizationEnvironment createFieldAuthorizationRequest(FieldCoordinates fieldCoordinates, Map<String, Object> fieldArguments, Object authData) {
         FieldAuthorizationEnvironment.builder()
-            .fieldPosition(fieldPosition)
+            .fieldCoordinates(fieldCoordinates)
             .fieldArguments(fieldArguments)
             .authData(authData)
             .build()

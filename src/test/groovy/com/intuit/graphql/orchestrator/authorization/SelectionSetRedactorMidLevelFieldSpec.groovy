@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.authorization
 
-import com.intuit.graphql.orchestrator.common.FieldPosition
+import graphql.schema.FieldCoordinates
 import graphql.analysis.QueryTransformer
 import graphql.language.Document
 import graphql.language.Field
@@ -43,7 +43,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
         FieldAuthorizationEnvironment fieldAuthorizationEnvironment = createFieldAuthorizationRequest(
-                new FieldPosition("Query", "a"), TEST_AUTH_DATA
+                FieldCoordinates.coordinates("Query", "a"), TEST_AUTH_DATA
         )
 
         and:
@@ -61,9 +61,9 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         then:
         transformedField == null
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> true
-        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> false
-        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B", "s1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("Query", "a")) >> true
+        0 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("A", "b1")) >> false
+        0 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("B", "s1")) >> false
         1 * mockFieldAuthorization.isAccessAllowed(fieldAuthorizationEnvironment) >> false
     }
 
@@ -88,9 +88,9 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         then:
         transformedField.getName() == "a"
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> false
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B1", "s1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("Query", "a")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("A", "b1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("B1", "s1")) >> false
     }
 
 
@@ -100,7 +100,7 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
         FieldAuthorizationEnvironment expectedFieldAuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("A", "b1"), TEST_AUTH_DATA
+                FieldCoordinates.coordinates("A", "b1"), TEST_AUTH_DATA
         )
 
         and:
@@ -118,9 +118,9 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         then:
         transformedField.getName() == "a"
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> true
-        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B1", "s1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("Query", "a")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("A", "b1")) >> true
+        0 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("B1", "s1")) >> false
         1 * mockFieldAuthorization.isAccessAllowed(expectedFieldAuthorizationRequest) >> false
     }
 
@@ -131,11 +131,11 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         Field rootField = DocumentTestUtil.getField(["a"], document)
 
         FieldAuthorizationEnvironment expectedB1AuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("A", "b1"), TEST_AUTH_DATA
+                FieldCoordinates.coordinates("A", "b1"), TEST_AUTH_DATA
         )
 
         FieldAuthorizationEnvironment expectedB2AuthorizationRequest = createFieldAuthorizationRequest(
-                new FieldPosition("A", "b2"), TEST_AUTH_DATA
+                FieldCoordinates.coordinates("A", "b2"), TEST_AUTH_DATA
         )
 
         and:
@@ -153,20 +153,20 @@ class SelectionSetRedactorMidLevelFieldSpec extends Specification {
         then:
         transformedField.getName() == "a"
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("Query", "a")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("Query", "a")) >> false
 
-        1 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b1")) >> true
-        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B1", "s1")) >> false
+        1 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("A", "b1")) >> true
+        0 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("B1", "s1")) >> false
         1 * mockFieldAuthorization.isAccessAllowed(expectedB1AuthorizationRequest) >> false
 
-        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("A", "b2")) >> true
-        0 * mockFieldAuthorization.requiresAccessControl(new FieldPosition("B2", "s2")) >> false
+        0 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("A", "b2")) >> true
+        0 * mockFieldAuthorization.requiresAccessControl(FieldCoordinates.coordinates("B2", "s2")) >> false
         0 * mockFieldAuthorization.isAccessAllowed(expectedB2AuthorizationRequest) >> false
     }
 
-    FieldAuthorizationEnvironment createFieldAuthorizationRequest(FieldPosition fieldPosition, Object authData) {
+    FieldAuthorizationEnvironment createFieldAuthorizationRequest(FieldCoordinates fieldCoordinates, Object authData) {
         return FieldAuthorizationEnvironment.builder()
-                .fieldPosition(fieldPosition)
+                .fieldCoordinates(fieldCoordinates)
                 .fieldArguments(Collections.emptyMap())
                 .authData(authData)
                 .build()

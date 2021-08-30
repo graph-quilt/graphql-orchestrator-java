@@ -1,7 +1,7 @@
 package com.intuit.graphql.orchestrator.authorization;
 
-import com.intuit.graphql.orchestrator.common.FieldPosition;
 import graphql.GraphqlErrorException;
+import graphql.schema.FieldCoordinates;
 import java.util.concurrent.CompletableFuture;
 
 public class DefaultFieldAuthorization<AuthDataT> implements FieldAuthorization<AuthDataT> {
@@ -12,7 +12,7 @@ public class DefaultFieldAuthorization<AuthDataT> implements FieldAuthorization<
   }
 
   @Override
-  public boolean requiresAccessControl(FieldPosition fieldPosition) {
+  public boolean requiresAccessControl(FieldCoordinates fieldCoordinates) {
     return false;
   }
 
