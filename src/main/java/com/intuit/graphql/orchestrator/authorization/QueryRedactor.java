@@ -27,14 +27,16 @@ public class QueryRedactor<AuthDataT> extends QueryVisitorStub {
   public TraversalControl visitFieldWithControl(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
     Map<String, Object> fieldArguments = queryVisitorFieldEnvironment.getArguments();
     if (hasResolverDirective(queryVisitorFieldEnvironment.getFieldDefinition())) {
-      TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
+      return TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
     }
 
-    FieldPosition fieldPosition = createFieldPosition(queryVisitorFieldEnvironment);
-    if (requiresFieldAuthorization(fieldPosition) && !isFieldAccessAllowed(fieldPosition, fieldArguments)) {
-      TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
-      this.fieldAccessDeclined = true;
-      return TraversalControl.QUIT;
+    if (queryVisitorFieldEnvironment.getParentType() instanceof GraphQLFieldsContainer) {
+      FieldPosition fieldPosition = createFieldPosition(queryVisitorFieldEnvironment);
+      if (requiresFieldAuthorization(fieldPosition) && !isFieldAccessAllowed(fieldPosition, fieldArguments)) {
+        TreeTransformerUtil.deleteNode(queryVisitorFieldEnvironment.getTraverserContext());
+        this.fieldAccessDeclined = true;
+        return TraversalControl.QUIT;
+      }
     }
 
     return TraversalControl.CONTINUE;
