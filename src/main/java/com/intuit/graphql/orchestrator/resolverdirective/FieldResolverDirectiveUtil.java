@@ -68,7 +68,7 @@ public class FieldResolverDirectiveUtil {
       String fieldName = getNameFromFieldReference(resolverArgValue);
       return parentType.getFieldDefinition(fieldName) != null;
     } else {
-      throw new NotAValidFieldReference(resolverArgValue);
+      return false;
     }
   }
 
