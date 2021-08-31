@@ -2,10 +2,8 @@ package com.intuit.graphql.orchestrator.fieldresolver;
 
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
-import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
 import graphql.Scalars;
 import graphql.language.*;
 import graphql.schema.DataFetchingEnvironment;

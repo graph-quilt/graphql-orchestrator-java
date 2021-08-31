@@ -44,10 +44,6 @@ public class ResolverArgumentDefinitionValidator {
     return resolverArgumentValue.startsWith("$");
   }
 
-  private boolean isLiteralAnObject(String resolverArgumentValue) {
-    return resolverArgumentValue.startsWith("{") && resolverArgumentValue.endsWith("}");
-  }
-
   private void validateResolverArgumentsAreFieldsOfParent() {
     TypeDefinition parentTypeDefinition = fieldResolverContext.getParentTypeDefinition();
 
