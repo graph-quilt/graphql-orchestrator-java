@@ -4,12 +4,13 @@
 name: Maven Package
 
 on:
-  release:
-    types: [created]
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]  
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,10 +26,13 @@ jobs:
         server-id: ossrh
         server-username: MAVEN_USERNAME
         server-password: MAVEN_PASSWORD
+        
     - name: Build with Maven
+      if: ${{ github.ref != 'refs/heads/master' }}
       run: mvn -B package --file pom.xml
 
     - name: Publish to GitHub Packages Apache Maven
+      if: ${{ github.ref == 'refs/heads/master' }}
       run: mvn --batch-mode deploy 
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
