@@ -32,10 +32,6 @@ public class ResolverArgumentDefinitionValidator {
     } else if (isObjectType(resolverArgumentType)) {
       if (isLiteralAVariableReference(resolverArgumentValue)) {
         validateResolverArgumentsAreFieldsOfParent();
-      } else if (!isLiteralAnObject(resolverArgumentValue)) {
-        String errorMessage = "Unsupported resolver argument value.";
-        throw new FieldResolverArgumentException(
-            errorMessage, resolverArgumentDefinition, fieldResolverContext);
       }
     } else {
       // this will only happen if graphql spec has been updated and using old graphql implementation
@@ -46,10 +42,6 @@ public class ResolverArgumentDefinitionValidator {
 
   private boolean isLiteralAVariableReference(String resolverArgumentValue) {
     return resolverArgumentValue.startsWith("$");
-  }
-
-  private boolean isLiteralAnObject(String resolverArgumentValue) {
-    return resolverArgumentValue.startsWith("{") && resolverArgumentValue.endsWith("}");
   }
 
   private void validateResolverArgumentsAreFieldsOfParent() {

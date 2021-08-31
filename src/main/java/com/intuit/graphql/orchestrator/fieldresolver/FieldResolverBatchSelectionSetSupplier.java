@@ -2,9 +2,9 @@ package com.intuit.graphql.orchestrator.fieldresolver;
 
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
+import graphql.Scalars;
 import graphql.language.*;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldsContainer;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.apache.commons.lang.StringUtils;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.*;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
@@ -79,7 +80,6 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
         String resolverArgValue = resolverArgumentDefinition.getValue();
 
         if (isPrimitiveType(resolverArgumentDefinition.getNamedType())) {
-
             if (isReferenceToFieldInParentType(resolverArgValue, parentType)) {
                 String fieldReferenceName = getNameFromFieldReference(resolverArgValue);
 
@@ -91,18 +91,17 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                 return astFromValue(valueFromSource, fieldReferenceType);
 
             } else {
-                throw new ResolverArgumentNotAFieldOfParentException(resolverArgValue, parentType.getName());
+                String typename = com.intuit.graphql.utils.XtextTypeUtils.typeName(resolverArgumentDefinition.getNamedType());
+                String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
+                if (StringUtils.equals(typename, Scalars.GraphQLString.getName()) ||
+                    StringUtils.equals(typename, Scalars.GraphQLID.getName())) {
+                    stringLiteralAstValue = String.format("\"%s\"", stringLiteralAstValue);
+                }
+                return AstValueHelper.valueFromAst(stringLiteralAstValue);
             }
         } else {
             String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
-
-            // did not use AstValueHelper.astFromValue(...) as it needs to be converted to a java value
-            // e.g. jsonstring as map.  need type introspection before it can be converted to a java value.
-            @SuppressWarnings("UnnecessaryLocalVariable")
-            Value<?> value = AstValueHelper.valueFromAst(stringLiteralAstValue);
-
-            // then just check if matches expected type.  Todo, find if there's a readily available class/method
-            return value;
+            return AstValueHelper.valueFromAst(stringLiteralAstValue);
         }
     }
 
