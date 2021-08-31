@@ -32,8 +32,8 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Publish Snapshot to OSS Maven Repository
-      if: ${{ github.ref == 'refs/heads/master' }}
-      run: mvn --batch-mode deploy 
+      if: ${{ github.ref == 'refs/heads/gh-workflow' }}
+      run: mvn -B --batch-mode deploy --file pom.xml
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
