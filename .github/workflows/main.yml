@@ -5,7 +5,7 @@ name: GraphQL Orchestrator Java Maven Action
 
 on:
   push:
-    branches: [ gh-workflow ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]  
 
@@ -32,7 +32,7 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Publish Snapshot to OSS Maven Repository
-      if: ${{ github.ref == 'refs/heads/gh-workflow' }}
+      if: ${{ github.ref == 'refs/heads/master' }}
       run: mvn -B --batch-mode deploy --file pom.xml
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
