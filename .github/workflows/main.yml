@@ -5,7 +5,7 @@ name: GraphQL Orchestrator Java Maven Action
 
 on:
   push:
-    branches: [ master ]
+    branches: [ gh-workflow ]
   pull_request:
     branches: [ master ]  
 
