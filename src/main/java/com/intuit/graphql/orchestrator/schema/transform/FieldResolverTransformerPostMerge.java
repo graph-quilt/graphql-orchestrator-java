@@ -87,8 +87,8 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
                                                                List<InputValueDefinition> targetFieldInputValueDefinitions,
                                                                FieldResolverContext fieldResolverContext) {
 
-    if (resolverArgumentDefinitions.size() != targetFieldInputValueDefinitions.size()) {
-      String errorMessage = "Field resolver arguments size does not match target field definition.";
+    if (resolverArgumentDefinitions.size() > targetFieldInputValueDefinitions.size()) {
+      String errorMessage = "Field resolver arguments size is greater than of target field definition.";
       throw new FieldResolverException(errorMessage, fieldResolverContext);
     }
 
@@ -105,18 +105,13 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
       String argumentName = inputValueDefinition.getName();
 
       ResolverArgumentDefinition resolverArgumentDefinition = resolverArgumentDefinitionMap.get(argumentName);
-      if (Objects.isNull(resolverArgumentDefinition)) {
-        String errorMessage = String.format("required argument %s not present in resolver argument definition", argumentName);
-        throw new FieldResolverException(errorMessage, fieldResolverContext);
-      }
       ResolverArgumentDefinitionValidator resolverArgumentDefinitionValidator = new ResolverArgumentDefinitionValidator(
               resolverArgumentDefinition, inputValueDefinition, fieldResolverContext
       );
 
       resolverArgumentDefinitionValidator.validate();
 
-      NamedType resolverArgumentType = unwrapAll(inputValueDefinition.getNamedType());
-      ResolverArgumentDefinition newResolverArgumentDefinition = resolverArgumentDefinition.transform(builder -> builder.namedType(resolverArgumentType));
+      ResolverArgumentDefinition newResolverArgumentDefinition = resolverArgumentDefinition.transform(builder -> builder.namedType(inputValueDefinition.getNamedType()));
       updatedList.add(newResolverArgumentDefinition);
     }
 
