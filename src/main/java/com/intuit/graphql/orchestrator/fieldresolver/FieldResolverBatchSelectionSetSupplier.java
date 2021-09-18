@@ -9,6 +9,7 @@ import graphql.language.*;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeUtil;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -87,7 +88,11 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                         fieldResolverContext.getResolverDirectiveDefinition(), fieldResolverContext.getServiceNamespace(), parentSource);
 
                 Object valueFromSource = parentSource.get(fieldReferenceName);
-                GraphQLType fieldReferenceType = parentType.getFieldDefinition(fieldReferenceName).getType();
+                GraphQLType fieldReferenceType = GraphQLTypeUtil
+                    .unwrapAll(parentType.getFieldDefinition(fieldReferenceName).getType());
+                if (fieldReferenceType == Scalars.GraphQLID) {
+                    fieldReferenceType = Scalars.GraphQLString;
+                }
                 return astFromValue(valueFromSource, fieldReferenceType);
 
             } else {
@@ -119,7 +124,6 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
             fieldBuilder.arguments(queryFieldArguments);
         }
 
-        //String aliasSuffix = Integer.toString(dfeBatchPosition); // TODO
         String aliasName = FieldResolverDirectiveUtil.createAlias(leafFieldName,dfeBatchPosition);
         fieldBuilder.alias(aliasName);
         Field leafField = fieldBuilder.build();

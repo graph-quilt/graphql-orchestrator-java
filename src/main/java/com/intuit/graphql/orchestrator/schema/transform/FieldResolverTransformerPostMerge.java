@@ -105,6 +105,10 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
       String argumentName = inputValueDefinition.getName();
 
       ResolverArgumentDefinition resolverArgumentDefinition = resolverArgumentDefinitionMap.get(argumentName);
+      if (Objects.isNull(resolverArgumentDefinition)) {
+        continue;
+      }
+
       ResolverArgumentDefinitionValidator resolverArgumentDefinitionValidator = new ResolverArgumentDefinitionValidator(
               resolverArgumentDefinition, inputValueDefinition, fieldResolverContext
       );
