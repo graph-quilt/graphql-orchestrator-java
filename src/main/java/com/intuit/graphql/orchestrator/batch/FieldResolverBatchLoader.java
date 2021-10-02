@@ -20,6 +20,7 @@ import graphql.language.Document;
 import graphql.language.FragmentDefinition;
 import graphql.language.FragmentSpread;
 import graphql.language.OperationDefinition;
+import graphql.language.SelectionSet;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLSchema;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Builder;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 
@@ -95,6 +97,10 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
   }
 
   private List<Definition<FragmentDefinition>> createResolverQueryFragmentDefinitions(DataFetchingEnvironment dataFetchingEnvironment) {
+    SelectionSet selectionSet = dataFetchingEnvironment.getField().getSelectionSet();
+    if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
+      return Collections.emptyList();
+    }
     return dataFetchingEnvironment.getField().getSelectionSet().getSelections()
         .stream()
         .filter(selection -> selection instanceof FragmentSpread)

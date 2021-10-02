@@ -68,7 +68,7 @@ public class FieldResolverDirectiveUtil {
       String fieldName = getNameFromFieldReference(resolverArgValue);
       return parentType.getFieldDefinition(fieldName) != null;
     } else {
-      throw new NotAValidFieldReference(resolverArgValue);
+      return false;
     }
   }
 
@@ -155,6 +155,9 @@ public class FieldResolverDirectiveUtil {
   }
 
   public static String createFieldResolverOperationName(String originalOperationName) {
+    if (StringUtils.isBlank(originalOperationName)) {
+      return RESOLVER_DIRECTIVE_QUERY_NAME.toString();
+    }
     return String.join(OPERATION_NAME_SEPARATOR, originalOperationName, RESOLVER_DIRECTIVE_QUERY_NAME);
   }
 }
