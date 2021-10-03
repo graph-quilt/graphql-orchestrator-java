@@ -1,6 +1,5 @@
 package com.intuit.graphql.orchestrator.authorization;
 
-import graphql.GraphQLContext;
 import graphql.GraphqlErrorException;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.List;
@@ -14,8 +13,8 @@ public class DefaultBatchFieldAuthorization implements BatchFieldAuthorization {
   }
 
   @Override
-  public void batchAuthorizeOrThrowGraphQLError(GraphQLContext context,
-      List<DataFetchingEnvironment> keys, Object authData) throws GraphqlErrorException {
+  public void batchAuthorizeOrThrowGraphQLError(Object authData, List<DataFetchingEnvironment> keys)
+      throws GraphqlErrorException {
     // do nothing, allow access
   }
 

@@ -10,6 +10,6 @@ public interface BatchFieldAuthorization {
 
     CompletableFuture<Object> getFutureAuthData();
 
-    void batchAuthorizeOrThrowGraphQLError(GraphQLContext context,
-        List<DataFetchingEnvironment> keys, Object authData) throws GraphqlErrorException;
+    void batchAuthorizeOrThrowGraphQLError(Object authData,
+        List<DataFetchingEnvironment> keys) throws GraphqlErrorException;
 }

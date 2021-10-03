@@ -84,14 +84,14 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
   private BatchFieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
     BatchFieldAuthorization batchFieldAuthorization = graphQLContext.get(BatchFieldAuthorization.class);
-    return Objects.isNull(
-        batchFieldAuthorization) ? DEFAULT_FIELD_AUTHORIZATION : batchFieldAuthorization;
+    return Objects.isNull(batchFieldAuthorization)
+        ? DEFAULT_FIELD_AUTHORIZATION : batchFieldAuthorization;
   }
 
   private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
       GraphQLContext context, Object authData, BatchFieldAuthorization batchFieldAuthorization) {
 
-    batchFieldAuthorization.batchAuthorizeOrThrowGraphQLError(context, keys, authData);
+    batchFieldAuthorization.batchAuthorizeOrThrowGraphQLError(authData, keys);
     hooks.onBatchLoadStart(context, keys);
 
     Optional<OperationDefinition> operation = getFirstOperation(keys);
