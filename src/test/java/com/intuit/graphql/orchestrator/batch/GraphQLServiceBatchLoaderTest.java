@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.google.common.collect.ImmutableMap;
+import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.PassthroughQueryModifier;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.GraphQLContext;
@@ -62,6 +63,9 @@ public class GraphQLServiceBatchLoaderTest {
   @Mock
   public VariableDefinitionFilter mockVariableDefinitionFilter;
 
+  @Mock
+  public BatchFieldAuthorization mockBatchFieldAuthorization;
+
   @Before
   public void setUp() {
     initMocks(this);
@@ -69,6 +73,9 @@ public class GraphQLServiceBatchLoaderTest {
     doReturn(Collections.emptySet()).when(mockVariableDefinitionFilter)
         .getVariableReferencesFromNode(any(GraphQLSchema.class), any(GraphQLObjectType.class), anyMap(), anyMap(),
             any(Node.class));
+
+    doReturn(CompletableFuture.completedFuture("TestFutureAuthData"))
+        .when(mockBatchFieldAuthorization).getFutureAuthData();
   }
 
   @Test
@@ -132,6 +139,69 @@ public class GraphQLServiceBatchLoaderTest {
   }
 
   @Test
+  public void makesCorrectBatchQueryWithCustomFieldAuthorization() {
+    QueryExecutor validator = (environment, context) -> {
+      assertThat(environment.getVariables())
+          .describedAs("Batch Loader merges variables")
+          .extracting("1", "2")
+          .containsOnly("3", "4");
+
+      assertThat(environment.getQuery()).contains("query", "first", "second");
+      assertThat(environment.getOperationName()).isEqualTo("QUERY");
+      assertThat(environment.getRoot()).isNotNull();
+
+      return CompletableFuture.completedFuture(new HashMap<>());
+    };
+
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+
+    MergedField mergedField1 = newMergedField(newField("first").build()).build();
+    MergedField mergedField2 = newMergedField(newField("second").build()).build();
+
+    GraphQLSchema graphQLSchema = newSchema()
+        .query(queryType).build();
+
+    GraphQLContext graphQLContext = GraphQLContext.newContext().build();
+    graphQLContext.put(BatchFieldAuthorization.class, mockBatchFieldAuthorization);
+
+    DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
+        .variables(ImmutableMap.of("1", "3"))
+        .graphQLSchema(graphQLSchema)
+        .context(graphQLContext)
+        .mergedField(mergedField1)
+        .parentType(queryType)
+        .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
+            .path(ExecutionPath.parse("/first"))
+            .field(mergedField1)
+            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .build())
+        .build();
+
+    DataFetchingEnvironment dfe2 = newDataFetchingEnvironment()
+        .variables(ImmutableMap.of("2", "4"))
+        .context(GraphQLContext.newContext().build())
+        .graphQLSchema(graphQLSchema)
+        .mergedField(mergedField2)
+        .parentType(queryType)
+        .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
+            .path(ExecutionPath.parse("/second"))
+            .field(mergedField2)
+            .type(GraphQLObjectType.newObject().name("SecondType").build())
+            .build())
+        .build();
+
+    GraphQLServiceBatchLoader batchLoader = GraphQLServiceBatchLoader.newQueryExecutorBatchLoader()
+        .queryExecutor(validator)
+        .serviceMetadata(mockServiceMetadata)
+        .queryOperationModifier(new PassthroughQueryModifier())
+        .build();
+
+    batchLoader.variableDefinitionFilter = mockVariableDefinitionFilter;
+
+    batchLoader.load(asList(dfe1, dfe2));
+  }
+
+  @Test
   public void makesCorrectBatchMutation() {
 
     QueryExecutor validator = (environment, context) -> {
@@ -156,6 +226,55 @@ public class GraphQLServiceBatchLoaderTest {
         .variables(ImmutableMap.of("1", "3"))
         .graphQLSchema(graphQLSchema)
         .context(GraphQLContext.newContext().build())
+        .mergedField(mergedField)
+        .parentType(mutationType)
+        .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
+            .path(ExecutionPath.parse("/first"))
+            .field(mergedField)
+            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .build())
+        .operationDefinition(opDef)
+        .build();
+
+    GraphQLServiceBatchLoader batchLoader = GraphQLServiceBatchLoader.newQueryExecutorBatchLoader()
+        .queryExecutor(validator)
+        .serviceMetadata(mockServiceMetadata)
+        .queryOperationModifier(new PassthroughQueryModifier())
+        .build();
+
+    batchLoader.variableDefinitionFilter = mockVariableDefinitionFilter;
+
+    batchLoader.load(singletonList(dfe1));
+  }
+
+  @Test
+  public void makesCorrectBatchMutationWithCustomFieldAuthorization() {
+
+    QueryExecutor validator = (environment, context) -> {
+      assertThat(environment.getQuery()).contains("mutation", "first");
+      assertThat(environment.getOperationName()).isEqualTo("MUTATION");
+      return CompletableFuture.completedFuture(new HashMap<>());
+    };
+
+    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation").build();
+
+    GraphQLSchema graphQLSchema = newSchema()
+        .query(GraphQLObjectType.newObject().name("Query")
+            .field(builder -> builder.name("first").type(Scalars.GraphQLInt))
+            .build())
+        .mutation(mutationType).build();
+
+    MergedField mergedField = newMergedField(newField("first").build()).build();
+
+    OperationDefinition opDef = newOperationDefinition().operation(Operation.MUTATION).build();
+
+    GraphQLContext graphQLContext = GraphQLContext.newContext().build();
+    graphQLContext.put(BatchFieldAuthorization.class, mockBatchFieldAuthorization);
+
+    DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
+        .variables(ImmutableMap.of("1", "3"))
+        .graphQLSchema(graphQLSchema)
+        .context(graphQLContext)
         .mergedField(mergedField)
         .parentType(mutationType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
