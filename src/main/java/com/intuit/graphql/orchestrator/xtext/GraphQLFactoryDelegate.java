@@ -100,6 +100,10 @@ public class GraphQLFactoryDelegate {
     return instance.createObjectType();
   }
 
+  public static PrimitiveType createPrimitiveType() {
+    return instance.createPrimitiveType();
+  }
+
   public static ListType createListType() {
     return instance.createListType();
   }

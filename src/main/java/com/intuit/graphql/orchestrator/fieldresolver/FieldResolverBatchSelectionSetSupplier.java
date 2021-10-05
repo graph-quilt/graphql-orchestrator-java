@@ -27,6 +27,8 @@ import static graphql.language.AstValueHelper.astFromValue;
 @AllArgsConstructor
 public class FieldResolverBatchSelectionSetSupplier implements Supplier<SelectionSet> {
 
+    // TODO apply Single Responsibility Principle
+
     private final String[] resolverSelectedFields;
     private final List<DataFetchingEnvironment> dataFetchingEnvironments;
     private final FieldResolverContext fieldResolverContext;
