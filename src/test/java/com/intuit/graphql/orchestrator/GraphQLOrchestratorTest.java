@@ -254,7 +254,7 @@ public class GraphQLOrchestratorTest {
 
     // Test query using ExecutionInput
     ExecutionInput personEI = ExecutionInput.newExecutionInput()
-        .query("{ person { id name book {id name} pets { name }  } }")
+        .query("{ person { id name book {id name} pets(animalType: DOG, pureBred: true) { name }  } }")
         .build();
 
     Map<String, Object> executionResult = orchestrator.execute(personEI).get().toSpecification();

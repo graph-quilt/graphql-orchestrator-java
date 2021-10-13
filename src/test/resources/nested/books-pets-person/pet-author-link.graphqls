@@ -1,5 +1,5 @@
 extend type Author {
-    pets : [Pet] @resolver(field: "person.pets")
+    pets : [Pet] @resolver(field: "person.pets" arguments: [{name : "animalType", value: "DOG"} {name : "pureBred", value: "true"}])
 }
 
 type Pet {}
