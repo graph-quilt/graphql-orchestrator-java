@@ -30,9 +30,10 @@ public class FieldResolverDirectiveNestedTest {
 
   private static final String BOOK_DOWNSTREAM_QUERY = "query Get_Person {person {book {id name author {lastName}}}}";
 
-  private static final String PETS_DOWNSTREAM_QUERY = "query Get_Person {person {pets {name}}}";
+  private static final String PETS_DOWNSTREAM_QUERY = "query Get_Person {person {pets(animalType:DOG,pureBred:true) {name}}}";
 
-  private static final String PETS_FIELD_RESOLVER_DOWNSTREAM_QUERY = "query Get_Person_Resolver_Directive_Query {person {pets_0:pets {name}}}";
+  private static final String PETS_FIELD_RESOLVER_DOWNSTREAM_QUERY = "query Get_Person_Resolver_Directive_Query {person {pets_0:pets(animalType:DOG,pureBred:true) {name}}}";
+
 
   private ExecutionInput personEI;
   private ExecutionInput bookEI;
@@ -107,7 +108,7 @@ public class FieldResolverDirectiveNestedTest {
     assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
 
     ExecutionInput query = ExecutionInput.newExecutionInput()
-        .query("query Get_Person { person { id name book {id name author {lastName pets { name } } } pets { name }  } }")
+        .query("query Get_Person { person { id name book {id name author {lastName pets { name } } } pets(animalType: DOG, pureBred: true) { name }  } }")
         .build();
 
     // WHEN
