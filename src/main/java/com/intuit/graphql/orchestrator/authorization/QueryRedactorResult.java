@@ -2,7 +2,8 @@ package com.intuit.graphql.orchestrator.authorization;
 
 import graphql.GraphqlErrorException;
 import graphql.language.Field;
-import graphql.language.FragmentDefinition;
+import graphql.language.Node;
+import graphql.language.SelectionSetContainer;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,11 +11,10 @@ import lombok.NonNull;
 
 @Builder
 @Getter
-public class FragmentDefinitionRedactorResult {
+public class QueryRedactorResult {
 
   @NonNull
-  private FragmentDefinition fragmentDefinition;
+  private Node<?> node;
 
-  @NonNull
   private List<GraphqlErrorException> errors;
 }

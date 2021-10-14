@@ -1,8 +1,11 @@
 package com.intuit.graphql.orchestrator.authorization;
 
 import graphql.GraphqlErrorException;
+import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.FieldCoordinates;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -10,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
  * authorization in a batch manner, i.e. if one field is denied access for a given downstream
  * service, then no data will be returned for the service.
  */
-public interface BatchFieldAuthorization {
+public interface FieldAuthorization {
 
   /**
    * Allows an authorization input data to be retrieved from a * CompletableFuture.
@@ -31,4 +34,6 @@ public interface BatchFieldAuthorization {
   void batchAuthorizeOrThrowGraphQLError(
       Object authData, List<DataFetchingEnvironment> dataFetchingEnvironments)
       throws GraphqlErrorException;
+
+  FieldAuthorizationResult authorize(FieldCoordinates fieldCoordinates, Field field, Object authData, Map<String, Object> argumentValues);
 }

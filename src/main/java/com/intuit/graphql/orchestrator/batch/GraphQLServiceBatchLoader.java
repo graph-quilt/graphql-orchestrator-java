@@ -6,12 +6,10 @@ import static graphql.language.OperationDefinition.Operation.QUERY;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 
-import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
-import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
-import com.intuit.graphql.orchestrator.authorization.FieldRedactor;
-import com.intuit.graphql.orchestrator.authorization.FieldRedactorResult;
-import com.intuit.graphql.orchestrator.authorization.FragmentDefinitionRedactor;
-import com.intuit.graphql.orchestrator.authorization.FragmentDefinitionRedactorResult;
+import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.QueryRedactor;
+import com.intuit.graphql.orchestrator.authorization.QueryRedactorResult;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -41,7 +39,6 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +57,7 @@ import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
-  private final BatchFieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultBatchFieldAuthorization();
+  private final FieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultFieldAuthorization();
   private final QueryExecutor queryExecutor;
   private final QueryResponseModifier queryResponseModifier;
   private final BatchResultTransformer batchResultTransformer;
@@ -85,20 +82,20 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> keys) {
     GraphQLContext graphQLContext = getContext(keys);
-    BatchFieldAuthorization batchFieldAuthorization = getDefaultOrCustomFieldAuthorization(graphQLContext);
-    CompletableFuture<Object> futureAuthData = batchFieldAuthorization.getFutureAuthData();
+    FieldAuthorization fieldAuthorization = getDefaultOrCustomFieldAuthorization(graphQLContext);
+    CompletableFuture<Object> futureAuthData = fieldAuthorization.getFutureAuthData();
     return futureAuthData.thenCompose(authData -> load(keys, graphQLContext, authData,
-        batchFieldAuthorization));
+        fieldAuthorization));
   }
 
-  private BatchFieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
-    BatchFieldAuthorization ctxBatchFieldAuthorization = graphQLContext.get(BatchFieldAuthorization.class);
-    return Objects.isNull(ctxBatchFieldAuthorization)
-        ? DEFAULT_FIELD_AUTHORIZATION : ctxBatchFieldAuthorization;
+  private FieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
+    FieldAuthorization ctxFieldAuthorization = graphQLContext.get(FieldAuthorization.class);
+    return Objects.isNull(ctxFieldAuthorization)
+        ? DEFAULT_FIELD_AUTHORIZATION : ctxFieldAuthorization;
   }
 
   private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
-      GraphQLContext context, Object authData, BatchFieldAuthorization fieldAuthorization) {
+      GraphQLContext context, Object authData, FieldAuthorization fieldAuthorization) {
 
     fieldAuthorization.batchAuthorizeOrThrowGraphQLError(authData, keys);
     hooks.onBatchLoadStart(context, keys);
@@ -128,19 +125,20 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         filteredRootField.getFields().stream()
             .map(field -> {
               if (shouldRedactQuery(fieldAuthorization)) {
-                FieldRedactor fieldRedactor = FieldRedactor.builder()
-                    .field(field)
-                    .fieldType(getRootFieldDefinition(key.getExecutionStepInfo()).getType())
+                QueryRedactor queryRedactor = QueryRedactor.builder()
+                    .root(field)
+                    .rootType(unwrapAll(getRootFieldDefinition(key.getExecutionStepInfo()).getType()))
+                    .rootParentType(operationObjectType)
                     .authData(authData)
                     .fieldAuthorization(fieldAuthorization)
                     .dataFetchingEnvironment(key)
                     .serviceMetadata(serviceMetadata)
                     .build();
-                FieldRedactorResult redactResult = fieldRedactor.redact();
+                QueryRedactorResult redactResult = queryRedactor.redact();
                 if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
                   errorsByKey.putAll(keyPath, redactResult.getErrors());
                 }
-                return redactResult.getField();
+                return (Field) redactResult.getNode();
               } else {
                 return field;
               }
@@ -173,7 +171,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
           FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition, parentType,
-              authData, fieldAuthorization, key, errorsByKey);
+              authData, fieldAuthorization, key, errorsByKey, operationObjectType);
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
         mergedFragmentDefinitions.putAll(finalServiceFragmentDefinitions);
@@ -243,9 +241,9 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         });
   }
 
-  private boolean shouldRedactQuery(BatchFieldAuthorization fieldAuthorization) {
+  private boolean shouldRedactQuery(FieldAuthorization fieldAuthorization) {
     return serviceMetadata.hasFieldResolverDirective() ||
-        !DefaultBatchFieldAuthorization.class.isInstance(fieldAuthorization);
+        !DefaultFieldAuthorization.class.isInstance(fieldAuthorization);
   }
 
   private GraphQLFieldDefinition getRootFieldDefinition(ExecutionStepInfo executionStepInfo) {
@@ -307,23 +305,25 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    * @return a modified fragment definition
    */
   private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
-      GraphQLType typeCondition, Object authData, BatchFieldAuthorization fieldAuthorization,
-      DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap errorsByKey) {
-    FragmentDefinitionRedactor fragmentDefinitionRedactor = FragmentDefinitionRedactor.builder()
-        .fragmentDefinition(origFragmentDefinition)
-        .typeCondition(typeCondition)
+      GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
+      DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap errorsByKey, GraphQLObjectType operationType) {
+
+    QueryRedactor fragmentDefinitionRedactor = QueryRedactor.builder()
+        .root(origFragmentDefinition)
+        .rootType(unwrapAll(typeCondition))
+        .rootParentType(operationType)
         .authData(authData)
         .fieldAuthorization(fieldAuthorization)
         .dataFetchingEnvironment(dataFetchingEnvironment)
         .serviceMetadata(serviceMetadata)
         .build();
 
-    FragmentDefinitionRedactorResult redactResult = fragmentDefinitionRedactor.redact();
+    QueryRedactorResult redactResult = fragmentDefinitionRedactor.redact();
     if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
       String keyPath = dataFetchingEnvironment.getExecutionStepInfo().getPath().toString();
       errorsByKey.putAll(keyPath, redactResult.getErrors());
     }
-    return redactResult.getFragmentDefinition();
+    return (FragmentDefinition) redactResult.getNode();
   }
 
   /**

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.google.common.collect.ImmutableMap;
-import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.PassthroughQueryModifier;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.GraphQLContext;
@@ -64,7 +64,7 @@ public class GraphQLServiceBatchLoaderTest {
   public VariableDefinitionFilter mockVariableDefinitionFilter;
 
   @Mock
-  public BatchFieldAuthorization mockBatchFieldAuthorization;
+  public FieldAuthorization mockFieldAuthorization;
 
   @Before
   public void setUp() {
@@ -75,7 +75,7 @@ public class GraphQLServiceBatchLoaderTest {
             any(Node.class));
 
     doReturn(CompletableFuture.completedFuture("TestFutureAuthData"))
-        .when(mockBatchFieldAuthorization).getFutureAuthData();
+        .when(mockFieldAuthorization).getFutureAuthData();
   }
 
   @Test
@@ -162,7 +162,7 @@ public class GraphQLServiceBatchLoaderTest {
         .query(queryType).build();
 
     GraphQLContext graphQLContext = GraphQLContext.newContext().build();
-    graphQLContext.put(BatchFieldAuthorization.class, mockBatchFieldAuthorization);
+    graphQLContext.put(FieldAuthorization.class, mockFieldAuthorization);
 
     DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
         .variables(ImmutableMap.of("1", "3"))
@@ -269,7 +269,7 @@ public class GraphQLServiceBatchLoaderTest {
     OperationDefinition opDef = newOperationDefinition().operation(Operation.MUTATION).build();
 
     GraphQLContext graphQLContext = GraphQLContext.newContext().build();
-    graphQLContext.put(BatchFieldAuthorization.class, mockBatchFieldAuthorization);
+    graphQLContext.put(FieldAuthorization.class, mockFieldAuthorization);
 
     DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
         .variables(ImmutableMap.of("1", "3"))
