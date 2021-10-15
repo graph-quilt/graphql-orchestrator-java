@@ -32,7 +32,7 @@ public class FieldMergeValidations {
   private FieldMergeValidations() {
   }
 
-  public static void fieldHasSameArguments(String parent, FieldDefinition current, FieldDefinition newcomer) {
+  private static void fieldHasSameArguments(String parent, FieldDefinition current, FieldDefinition newcomer) {
 
     Objects.requireNonNull(current);
     Objects.requireNonNull(newcomer);
@@ -47,25 +47,24 @@ public class FieldMergeValidations {
     }
   }
 
-  public static void compareArguments(ArgumentsDefinition argDef1, ArgumentsDefinition argDef2) {
+  private static void compareArguments(ArgumentsDefinition argDefLeft, ArgumentsDefinition argDefRight) {
     //todo: compare default value for args?
-    int argsSize1 = argsize(argDef1);
-    int argsSize2 = argsize(argDef2);
+    int sizeLeft = argsize(argDefLeft);
+    int sizeRight = argsize(argDefRight);
 
-    if (argsSize1 > 0 || argsSize2 > 0) {
+    if (sizeLeft > 0 || sizeRight > 0) {
 
-      //compare size
-      if (argsSize1 != argsSize2) {
-        throw new FieldMergeException(String.format(UNEQUAL_ARGUMENTS, argsSize1, argsSize2));
+      if (sizeLeft != sizeRight) {
+        throw new FieldMergeException(String.format(UNEQUAL_ARGUMENTS, sizeLeft, sizeRight));
       }
 
       //compare names and types
-      argDef1.getInputValueDefinition().forEach(leftArg -> {
+      argDefLeft.getInputValueDefinition().forEach(leftArg -> {
 
         //compare names
-        InputValueDefinition rightArg = argDef2.getInputValueDefinition().stream()
-            .filter(t -> leftArg.getName().equals(t.getName())).findFirst()
-            .orElseThrow(() -> new FieldMergeException(String
+        InputValueDefinition rightArg = argDefRight.getInputValueDefinition().stream()
+            .filter(arg -> StringUtils.equals(leftArg.getName(), arg.getName()))
+            .findFirst().orElseThrow(() -> new FieldMergeException(String
                 .format(MISSING_ARGUMENT, leftArg.getName(), XtextUtils.toDescriptiveString(leftArg.getNamedType()))));
 
         //compare types
@@ -81,14 +80,14 @@ public class FieldMergeValidations {
     }
   }
 
-  public static int argsize(ArgumentsDefinition argumentsDefinition) {
+  private static int argsize(ArgumentsDefinition argumentsDefinition) {
     if (Objects.nonNull(argumentsDefinition)) {
       return CollectionUtils.size(argumentsDefinition.getInputValueDefinition());
     }
     return 0;
   }
 
-  public static void fieldHasSameDirectives(String parent, FieldDefinition current, FieldDefinition newcomer) {
+  private static void fieldHasSameDirectives(String parent, FieldDefinition current, FieldDefinition newcomer) {
 
     Objects.requireNonNull(current);
     Objects.requireNonNull(newcomer);
@@ -100,29 +99,29 @@ public class FieldMergeValidations {
     }
   }
 
-  public static void compareDirectives(EList<Directive> directives1, EList<Directive> directives2) {
+  private static void compareDirectives(EList<Directive> leftDirectives, EList<Directive> rightDirectives) {
 
-    int size1 = CollectionUtils.size(directives1);
-    int size2 = CollectionUtils.size(directives2);
+    int sizeLeft = CollectionUtils.size(leftDirectives);
+    int sizeRight = CollectionUtils.size(rightDirectives);
 
-    if (size1 > 0 || size2 > 0) {
-      //compare size
-      if (size1 != size2) {
-        throw new FieldMergeException(String.format(UNEQUAL_DIRECTIVES, size1, size2));
-      }
+    if (sizeLeft != sizeRight) {
+      throw new FieldMergeException(String.format(UNEQUAL_DIRECTIVES, sizeLeft, sizeRight));
+    }
 
-      //compare names and types
-      directives1.forEach(leftDirective -> {
+    if (sizeLeft > 0 || sizeRight > 0) {
+
+      leftDirectives.forEach(leftDirective -> {
         //compare names
-        Directive rightDirective = directives2.stream()
-            .filter(t -> leftDirective.getDefinition().getName().equals(t.getDefinition().getName())).findFirst()
-            .orElseThrow(() -> new FieldMergeException(
+        Directive rightDirective = rightDirectives.stream()
+            .filter(dir -> StringUtils.equals(leftDirective.getDefinition().getName(), dir.getDefinition().getName()))
+            .findFirst().orElseThrow(() -> new FieldMergeException(
                 String.format(MISSING_DIRECTIVE, leftDirective.getDefinition().getName())));
 
         //compare arguments
         compareArguments(leftDirective.getDefinition().getArgumentsDefinition(),
             rightDirective.getDefinition().getArgumentsDefinition());
 
+        //compare location
         int llocSize = CollectionUtils.size(leftDirective.getDefinition().getDirectiveLocations());
         int rlocSize = CollectionUtils.size(rightDirective.getDefinition().getDirectiveLocations());
 

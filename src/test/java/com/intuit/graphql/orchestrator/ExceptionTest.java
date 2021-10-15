@@ -1,18 +1,21 @@
 package com.intuit.graphql.orchestrator;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.hamcrest.core.StringEndsWith.endsWith;
 import static org.hamcrest.core.StringStartsWith.startsWith;
-import static org.hamcrest.core.StringContains.containsString;
 
 import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.schema.Operation;
+import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations;
 import com.intuit.graphql.orchestrator.schema.transform.FieldMergeException;
 import com.intuit.graphql.orchestrator.stitching.XtextStitcher;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder;
+import graphql.schema.GraphQLObjectType;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Rule;
@@ -124,8 +127,8 @@ public class ExceptionTest {
 
   @Test
   public void NestedTypeMatchedArgumentsMultilevelNoExceptionTest() {
-    String schema1 = "schema { query: Query } type Query { a: A } type A {  bbc (arg1: Arg1, arg2: Arg2): BB } type BB {cc: String} input Arg1 { pp: QQ } input Arg2 { pp: Arg2 } input QQ { mm: String }";
-    String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc (arg1: Arg1, arg2: Arg2): BB } type BB {dd: String} input Arg1 { pp: QQ } input Arg2 { pp: Arg2 } input QQ { mm: String }";
+    String schema1 = "schema { query: Query } type Query { a: A } type A {  bbc (arg1: [Arg1], arg2: Arg2): BB } type BB {cc: String} input Arg1 { pp: QQ } input Arg2 { pp: Arg2 } input QQ { mm: String }";
+    String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc (arg1: [Arg1], arg2: Arg2): BB } type BB {dd: String} input Arg1 { pp: QR } input Arg2 { pp: Arg2 } input QR { mm: String }";
 
     XtextGraph xtextGraph1 = XtextGraphBuilder
         .build(TestServiceProvider.newBuilder().namespace("SVC_A").serviceType(ServiceType.REST)
@@ -137,7 +140,15 @@ public class ExceptionTest {
 
     List<ServiceProvider> providerList = Arrays
         .asList(xtextGraph1.getServiceProvider(), xtextGraph2.getServiceProvider());
-    XtextStitcher.newBuilder().build().stitch(providerList);
+    RuntimeGraph runtimeGraph = XtextStitcher.newBuilder().build().stitch(providerList);
+    GraphQLObjectType aType = (GraphQLObjectType) runtimeGraph.getGraphQLtypes().get("A");
+    assertThat(aType.getFieldDefinition("bbc")).satisfies(bbcFieldDef -> {
+      assertThat(bbcFieldDef.getArgument("arg1")).isNotNull();
+      assertThat(bbcFieldDef.getArgument("arg2")).isNotNull();
+      GraphQLObjectType bbcType = (GraphQLObjectType) bbcFieldDef.getType();
+      assertThat(bbcType.getFieldDefinition("cc")).isNotNull();
+      assertThat(bbcType.getFieldDefinition("dd")).isNotNull();
+    });
   }
 
   @Test
@@ -146,7 +157,6 @@ public class ExceptionTest {
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {cc: String} "
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
         + "directive @excludeField(name: String!) on FIELD_DEFINITION | ENUM_VALUE";
-
 
     String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc : BB "
         + "@addExternalFields(source: \"profiles\") } type BB {dd: String} "
@@ -175,7 +185,6 @@ public class ExceptionTest {
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {cc: String} "
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
         + "directive @excludeField(name: String!) on FIELD_DEFINITION | ENUM_VALUE";
-
 
     String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc : BB "
         + "@addExternalFields(source: \"profiles\") @ignoreField(name: \"photo\") } type BB {dd: String} "
@@ -206,7 +215,6 @@ public class ExceptionTest {
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
         + "directive @excludeField(name: String!) on FIELD_DEFINITION";
 
-
     String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc : BB "
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {dd: String} "
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
@@ -234,7 +242,6 @@ public class ExceptionTest {
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {cc: String} "
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
         + "directive @excludeField(name: String!) on FIELD_DEFINITION | FIELD";
-
 
     String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc : BB "
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {dd: String} "
@@ -264,7 +271,6 @@ public class ExceptionTest {
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
         + "directive @excludeField(name: String!) on FIELD_DEFINITION | ENUM_VALUE";
 
-
     String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc : BB "
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {dd: String} "
         + "directive @addExternalFields(source: String!) on FIELD_DEFINITION | ENUM_VALUE "
@@ -281,7 +287,15 @@ public class ExceptionTest {
 
     List<ServiceProvider> providerList = Arrays
         .asList(xtextGraph1.getServiceProvider(), xtextGraph2.getServiceProvider());
-    XtextStitcher.newBuilder().build().stitch(providerList);
+    RuntimeGraph runtimeGraph = XtextStitcher.newBuilder().build().stitch(providerList);
+    GraphQLObjectType aType = (GraphQLObjectType) runtimeGraph.getGraphQLtypes().get("A");
+    assertThat(aType.getFieldDefinition("bbc")).satisfies(bbcFieldDef -> {
+      assertThat(bbcFieldDef.getDirective("addExternalFields")).isNotNull();
+      assertThat(bbcFieldDef.getDirective("excludeField")).isNotNull();
+      GraphQLObjectType bbcType = (GraphQLObjectType) bbcFieldDef.getType();
+      assertThat(bbcType.getFieldDefinition("cc")).isNotNull();
+      assertThat(bbcType.getFieldDefinition("dd")).isNotNull();
+    });
   }
 
 

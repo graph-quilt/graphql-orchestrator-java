@@ -273,6 +273,7 @@ public class GraphQLOrchestratorTest {
 
   }
 
+
   @Test
   public void canQueryToplevelWithResultTypeOfBaseInterface() throws Exception {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
