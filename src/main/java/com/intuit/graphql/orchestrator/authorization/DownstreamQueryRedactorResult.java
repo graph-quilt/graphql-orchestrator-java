@@ -1,20 +1,19 @@
 package com.intuit.graphql.orchestrator.authorization;
 
 import graphql.GraphqlErrorException;
-import graphql.language.Field;
 import graphql.language.Node;
-import graphql.language.SelectionSetContainer;
 import java.util.List;
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 
-@Builder
 @Getter
-public class QueryRedactorResult {
+@AllArgsConstructor
+public class DownstreamQueryRedactorResult {
 
   @NonNull
   private Node<?> node;
 
+  @NonNull
   private List<GraphqlErrorException> errors;
 }

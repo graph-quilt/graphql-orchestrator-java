@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
 import static graphql.schema.GraphQLTypeUtil.isNotWrapped;
 import static graphql.schema.GraphQLTypeUtil.unwrapOne;
 
@@ -10,6 +11,8 @@ import graphql.language.ListType;
 import graphql.language.NonNullType;
 import graphql.language.Type;
 import graphql.language.TypeName;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLNamedType;
@@ -82,4 +85,12 @@ public class GraphQLUtil {
     throw new CreateTypeException(
         String.format(ERR_CREATE_TYPE_UNEXPECTED_TYPE, GraphQLTypeUtil.simplePrint(graphQLType)));
   }
+
+  public static GraphQLFieldDefinition getFieldDefinition(String name, GraphQLFieldsContainer parentType) {
+    if (TypeNameMetaFieldDef.getName().equals(name)) {
+      return TypeNameMetaFieldDef;
+    }
+    return parentType.getFieldDefinition(name);
+  }
+
 }

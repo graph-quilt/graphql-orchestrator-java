@@ -36,7 +36,7 @@ public class FieldResolverDirectiveToplevelTest {
 
   private static final String USERS_DOWNSTREAM_QUERY = "query GetQuery {users {id firstName lastName}}";
 
-  private static final String BOOKS_SIMPLE_DOWNSTREAM_QUERY = "query GetQuery {books {id name author {}}}";
+  private static final String BOOKS_SIMPLE_DOWNSTREAM_QUERY = "query GetQuery {books {id name author {firstName}}}";
 
   private static final String USERS_WITH_LINK_DOWNSTREAM_QUERY = "query GetQuery {userById(id:\"user-1\") {id firstName lastName petId1 petId2}}";
 
@@ -407,7 +407,7 @@ public class FieldResolverDirectiveToplevelTest {
         new AsyncExecutionStrategy(), null, services);
 
     ExecutionInput query = ExecutionInput.newExecutionInput()
-        .query("query GetQuery { books { id name  author { pet { id name } } } }")
+        .query("query GetQuery { books { id name  author { firstName pet { id name } } } }")
         .build();
 
     // WHEN

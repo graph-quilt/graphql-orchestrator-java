@@ -8,8 +8,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
-import com.intuit.graphql.orchestrator.authorization.QueryRedactor;
-import com.intuit.graphql.orchestrator.authorization.QueryRedactorResult;
+import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactor;
+import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactorResult;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -97,7 +97,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
       GraphQLContext context, Object authData, FieldAuthorization fieldAuthorization) {
 
-    fieldAuthorization.batchAuthorizeOrThrowGraphQLError(authData, keys);
     hooks.onBatchLoadStart(context, keys);
 
     Optional<OperationDefinition> operation = getFirstOperation(keys);
@@ -125,16 +124,15 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         filteredRootField.getFields().stream()
             .map(field -> {
               if (shouldRedactQuery(fieldAuthorization)) {
-                QueryRedactor queryRedactor = QueryRedactor.builder()
+                DownstreamQueryRedactor downstreamQueryRedactor = DownstreamQueryRedactor.builder()
                     .root(field)
                     .rootType(unwrapAll(getRootFieldDefinition(key.getExecutionStepInfo()).getType()))
                     .rootParentType(operationObjectType)
                     .authData(authData)
                     .fieldAuthorization(fieldAuthorization)
                     .dataFetchingEnvironment(key)
-                    .serviceMetadata(serviceMetadata)
                     .build();
-                QueryRedactorResult redactResult = queryRedactor.redact();
+                DownstreamQueryRedactorResult redactResult = downstreamQueryRedactor.redact();
                 if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
                   errorsByKey.putAll(keyPath, redactResult.getErrors());
                 }
@@ -308,17 +306,16 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
       DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap errorsByKey, GraphQLObjectType operationType) {
 
-    QueryRedactor fragmentDefinitionRedactor = QueryRedactor.builder()
+    DownstreamQueryRedactor fragmentDefinitionRedactor = DownstreamQueryRedactor.builder()
         .root(origFragmentDefinition)
         .rootType(unwrapAll(typeCondition))
         .rootParentType(operationType)
         .authData(authData)
         .fieldAuthorization(fieldAuthorization)
         .dataFetchingEnvironment(dataFetchingEnvironment)
-        .serviceMetadata(serviceMetadata)
         .build();
 
-    QueryRedactorResult redactResult = fragmentDefinitionRedactor.redact();
+    DownstreamQueryRedactorResult redactResult = fragmentDefinitionRedactor.redact();
     if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
       String keyPath = dataFetchingEnvironment.getExecutionStepInfo().getPath().toString();
       errorsByKey.putAll(keyPath, redactResult.getErrors());

@@ -15,7 +15,6 @@ public class ArgumentValueResolver {
 
     ValuesResolver valuesResolver = new ValuesResolver();
     return valuesResolver.getArgumentValues(graphQLSchema.getCodeRegistry(), fieldDefinition.getArguments(),
-        field.getArguments(), queryVariables
-    );
+        field.getArguments(), queryVariables);
   }
 }

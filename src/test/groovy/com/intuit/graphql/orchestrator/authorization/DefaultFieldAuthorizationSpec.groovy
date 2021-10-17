@@ -13,7 +13,7 @@ class DefaultFieldAuthorizationSpec extends Specification {
         CompletableFuture<?> actual =  specUnderTest.getFutureAuthData()
 
         then:
-        actual.get() == null
+        actual.get() == ""
     }
 
 }
