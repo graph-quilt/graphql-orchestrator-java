@@ -4,6 +4,7 @@ import static com.intuit.graphql.orchestrator.GraphQLOrchestratorTest.createGrap
 import static com.intuit.graphql.orchestrator.testhelpers.CustomAssertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -430,6 +431,31 @@ public class FieldResolverDirectiveToplevelTest {
     assertThat(executionResult).pathIsNull("$.data.books[0].author.pet");
     assertThat(executionResult).pathIsNull("$.data.books[1].author.pet");
     assertThat(executionResult).pathIsNull("$.data.books[2].author.pet");
+  }
+
+  @Test
+  public void testFieldResolverParentSelectionBecomesEmpty() throws Exception {
+    // GIVEN
+    String expectedError1 = "Downstream query result has empty selection set.";
+
+    ServiceProvider[] services = new ServiceProvider[]{mockBookService, mockPetsService};
+    final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
+        new AsyncExecutionStrategy(), null, services);
+
+    ExecutionInput query = ExecutionInput.newExecutionInput()
+        .query("query GetQuery { books { id name  author { pet { id name } } } }")
+        .build();
+
+    // WHEN
+    ExecutionResult executionResult = orchestrator.execute(query).get();
+
+    // THEN
+    verify(mockBookService, never()).query(any(ExecutionInput.class), any(GraphQLContext.class));
+    verify(mockPetsService, never()).query(any(ExecutionInput.class), any(GraphQLContext.class));
+
+    assertThat(executionResult).hasErrors();
+    assertThat(executionResult).pathContains("$.errors[0].message", expectedError1);
+    assertThat(executionResult).pathIsNull("$.data.books");
   }
 
 }

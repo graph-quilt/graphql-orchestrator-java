@@ -34,7 +34,7 @@ public class DownstreamCreateQueryException extends GraphqlErrorException {
       return new DownstreamCreateQueryException(this);
     }
 
-    public DownstreamCreateQueryException.Builder extension(String key, String value) {
+    public DownstreamCreateQueryException.Builder extension(String key, Object value) {
       this.extensions.put(key, value);
       return this;
     }

@@ -34,7 +34,7 @@ import lombok.NonNull;
 public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
 
   private static final ArgumentValueResolver ARGUMENT_VALUE_RESOLVER = new ArgumentValueResolver(); // thread-safe
-  private final List<SelectionSetFieldsCounter> processedSelectionSetMetadata = new ArrayList<>();
+  private final List<SelectionSetMetadata> processedSelectionSetMetadata = new ArrayList<>();
   private final List<GraphqlErrorException> declinedFieldsErrors = new ArrayList<>();
 
   @NonNull private GraphQLFieldsContainer rootFieldParentType;
@@ -79,8 +79,8 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
 
   @SuppressWarnings("rawtypes") // Node defined raw in graphql.language.NodeVisitor
   private void decreaseParentSelectionSetCount(TraverserContext<Node> parentContext) {
-    if (nonNull(parentContext) && nonNull(parentContext.getVar(SelectionSetFieldsCounter.class))) {
-      parentContext.getVar(SelectionSetFieldsCounter.class).decreaseRemainingSelection();
+    if (nonNull(parentContext) && nonNull(parentContext.getVar(SelectionSetMetadata.class))) {
+      parentContext.getVar(SelectionSetMetadata.class).decreaseRemainingSelection();
     }
   }
 
@@ -109,8 +109,9 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     if (!context.isVisited()) {
       int selectionCount = node.getSelections().size();
-      SelectionSetFieldsCounter selectionSetMetadata = new SelectionSetFieldsCounter(selectionCount);
-      context.setVar(SelectionSetFieldsCounter.class, selectionSetMetadata);
+      String selectionSetPath = SelectionSetMetadata.getSelectionSetPathString(context);
+      SelectionSetMetadata selectionSetMetadata = new SelectionSetMetadata(selectionCount, selectionSetPath);
+      context.setVar(SelectionSetMetadata.class, selectionSetMetadata);
       processedSelectionSetMetadata.add(selectionSetMetadata);
     }
 
@@ -123,7 +124,7 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
     return declinedFieldsErrors;
   }
 
-  public List<SelectionSetFieldsCounter> getEmptySelectionSets() {
+  public List<SelectionSetMetadata> getEmptySelectionSets() {
     return this.processedSelectionSetMetadata.stream()
         .filter(selectionSetMetadata -> selectionSetMetadata.getRemainingSelectionsCount() == 0)
         .collect(Collectors.toList());
