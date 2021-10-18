@@ -4,15 +4,14 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * This interface provides a facility for applications using this library to implement field level
- * authorization.
+ * This interface allows applications using this library to implement field level authorization. An
+ * application may provide a custom implementation by adding it in the GraphqlQL Context e.g. *
+ * graphQLContext.put(FieldAuthorization.class, appCustomFieldAuthorizationObject).
  *
- * If the implementation of {@link #authorize(FieldAuthorizationEnvironment)} requires
- * an input data, here referred to as authData, the {@link #getFutureAuthData()} may be implemented.
- * Otherwise, no need to implement {@link #getFutureAuthData()} as this interface provides a
- * default implementation which returns a completed future returning an empty string.
- *
- * graphQLContext.put(FieldAuthorization.class, appCustomFieldAuthorizationObject);
+ * <p>If the implementation of {@link #authorize(FieldAuthorizationEnvironment)} requires an input
+ * data, here referred to as authData, the {@link #getFutureAuthData()} may be implemented.
+ * Otherwise, no need to implement {@link #getFutureAuthData()} as this interface provides a default
+ * implementation.
  */
 public interface FieldAuthorization {
 
