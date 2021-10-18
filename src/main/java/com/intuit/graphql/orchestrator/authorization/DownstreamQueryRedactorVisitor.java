@@ -49,8 +49,9 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   @Override
   public TraversalControl visitField(Field currentField, TraverserContext<Node> context) {
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) this.getParentType(context);
+    requireNonNull(parentType, "Failed to get parent type for " + currentField.getName());
     GraphQLFieldDefinition currentFieldFieldDefinition = getFieldDefinition(currentField.getName(), parentType);
-    requireNonNull(currentFieldFieldDefinition, "Failed to get Field Definition for " + currentField.getName());
+    requireNonNull(currentFieldFieldDefinition, "Failed to get GraphQLFieldDefinition for " + currentField.getName());
 
     context.setVar(GraphQLType.class, currentFieldFieldDefinition.getType());
 
