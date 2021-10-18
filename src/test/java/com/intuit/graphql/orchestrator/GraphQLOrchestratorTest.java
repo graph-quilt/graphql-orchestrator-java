@@ -273,6 +273,7 @@ public class GraphQLOrchestratorTest {
 
   }
 
+
   @Test
   public void canQueryToplevelWithResultTypeOfBaseInterface() throws Exception {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
@@ -427,7 +428,7 @@ public class GraphQLOrchestratorTest {
   }
 
   @Test(expected = FieldMergeException.class)
-  public void cannotBuildDueToQueryNestedFieldsHasArguments() throws Exception {
+  public void cannotBuildDueToQueryNestedFieldsHasMismatchedArguments() throws Exception {
     TestCase.newTestCase()
         .service(new ServiceA())
         .service(new ServiceB())
@@ -436,7 +437,7 @@ public class GraphQLOrchestratorTest {
   }
 
   @Test(expected = FieldMergeException.class)
-  public void cannotBuildDueToQueryNestedFieldsHasDirectives() throws Exception {
+  public void cannotBuildDueToQueryNestedFieldsHasMismatchedDirectives() throws Exception {
     TestCase.newTestCase()
         .service(new ServiceA())
         .service(new ServiceC())
@@ -445,7 +446,7 @@ public class GraphQLOrchestratorTest {
   }
 
   @Test(expected = FieldMergeException.class)
-  public void cannotBuildDueToMutationNestedFieldsHasArguments() throws Exception {
+  public void cannotBuildDueToMutationNestedFieldsHasMismatchedArguments() throws Exception {
     TestCase.newTestCase()
         .service(new ServiceD())
         .service(new ServiceE())
