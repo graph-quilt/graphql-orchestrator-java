@@ -1,13 +1,20 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.isNonNull;
+import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
+import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapOne;
 
 import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 
 public class XtextTypeUtils {
@@ -84,5 +91,39 @@ public class XtextTypeUtils {
     String errorMessage = String.format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
             typeDefinition.getName(), typeDefinition.getClass().getName());
     throw new IllegalArgumentException(errorMessage);
+  }
+
+  public static boolean compareTypes(NamedType lType, NamedType rType) {
+    if (isNonNull(lType) != isNonNull(rType) || isWrapped(lType) != isWrapped(rType)) {
+      return false;
+    }
+    if (isWrapped(lType) && isWrapped(rType)) {
+      return compareTypes(unwrapOne(lType), unwrapOne(rType));
+    }
+    return StringUtils.equals(typeName(lType), typeName(rType));
+  }
+
+  public static String toDescriptiveString(ArgumentsDefinition argumentsDefinition) {
+    if (Objects.nonNull(argumentsDefinition)) {
+      StringBuilder result = new StringBuilder();
+      result.append("[");
+      result.append(argumentsDefinition.getInputValueDefinition().stream().map(Objects::toString)
+          .collect(Collectors.joining(",")));
+      result.append("]");
+      return result.toString();
+    }
+    return StringUtils.EMPTY;
+  }
+
+  public static String toDescriptiveString(EList<Directive> directives) {
+    if (Objects.nonNull(directives)) {
+      StringBuilder result = new StringBuilder();
+      result.append("[");
+      result.append(
+          directives.stream().map(dir -> dir.getDefinition()).map(Objects::toString).collect(Collectors.joining(",")));
+      result.append("]");
+      return result.toString();
+    }
+    return StringUtils.EMPTY;
   }
 }
