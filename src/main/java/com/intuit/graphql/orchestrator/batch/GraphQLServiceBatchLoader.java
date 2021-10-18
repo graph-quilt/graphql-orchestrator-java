@@ -141,6 +141,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
                 return field;
               }
             })
+            .filter(Objects::nonNull)
             .forEach(selectionSetBuilder::selection);
       }
 
