@@ -9,8 +9,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 public class QueryPathUtils {
+
+  private static final String PATH_SEPARATOR = ".";
 
   private QueryPathUtils(){}
 
@@ -27,9 +30,7 @@ public class QueryPathUtils {
   }
 
   public static String pathListToFQN(List<Object> pathList) {
-    StringJoiner pathBuilder = new StringJoiner(".");
-    pathList.stream().map(o -> (String) o).forEach(pathBuilder::add);
-    return pathBuilder.toString();
+    return StringUtils.join(pathList, PATH_SEPARATOR);
   }
 
 }
