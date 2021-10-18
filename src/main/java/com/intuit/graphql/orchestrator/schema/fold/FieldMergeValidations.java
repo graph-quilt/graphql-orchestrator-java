@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.schema.fold;
 
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.compareTypes;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.isObjectType;
 import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 
@@ -52,12 +54,12 @@ public class FieldMergeValidations {
     int sizeLeft = argsize(argDefLeft);
     int sizeRight = argsize(argDefRight);
 
+    if (sizeLeft != sizeRight) {
+      throw new FieldMergeException(
+          String.format(UNEQUAL_ARGUMENTS, toDescriptiveString(argDefLeft), toDescriptiveString(argDefRight)));
+    }
+
     if (sizeLeft > 0 || sizeRight > 0) {
-
-      if (sizeLeft != sizeRight) {
-        throw new FieldMergeException(String.format(UNEQUAL_ARGUMENTS, sizeLeft, sizeRight));
-      }
-
       //compare names and types
       argDefLeft.getInputValueDefinition().forEach(leftArg -> {
 
@@ -68,7 +70,7 @@ public class FieldMergeValidations {
                 .format(MISSING_ARGUMENT, leftArg.getName(), XtextUtils.toDescriptiveString(leftArg.getNamedType()))));
 
         //compare types
-        if (!StringUtils.equals(typeName(leftArg.getNamedType()), typeName(rightArg.getNamedType()))) {
+        if (!compareTypes(leftArg.getNamedType(), rightArg.getNamedType())) {
           throw new FieldMergeException(
               String.format(UNEQUAL_ARGUMENTS, XtextUtils.toDescriptiveString(leftArg.getNamedType()),
                   XtextUtils.toDescriptiveString(rightArg.getNamedType())));
@@ -105,7 +107,8 @@ public class FieldMergeValidations {
     int sizeRight = CollectionUtils.size(rightDirectives);
 
     if (sizeLeft != sizeRight) {
-      throw new FieldMergeException(String.format(UNEQUAL_DIRECTIVES, sizeLeft, sizeRight));
+      throw new FieldMergeException(
+          String.format(UNEQUAL_DIRECTIVES, toDescriptiveString(leftDirectives), toDescriptiveString(rightDirectives)));
     }
 
     if (sizeLeft > 0 || sizeRight > 0) {
@@ -127,7 +130,8 @@ public class FieldMergeValidations {
 
         if (llocSize != rlocSize) {
           throw new FieldMergeException(
-              String.format(UNEQUAL_DIRECTIVE_LOCATIONS, llocSize, rlocSize));
+              String.format(UNEQUAL_DIRECTIVE_LOCATIONS, leftDirective.getDefinition().getDirectiveLocations(),
+                  rightDirective.getDefinition().getDirectiveLocations()));
         }
 
         if (llocSize > 0 || rlocSize > 0) {
