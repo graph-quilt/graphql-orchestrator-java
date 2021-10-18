@@ -36,7 +36,6 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import java.util.ArrayList;
@@ -169,7 +168,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
-          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition, parentType,
+          FragmentDefinition transformedFragment = redactFragmentDefinition(fragmentDefinition, parentType,
               authData, fieldAuthorization, key, errorsByKey, operationObjectType);
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
@@ -306,15 +305,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         });
   }
 
-  /**
-   * remove fields with external type from a fragment definition.
-   *
-   * @param origFragmentDefinition original fragment definition
-   * @param typeCondition type condition of the original fragment definition.  This will be used as
-   *                      the root type for {@link NoExternalReferenceSelectionSetModifier}
-   * @return a modified fragment definition
-   */
-  private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
+  private FragmentDefinition redactFragmentDefinition(final FragmentDefinition origFragmentDefinition,
       GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
       DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap errorsByKey, GraphQLObjectType operationType) {
 
@@ -352,20 +343,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       ));
     }
     return origFragmentDefinition;
-  }
-
-  /**
-   * remove fields with external type from selections of a given field.
-   *
-   * @param origField field to be processed.
-   * @param fieldType the type of origField.  This will be used as the root type for {@link
-   * NoExternalReferenceSelectionSetModifier}
-   * @return a modified field
-   */
-  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType) {
-    // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    return (Field) AST_TRANSFORMER.transform(origField,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType)));
   }
 
   private GraphQLSchema getSchema(List<DataFetchingEnvironment> environments) {
