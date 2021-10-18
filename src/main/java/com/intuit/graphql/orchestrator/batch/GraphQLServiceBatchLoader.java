@@ -7,9 +7,9 @@ import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
-import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactor;
 import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactorResult;
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -39,6 +39,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -227,16 +228,27 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     return execute(context, query, mergedVariables, fragmentsAsDefinitions)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, keys))
-        .thenApply(dataFetcherResults -> {
-          if (!errorsByKey.isEmpty()) {
-            // TODO add errorsByKey
-          }
-          return dataFetcherResults;
-        })
+        .thenApply(dataFetcherResults -> addErrorsByKey(dataFetcherResults, errorsByKey, keys))
         .thenApply(batchResult -> {
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
+  }
+
+  private List<DataFetcherResult<Object>> addErrorsByKey(List<DataFetcherResult<Object>> dataFetcherResults,
+      MultiValuedMap<String, GraphqlErrorException> errorsByKey,
+      List<DataFetchingEnvironment> keys) {
+    if (!errorsByKey.isEmpty()) {
+      for (int i = 0; i < keys.size(); i++) {
+        final DataFetchingEnvironment key = keys.get(i);
+        String keyPath = key.getExecutionStepInfo().getPath().toString();
+        DataFetcherResult<Object> newDataFetcherResult = dataFetcherResults.get(i).transform(objectBuilder ->
+            objectBuilder.errors(new ArrayList<>(errorsByKey.get(keyPath)))
+        );
+        dataFetcherResults.set(i, newDataFetcherResult);
+      }
+    }
+    return dataFetcherResults;
   }
 
   private boolean shouldRedactQuery(FieldAuthorization fieldAuthorization) {

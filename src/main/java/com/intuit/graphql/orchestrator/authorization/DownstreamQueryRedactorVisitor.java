@@ -2,6 +2,8 @@ package com.intuit.graphql.orchestrator.authorization;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.getFieldDefinition;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getParentNodesAsPathList;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
 import static graphql.util.TreeTransformerUtil.deleteNode;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -56,7 +58,8 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
       decreaseParentSelectionSetCount(context.getParentContext());
       return deleteNode(context);
     } else {
-      FieldAuthorizationResult fieldAuthorizationResult = authorize(currentField, currentFieldFieldDefinition, parentType);
+      FieldAuthorizationResult fieldAuthorizationResult = authorize(currentField,
+          currentFieldFieldDefinition, parentType, context);
       if (!fieldAuthorizationResult.isAllowed()) {
         decreaseParentSelectionSetCount(context.getParentContext());
         this.declinedFieldsErrors.add(fieldAuthorizationResult.getGraphqlErrorException());
@@ -84,11 +87,20 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
     }
   }
 
-  private FieldAuthorizationResult authorize(Field node, GraphQLFieldDefinition fieldDefinition, GraphQLFieldsContainer parentType) {
+  private FieldAuthorizationResult authorize(Field node, GraphQLFieldDefinition fieldDefinition,
+      GraphQLFieldsContainer parentType, TraverserContext<Node> context) {
     String fieldName = node.getName();
     FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentType.getName(), fieldName);
     Map<String, Object> argumentValues = ARGUMENT_VALUE_RESOLVER.resolve(graphQLSchema, fieldDefinition, node, variables);
-    return fieldAuthorization.authorize(fieldCoordinates, node, authData, argumentValues);
+    FieldAuthorizationEnvironment fieldAuthorizationEnvironment = FieldAuthorizationEnvironment
+        .builder()
+        .field(node)
+        .fieldCoordinates(fieldCoordinates)
+        .authData(authData)
+        .argumentValues(argumentValues)
+        .path(getParentNodesAsPathList(context))
+        .build();
+    return fieldAuthorization.authorize(fieldAuthorizationEnvironment);
   }
 
   @Override
@@ -109,7 +121,8 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     if (!context.isVisited()) {
       int selectionCount = node.getSelections().size();
-      String selectionSetPath = SelectionSetMetadata.getSelectionSetPathString(context);
+      List<Object> pathList = getParentNodesAsPathList(context);
+      String selectionSetPath = pathListToFQN(pathList);
       SelectionSetMetadata selectionSetMetadata = new SelectionSetMetadata(selectionCount, selectionSetPath);
       context.setVar(SelectionSetMetadata.class, selectionSetMetadata);
       processedSelectionSetMetadata.add(selectionSetMetadata);
