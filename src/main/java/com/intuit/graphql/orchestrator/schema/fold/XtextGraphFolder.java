@@ -1,11 +1,15 @@
 package com.intuit.graphql.orchestrator.schema.fold;
 
-import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligiblity;
+import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligibility;
 import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.STATIC_DATAFETCHER_CONTEXT;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
+import com.intuit.graphql.graphQL.InputValueDefinition;
+import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -26,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
 public class XtextGraphFolder implements Foldable<XtextGraph> {
@@ -115,7 +120,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
           .findFirst();
 
       if (currentField.isPresent()) {
-        checkMergeEligiblity(parentType, currentField.get(), newField);
+        checkMergeEligibility(parentType, currentField.get(), newField);
 
         // XtextNestedTypeConflictResolver.INSTANCE.resolve(newField.getNamedType(), currentField.get().getNamedType());
 
@@ -124,8 +129,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
         FieldDefinition nestedField = merge(parentType, currentField.get(), newField, newComerServiceProvider);
         current.getFieldDefinition().add(nestedField);
 
-        TypeDefinition nestedType = XtextTypeUtils.getObjectType(nestedField.getNamedType());
-        nestedTypes.put(nestedType.getName(), nestedType);
+        collectNestedTypes(nestedField);
       } else {
         // Top level: Add field and add data fetcher
         addNewFieldToObject(current, newField, newComerServiceProvider);
@@ -135,6 +139,40 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
     current.setDesc(mergeDescriptions(current.getDesc(), newComer.getDesc()));
 
     return current;
+  }
+
+  /**
+   * Store the type of a nested field, and all types of its input arguments.
+   *
+   * @param nestedField a nested field
+   */
+  private void collectNestedTypes(FieldDefinition nestedField) {
+    TypeDefinition type = XtextTypeUtils.getObjectType(nestedField.getNamedType());
+    nestedTypes.put(type.getName(), type);
+
+    if (Objects.nonNull(nestedField.getArgumentsDefinition())) {
+      //collect argument types
+      collectNestedInputTypes(nestedField.getArgumentsDefinition().getInputValueDefinition());
+    }
+  }
+
+  /**
+   * Recursively traverse input arguments of a field (which is nested) and store all the input types as nested.
+   *
+   * @param inputs the input arguments of a nested field
+   */
+  private void collectNestedInputTypes(EList<InputValueDefinition> inputs) {
+    inputs.stream().forEach(inputValueDefinition -> {
+      NamedType namedType = unwrapAll(inputValueDefinition.getNamedType());
+      if (com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType(namedType)) {
+        InputObjectTypeDefinition inputObjectTypeDefinition = (InputObjectTypeDefinition) XtextTypeUtils
+            .getObjectType(namedType);
+        if (!nestedTypes.containsKey(inputObjectTypeDefinition.getName())) {
+          nestedTypes.put(inputObjectTypeDefinition.getName(), inputObjectTypeDefinition);
+          collectNestedInputTypes(inputObjectTypeDefinition.getInputValueDefinition());
+        }
+      }
+    });
   }
 
   private void addNewFieldToObject(ObjectTypeDefinition objectTypeDefinition, FieldDefinition fieldDefinition,
