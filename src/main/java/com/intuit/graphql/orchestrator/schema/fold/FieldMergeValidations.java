@@ -85,7 +85,7 @@ public class FieldMergeValidations {
   }
 
   private static boolean compareTypes(NamedType lType, NamedType rType) {
-    if (isNonNull(lType) != isNonNull(rType)) {
+    if (isNonNull(lType) != isNonNull(rType) || isWrapped(lType) != isWrapped(rType)) {
       return false;
     }
     if (isWrapped(lType) && isWrapped(rType)) {
