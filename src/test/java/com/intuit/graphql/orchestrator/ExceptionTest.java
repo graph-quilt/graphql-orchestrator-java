@@ -152,6 +152,26 @@ public class ExceptionTest {
   }
 
   @Test
+  public void NestedTypeMisMatchedArgumentsMultilevelExceptionTest() {
+    String schema1 = "schema { query: Query } type Query { a: A } type A {  bbc (arg1: [Arg1!]!, arg2: Arg2!): BB } type BB {cc: String} input Arg1 { pp: QQ } input Arg2 { pp: Arg2 } input QQ { mm: String }";
+    String schema2 = "schema { query: Query } type Query { a: A } type A {  bbc (arg1: [Arg1]!, arg2: Arg2!): BB } type BB {dd: String} input Arg1 { pp: QQ } input Arg2 { pp: Arg2 } input QQ { mn: String }";
+
+    XtextGraph xtextGraph1 = XtextGraphBuilder
+        .build(TestServiceProvider.newBuilder().namespace("SVC_A").serviceType(ServiceType.REST)
+            .sdlFiles(ImmutableMap.of("schema.graphqls", schema1)).build());
+
+    XtextGraph xtextGraph2 = XtextGraphBuilder
+        .build(TestServiceProvider.newBuilder().namespace("SVC_B").serviceType(ServiceType.REST)
+            .sdlFiles(ImmutableMap.of("schema.graphqls", schema2)).build());
+
+    List<ServiceProvider> providerList = Arrays
+        .asList(xtextGraph1.getServiceProvider(), xtextGraph2.getServiceProvider());
+    exceptionRule.expect(FieldMergeException.class);
+    exceptionRule.expectMessage(containsString("Nested fields (parentType:A, field:bbc) are not eligible to merge"));
+    XtextStitcher.newBuilder().build().stitch(providerList);
+  }
+
+  @Test
   public void NestedTypeUnEqualDirectivesExceptionTest() {
     String schema1 = "schema { query: Query } type Query { a: A } type A {  bbc : BB "
         + "@addExternalFields(source: \"profiles\") @excludeField(name: \"photo\") } type BB {cc: String} "
@@ -175,7 +195,7 @@ public class ExceptionTest {
         .asList(xtextGraph1.getServiceProvider(), xtextGraph2.getServiceProvider());
     exceptionRule.expect(FieldMergeException.class);
     exceptionRule.expectMessage(startsWith("Nested fields (parentType:A, field:bbc) are not eligible to merge"));
-    exceptionRule.expectMessage(containsString("Unequal directives: 1 is not same as 2"));
+    exceptionRule.expectMessage(containsString("Unequal directives"));
     XtextStitcher.newBuilder().build().stitch(providerList);
   }
 

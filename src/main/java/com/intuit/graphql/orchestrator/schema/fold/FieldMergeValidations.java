@@ -1,7 +1,10 @@
 package com.intuit.graphql.orchestrator.schema.fold;
 
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.isObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.isNonNull;
+import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
 import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapOne;
 
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.Directive;
@@ -12,6 +15,7 @@ import com.intuit.graphql.orchestrator.schema.transform.FieldMergeException;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import graphql.VisibleForTesting;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.common.util.EList;
@@ -52,12 +56,12 @@ public class FieldMergeValidations {
     int sizeLeft = argsize(argDefLeft);
     int sizeRight = argsize(argDefRight);
 
+    if (sizeLeft != sizeRight) {
+      throw new FieldMergeException(
+          String.format(UNEQUAL_ARGUMENTS, toDescriptiveString(argDefLeft), toDescriptiveString(argDefRight)));
+    }
+
     if (sizeLeft > 0 || sizeRight > 0) {
-
-      if (sizeLeft != sizeRight) {
-        throw new FieldMergeException(String.format(UNEQUAL_ARGUMENTS, sizeLeft, sizeRight));
-      }
-
       //compare names and types
       argDefLeft.getInputValueDefinition().forEach(leftArg -> {
 
@@ -68,7 +72,7 @@ public class FieldMergeValidations {
                 .format(MISSING_ARGUMENT, leftArg.getName(), XtextUtils.toDescriptiveString(leftArg.getNamedType()))));
 
         //compare types
-        if (!StringUtils.equals(typeName(leftArg.getNamedType()), typeName(rightArg.getNamedType()))) {
+        if (!compareTypes(leftArg.getNamedType(), rightArg.getNamedType())) {
           throw new FieldMergeException(
               String.format(UNEQUAL_ARGUMENTS, XtextUtils.toDescriptiveString(leftArg.getNamedType()),
                   XtextUtils.toDescriptiveString(rightArg.getNamedType())));
@@ -78,6 +82,28 @@ public class FieldMergeValidations {
         compareDirectives(leftArg.getDirectives(), rightArg.getDirectives());
       });
     }
+  }
+
+  private static boolean compareTypes(NamedType lType, NamedType rType) {
+    if (isNonNull(lType) != isNonNull(rType)) {
+      return false;
+    }
+    if (isWrapped(lType) && isWrapped(rType)) {
+      return compareTypes(unwrapOne(lType), unwrapOne(rType));
+    }
+    return StringUtils.equals(typeName(lType), typeName(rType));
+  }
+
+  private static String toDescriptiveString(ArgumentsDefinition argumentsDefinition) {
+    if (Objects.nonNull(argumentsDefinition)) {
+      StringBuilder result = new StringBuilder();
+      result.append("[");
+      result.append(argumentsDefinition.getInputValueDefinition().stream().map(Objects::toString)
+          .collect(Collectors.joining(",")));
+      result.append("]");
+      return result.toString();
+    }
+    return StringUtils.EMPTY;
   }
 
   private static int argsize(ArgumentsDefinition argumentsDefinition) {
@@ -105,7 +131,8 @@ public class FieldMergeValidations {
     int sizeRight = CollectionUtils.size(rightDirectives);
 
     if (sizeLeft != sizeRight) {
-      throw new FieldMergeException(String.format(UNEQUAL_DIRECTIVES, sizeLeft, sizeRight));
+      throw new FieldMergeException(
+          String.format(UNEQUAL_DIRECTIVES, toDescriptiveString(leftDirectives), toDescriptiveString(rightDirectives)));
     }
 
     if (sizeLeft > 0 || sizeRight > 0) {
@@ -127,7 +154,8 @@ public class FieldMergeValidations {
 
         if (llocSize != rlocSize) {
           throw new FieldMergeException(
-              String.format(UNEQUAL_DIRECTIVE_LOCATIONS, llocSize, rlocSize));
+              String.format(UNEQUAL_DIRECTIVE_LOCATIONS, leftDirective.getDefinition().getDirectiveLocations(),
+                  rightDirective.getDefinition().getDirectiveLocations()));
         }
 
         if (llocSize > 0 || rlocSize > 0) {
@@ -139,6 +167,19 @@ public class FieldMergeValidations {
         }
       });
     }
+  }
+
+
+  private static String toDescriptiveString(EList<Directive> directives) {
+    if (Objects.nonNull(directives)) {
+      StringBuilder result = new StringBuilder();
+      result.append("[");
+      result.append(
+          directives.stream().map(dir -> dir.getDefinition()).map(Objects::toString).collect(Collectors.joining(",")));
+      result.append("]");
+      return result.toString();
+    }
+    return StringUtils.EMPTY;
   }
 
   public static void checkMergeEligibility(String parentType, FieldDefinition current, FieldDefinition newcomer) {
