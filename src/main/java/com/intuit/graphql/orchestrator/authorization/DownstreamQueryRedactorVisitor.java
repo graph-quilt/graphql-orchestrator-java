@@ -39,6 +39,8 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   private final List<SelectionSetMetadata> processedSelectionSetMetadata = new ArrayList<>();
   private final List<GraphqlErrorException> declinedFieldsErrors = new ArrayList<>();
 
+  private boolean hasEmptySelectionSet;
+
   @NonNull private GraphQLFieldsContainer rootFieldParentType;
   @NonNull private FieldAuthorization fieldAuthorization;
   @NonNull private GraphQLContext graphQLContext;
@@ -84,7 +86,11 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   @SuppressWarnings("rawtypes") // Node defined raw in graphql.language.NodeVisitor
   private void decreaseParentSelectionSetCount(TraverserContext<Node> parentContext) {
     if (nonNull(parentContext) && nonNull(parentContext.getVar(SelectionSetMetadata.class))) {
-      parentContext.getVar(SelectionSetMetadata.class).decreaseRemainingSelection();
+      SelectionSetMetadata selectionSetMetadata = parentContext.getVar(SelectionSetMetadata.class);
+      selectionSetMetadata.decreaseRemainingSelection();
+      if (!hasEmptySelectionSet && selectionSetMetadata.getRemainingSelectionsCount() == 0) {
+        hasEmptySelectionSet = true;
+      }
     }
   }
 
@@ -143,6 +149,10 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
     return this.processedSelectionSetMetadata.stream()
         .filter(selectionSetMetadata -> selectionSetMetadata.getRemainingSelectionsCount() == 0)
         .collect(Collectors.toList());
+  }
+
+  public boolean redactedQueryHasEmptySelectionSet() {
+    return hasEmptySelectionSet;
   }
 
 }

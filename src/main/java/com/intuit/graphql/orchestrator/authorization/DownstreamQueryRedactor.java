@@ -26,11 +26,11 @@ public class DownstreamQueryRedactor {
   public DownstreamQueryRedactorResult redact() {
     DownstreamQueryRedactorVisitor downstreamQueryRedactorVisitor = createQueryRedactorVisitor();
     Node<?> transformedRoot = AST_TRANSFORMER.transform(root, downstreamQueryRedactorVisitor);
-    List<SelectionSetMetadata> emptySelectionSets = downstreamQueryRedactorVisitor.getEmptySelectionSets();
-    if (CollectionUtils.size(emptySelectionSets) > 0) {
+    if (downstreamQueryRedactorVisitor.redactedQueryHasEmptySelectionSet()) {
       throw DownstreamCreateQueryException.builder()
           .message("Downstream query result has empty selection set.")
-          .extension("emptySelectionSets", emptySelectionSets.stream()
+          .extension("emptySelectionSets", downstreamQueryRedactorVisitor.getEmptySelectionSets()
+              .stream()
               .map(SelectionSetMetadata::getSelectionSetPath)
               .collect(Collectors.toList())
           )
