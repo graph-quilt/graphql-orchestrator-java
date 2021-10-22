@@ -1,12 +1,17 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.intuit.graphql.graphQL.ArgumentsDefinition;
+import com.intuit.graphql.graphQL.Directive;
+import com.intuit.graphql.graphQL.DirectiveDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputValueDefinition;
 import com.intuit.graphql.graphQL.ListType;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
-import com.intuit.graphql.graphQL.impl.ListTypeImpl;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import org.junit.Test;
 
@@ -68,4 +73,47 @@ public class XtextTypeUtilsTest {
     assertThat(XtextTypeUtils.compareTypes(listType, listType2)).isTrue();
   }
 
+  @Test
+  public void generateArgumentsDefinitionStringTest() {
+
+    final ArgumentsDefinition argumentsDefinition = GraphQLFactoryDelegate.createArgumentsDefinition();
+    InputValueDefinition ivf = GraphQLFactoryDelegate.createInputValueDefinition();
+    ivf.setName("argument1");
+    ivf.setDesc("desc1");
+    argumentsDefinition.getInputValueDefinition().add(ivf);
+
+    InputValueDefinition ivf2 = GraphQLFactoryDelegate.createInputValueDefinition();
+    ivf2.setName("argument2");
+    ivf2.setDesc("desc2");
+    argumentsDefinition.getInputValueDefinition().add(ivf2);
+
+    assertThat(toDescriptiveString(argumentsDefinition)).contains("argument1").contains("desc1").contains("argument2")
+        .contains("desc2");
+  }
+
+  @Test
+  public void generateDirectivesStringTest() {
+
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+
+    final DirectiveDefinition directiveDefinition = GraphQLFactoryDelegate.createDirectiveDefinition();
+    directiveDefinition.setName("directive1");
+    directiveDefinition.setDesc("description1");
+
+    Directive directive = GraphQLFactoryDelegate.createDirective();
+    directive.setDefinition(directiveDefinition);
+
+    final DirectiveDefinition directiveDefinition2 = GraphQLFactoryDelegate.createDirectiveDefinition();
+    directiveDefinition2.setName("directive2");
+    directiveDefinition2.setDesc("description2");
+
+    Directive directive2 = GraphQLFactoryDelegate.createDirective();
+    directive2.setDefinition(directiveDefinition2);
+
+    fieldDefinition.getDirectives().add(directive);
+    fieldDefinition.getDirectives().add(directive2);
+
+    assertThat(toDescriptiveString(fieldDefinition.getDirectives())).contains("directive1").contains("description1")
+        .contains("directive2").contains("description2");
+  }
 }
