@@ -47,7 +47,7 @@ public class DownstreamQueryRedactor {
           .fieldAuthorization(fieldAuthorization)
           .authData(authData)
           .graphQLContext(dataFetchingEnvironment.getContext())
-          .variables(dataFetchingEnvironment.getVariables())
+          .queryVariables(dataFetchingEnvironment.getVariables())
           .graphQLSchema(dataFetchingEnvironment.getGraphQLSchema())
           .build();
     }

@@ -147,7 +147,7 @@ class DownstreamQueryRedactorVisitorSpec extends Specification {
                 .fieldAuthorization(mockFieldAuthorization)
                 .authData(TEST_AUTH_DATA)
                 .graphQLContext(mockGraphQLContext)
-                .variables(Collections.emptyMap())
+                .queryVariables(Collections.emptyMap())
                 .graphQLSchema(testGraphQLSchema)
                 .build()
 
@@ -185,7 +185,7 @@ class DownstreamQueryRedactorVisitorSpec extends Specification {
                 .fieldAuthorization(mockFieldAuthorization)
                 .authData(TEST_AUTH_DATA)
                 .graphQLContext(mockGraphQLContext)
-                .variables(Collections.emptyMap())
+                .queryVariables(Collections.emptyMap())
                 .graphQLSchema(testGraphQLSchema)
                 .build()
 

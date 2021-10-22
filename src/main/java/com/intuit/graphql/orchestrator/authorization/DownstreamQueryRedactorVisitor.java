@@ -42,7 +42,7 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   @NonNull private GraphQLFieldsContainer rootFieldParentType;
   @NonNull private FieldAuthorization fieldAuthorization;
   @NonNull private GraphQLContext graphQLContext;
-  @NonNull private Map<String, Object> variables;
+  @NonNull private Map<String, Object> queryVariables;
   @NonNull private GraphQLSchema graphQLSchema;
   private Object authData;
 
@@ -92,7 +92,8 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
       GraphQLFieldsContainer parentType, TraverserContext<Node> context) {
     String fieldName = node.getName();
     FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentType.getName(), fieldName);
-    Map<String, Object> argumentValues = ARGUMENT_VALUE_RESOLVER.resolve(graphQLSchema, fieldDefinition, node, variables);
+    Map<String, Object> argumentValues = ARGUMENT_VALUE_RESOLVER.resolve(graphQLSchema, fieldDefinition, node,
+        queryVariables);
     FieldAuthorizationEnvironment fieldAuthorizationEnvironment = FieldAuthorizationEnvironment
         .builder()
         .field(node)
