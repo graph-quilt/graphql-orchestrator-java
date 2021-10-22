@@ -17,7 +17,7 @@ public class QueryPathUtils {
 
   private QueryPathUtils(){}
 
-  public static List<Object> getParentNodesAsPathList(TraverserContext<Node> context) {
+  public static List<Object> getNodesAsPathList(TraverserContext<Node> context) {
     List<Node> nodes = new ArrayList<>(context.getParentNodes());
     Collections.reverse(nodes);
     nodes.add(context.thisNode());

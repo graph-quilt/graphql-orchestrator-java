@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator.authorization;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.getFieldDefinition;
-import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getParentNodesAsPathList;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getNodesAsPathList;
 import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
 import static graphql.util.TreeTransformerUtil.deleteNode;
 import static java.util.Objects.nonNull;
@@ -100,7 +100,7 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
         .fieldCoordinates(fieldCoordinates)
         .authData(authData)
         .argumentValues(argumentValues)
-        .path(getParentNodesAsPathList(context))
+        .path(getNodesAsPathList(context))
         .build();
     return fieldAuthorization.authorize(fieldAuthorizationEnvironment);
   }
@@ -123,7 +123,7 @@ public class DownstreamQueryRedactorVisitor extends NodeVisitorStub {
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     if (!context.isVisited()) {
       int selectionCount = node.getSelections().size();
-      List<Object> pathList = getParentNodesAsPathList(context);
+      List<Object> pathList = getNodesAsPathList(context);
       String selectionSetPath = pathListToFQN(pathList);
       SelectionSetMetadata selectionSetMetadata = new SelectionSetMetadata(selectionCount, selectionSetPath);
       context.setVar(SelectionSetMetadata.class, selectionSetMetadata);
