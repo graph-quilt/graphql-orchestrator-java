@@ -20,7 +20,6 @@ import graphql.VisibleForTesting;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
-import graphql.language.AstTransformer;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
@@ -64,8 +63,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private final QueryOperationModifier queryOperationModifier;
   private final ServiceMetadata serviceMetadata;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> hooks;
-
-  private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
   @VisibleForTesting
   VariableDefinitionFilter variableDefinitionFilter = new VariableDefinitionFilter();
@@ -114,7 +111,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
     Map<String, FragmentDefinition> mergedFragmentDefinitions = new HashMap<>();
 
-    MultiValuedMap<String, GraphqlErrorException> errorsByKey = new ArrayListValuedHashMap<>();
+    MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey = new ArrayListValuedHashMap<>();
 
     for (final DataFetchingEnvironment key : keys) {
       MergedFieldModifierResult result = new MergedFieldModifier(key).getFilteredRootField();
@@ -134,7 +131,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
                     .build();
                 DownstreamQueryRedactorResult redactResult = downstreamQueryRedactor.redact();
                 if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
-                  errorsByKey.putAll(keyPath, redactResult.getErrors());
+                  queryRedactErrorsByKey.putAll(keyPath, redactResult.getErrors());
                 }
                 return (Field) redactResult.getNode();
               } else {
@@ -170,7 +167,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
           FragmentDefinition transformedFragment = redactFragmentDefinition(fragmentDefinition, parentType,
-              authData, fieldAuthorization, key, errorsByKey, operationObjectType);
+              authData, fieldAuthorization, key, queryRedactErrorsByKey, operationObjectType);
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
         mergedFragmentDefinitions.putAll(finalServiceFragmentDefinitions);
@@ -228,32 +225,33 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     return execute(context, query, mergedVariables, fragmentsAsDefinitions)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, keys))
-        .thenApply(dataFetcherResults -> addErrorsByKey(dataFetcherResults, errorsByKey, keys))
+        .thenApply(batchResult -> addQueryRedactErrors(batchResult, queryRedactErrorsByKey, keys))
         .thenApply(batchResult -> {
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
   }
 
-  private List<DataFetcherResult<Object>> addErrorsByKey(List<DataFetcherResult<Object>> dataFetcherResults,
-      MultiValuedMap<String, GraphqlErrorException> errorsByKey,
+  private List<DataFetcherResult<Object>> addQueryRedactErrors(
+      List<DataFetcherResult<Object>> batchResult,
+      MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey,
       List<DataFetchingEnvironment> keys) {
-    if (!errorsByKey.isEmpty()) {
+    if (!queryRedactErrorsByKey.isEmpty()) {
       for (int i = 0; i < keys.size(); i++) {
         final DataFetchingEnvironment key = keys.get(i);
         String keyPath = key.getExecutionStepInfo().getPath().toString();
-        DataFetcherResult<Object> newDataFetcherResult = dataFetcherResults.get(i).transform(objectBuilder ->
-            objectBuilder.errors(new ArrayList<>(errorsByKey.get(keyPath)))
+        DataFetcherResult<Object> newDataFetcherResult = batchResult.get(i).transform(builder ->
+            builder.errors(new ArrayList<>(queryRedactErrorsByKey.get(keyPath)))
         );
-        dataFetcherResults.set(i, newDataFetcherResult);
+        batchResult.set(i, newDataFetcherResult);
       }
     }
-    return dataFetcherResults;
+    return batchResult;
   }
 
   private boolean shouldRedactQuery(FieldAuthorization fieldAuthorization) {
     return serviceMetadata.hasFieldResolverDirective() ||
-        !DefaultFieldAuthorization.class.isInstance(fieldAuthorization);
+        !(fieldAuthorization instanceof DefaultFieldAuthorization);
   }
 
   private GraphQLFieldDefinition getRootFieldDefinition(ExecutionStepInfo executionStepInfo) {
@@ -308,7 +306,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
   private FragmentDefinition redactFragmentDefinition(final FragmentDefinition origFragmentDefinition,
       GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
-      DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap errorsByKey, GraphQLObjectType operationType) {
+      DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey,
+      GraphQLObjectType operationType) {
 
     DownstreamQueryRedactor fragmentDefinitionRedactor = DownstreamQueryRedactor.builder()
         .root(origFragmentDefinition)
@@ -322,7 +321,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     DownstreamQueryRedactorResult redactResult = fragmentDefinitionRedactor.redact();
     if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
       String keyPath = dataFetchingEnvironment.getExecutionStepInfo().getPath().toString();
-      errorsByKey.putAll(keyPath, redactResult.getErrors());
+      queryRedactErrorsByKey.putAll(keyPath, redactResult.getErrors());
     }
     return (FragmentDefinition) redactResult.getNode();
   }
