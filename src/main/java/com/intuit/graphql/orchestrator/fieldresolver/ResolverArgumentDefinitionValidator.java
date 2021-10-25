@@ -7,9 +7,12 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinit
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
+import graphql.language.AstValueHelper;
+import graphql.parser.InvalidSyntaxException;
 import lombok.AllArgsConstructor;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
+import static com.intuit.graphql.orchestrator.utils.AstValueValidator.validateAstValue;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
@@ -24,15 +27,19 @@ public class ResolverArgumentDefinitionValidator {
   public void validate() {
     NamedType resolverArgumentType = unwrapAll(inputValueDefinition.getNamedType());
     String resolverArgumentValue = resolverArgumentDefinition.getValue();
-    if (isPrimitiveType(resolverArgumentType)) {
-      if (isLiteralAVariableReference(resolverArgumentValue)) {
+    if (isPrimitiveType(resolverArgumentType) || isObjectType(resolverArgumentType)) {
+      if (isVariableReference(resolverArgumentValue)) {
         validateResolverArgumentsAreFieldsOfParent();
+      } else {
+        try {
+          validateAstValue(resolverArgumentValue);
+        } catch(InvalidSyntaxException e) {
+          String errorMessage = String.format("Failed to validate resolver argument value: %s",
+              resolverArgumentDefinition.toString());
+          throw new StitchingException(errorMessage, e);
+        }
       }
-      // else could be int, boolean string literal which is fine
-    } else if (isObjectType(resolverArgumentType)) {
-      if (isLiteralAVariableReference(resolverArgumentValue)) {
-        validateResolverArgumentsAreFieldsOfParent();
-      }
+
     } else {
       // this will only happen if graphql spec has been updated and using old graphql implementation
       String errorMessage = "Unsupported NamedType. " + resolverArgumentType.getClass().getName();
@@ -40,7 +47,7 @@ public class ResolverArgumentDefinitionValidator {
     }
   }
 
-  private boolean isLiteralAVariableReference(String resolverArgumentValue) {
+  private boolean isVariableReference(String resolverArgumentValue) {
     return resolverArgumentValue.startsWith("$");
   }
 
