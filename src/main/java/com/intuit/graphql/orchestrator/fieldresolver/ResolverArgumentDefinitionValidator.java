@@ -12,7 +12,6 @@ import graphql.parser.InvalidSyntaxException;
 import lombok.AllArgsConstructor;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
-import static com.intuit.graphql.orchestrator.utils.AstValueValidator.validateAstValue;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
@@ -32,8 +31,8 @@ public class ResolverArgumentDefinitionValidator {
         validateResolverArgumentsAreFieldsOfParent();
       } else {
         try {
-          validateAstValue(resolverArgumentValue);
-        } catch(InvalidSyntaxException e) {
+          AstValueHelper.valueFromAst(resolverArgumentValue);
+        } catch(graphql.AssertException e) {
           String errorMessage = String.format("Failed to validate resolver argument value: %s",
               resolverArgumentDefinition.toString());
           throw new StitchingException(errorMessage, e);
