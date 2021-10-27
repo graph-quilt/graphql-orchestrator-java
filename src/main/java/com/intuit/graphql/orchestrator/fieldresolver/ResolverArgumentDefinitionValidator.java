@@ -19,6 +19,7 @@ import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 public class ResolverArgumentDefinitionValidator {
 
   private static final String INVALID_RESOLVER_ARGUMENT_VALUE = "Invalid resolver argument value: %s";
+  private static final String UNSUPPORTED_NAMEDTYPE = "Unsupported NamedType: %s";
 
   private final ResolverArgumentDefinition resolverArgumentDefinition;
   private final InputValueDefinition inputValueDefinition;
@@ -39,9 +40,8 @@ public class ResolverArgumentDefinitionValidator {
       }
 
     } else {
-      // this will only happen if graphql spec has been updated and using old graphql implementation
-      String errorMessage = "Unsupported NamedType. " + resolverArgumentType.getClass().getName();
-      throw new StitchingException(errorMessage);
+      // this will only happen if spec for NamedType has been updated
+      throw new StitchingException(String.format(UNSUPPORTED_NAMEDTYPE, resolverArgumentType.getClass().getName()));
     }
   }
 
