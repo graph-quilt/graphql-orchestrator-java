@@ -8,7 +8,6 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFie
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import graphql.language.AstValueHelper;
-import graphql.parser.InvalidSyntaxException;
 import lombok.AllArgsConstructor;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
@@ -18,6 +17,8 @@ import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 
 @AllArgsConstructor
 public class ResolverArgumentDefinitionValidator {
+
+  private static final String INVALID_RESOLVER_ARGUMENT_VALUE = "Invalid resolver argument value: %s";
 
   private final ResolverArgumentDefinition resolverArgumentDefinition;
   private final InputValueDefinition inputValueDefinition;
@@ -33,9 +34,7 @@ public class ResolverArgumentDefinitionValidator {
         try {
           AstValueHelper.valueFromAst(resolverArgumentValue);
         } catch(graphql.AssertException e) {
-          String errorMessage = String.format("Failed to validate resolver argument value: %s",
-              resolverArgumentDefinition.toString());
-          throw new StitchingException(errorMessage, e);
+          throw new StitchingException(String.format(INVALID_RESOLVER_ARGUMENT_VALUE, resolverArgumentDefinition), e);
         }
       }
 

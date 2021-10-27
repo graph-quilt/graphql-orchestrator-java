@@ -527,7 +527,7 @@ public class FieldResolverTransformerPostMergeTest {
         + RESOLVER_DIRECTIVE_DEFINITION;
 
     exceptionRule.expect(StitchingException.class);
-    String expectedMessage = "Failed to validate resolver argument value: ResolverArgumentDefinition(name=id, value={invalid object})";
+    String expectedMessage = "Invalid resolver argument value: ResolverArgumentDefinition(name=id, value={invalid object})";
     exceptionRule.expectMessage(expectedMessage);
 
     XtextGraph xtextGraph = createTestXtextGraph(schema);
