@@ -38,46 +38,6 @@ public class XtextGraphFolderTest {
         .isEqualTo("Date");
   }
 
-  @Test
-  public void testOjectTypeConflictsGettingIgnoredForGoldenTypesXtextStrategy() {
-    ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
-        "schema { query: Query } type Query { a: PageInfo } type PageInfo { id: String }");
-
-    ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
-        "schema { query: Query } type Query { b: PageInfo } type PageInfo { id: String }");
-
-    RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
-        .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build().stitchGraph();
-
-    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
-    Assertions.assertThat(query).isNotNull();
-
-    Assertions.assertThat(query.getFieldDefinition("b")).isNotNull();
-
-    Assertions.assertThat(((GraphQLNamedType) query.getFieldDefinition("b").getType()).getName())
-        .isEqualTo("PageInfo");
-  }
-
-  @Test
-  public void testInterfaceTypeConflictsGettingIgnoredForGoldenTypesXtextStrategy() {
-    ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
-        "schema { query: Query } type Query { a: Node } interface Node { id: String }");
-
-    ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
-        "schema { query: Query } type Query { b: Node } interface Node { id: String }");
-
-    RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
-        .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build().stitchGraph();
-
-    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
-    Assertions.assertThat(query).isNotNull();
-
-    Assertions.assertThat(query.getFieldDefinition("b")).isNotNull();
-
-    Assertions.assertThat(((GraphQLNamedType) query.getFieldDefinition("b").getType()).getName())
-        .isEqualTo("Node");
-  }
-
   static class GenericTestService implements ServiceProvider {
 
     private final String schema;
