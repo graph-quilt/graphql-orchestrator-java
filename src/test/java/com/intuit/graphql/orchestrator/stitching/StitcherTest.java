@@ -195,6 +195,33 @@ public class StitcherTest {
   }
 
   @Test
+  public void throwsExceptionOnGoldenTypeConflict() {
+    String schema1 = "type Query { foo: PageInfo } type PageInfo { id: String }";
+    String schema2 = "type Query { bar: PageInfo } type PageInfo { id: String }";
+
+    List<ServiceProvider> services = Arrays.asList(
+            TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
+            TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
+    );
+
+    assertThatThrownBy(() -> stitcher.stitch(services)).isInstanceOf(TypeConflictException.class);
+
+  }
+
+  @Test
+  public void throwsExceptionOnGoldenInterfaceConflict() {
+    String schema1 = "type Query { foo: Nod } interface Nod { id: String } type foo implements Nod {id: String}";
+    String schema2 = "type Query { bar: Nod } interface Nod { id: String } type bar implements Nod {id: String}";
+
+    List<ServiceProvider> services = Arrays.asList(
+            TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
+            TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
+    );
+
+    assertThatThrownBy(() -> stitcher.stitch(services)).isInstanceOf(TypeConflictException.class);
+  }
+
+  @Test
   public void NestedTypeDescriptionWithNamespaceAndEmptyDescription_TwoSchemaMergeTest() {
     ServiceProvider provider1 = serviceProvider("http://localhost", "V4O", TestHelper.getFileMapFromList(
         "nested/v4os/schema.graphqls"));

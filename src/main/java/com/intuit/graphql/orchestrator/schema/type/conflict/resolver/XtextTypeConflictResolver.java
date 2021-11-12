@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.schema.type.conflict.resolver;
 
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isScalarType;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.toDescriptiveString;
 
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -19,7 +20,7 @@ public class XtextTypeConflictResolver {
   }
 
   private void checkSameType(final TypeDefinition conflictingType, final TypeDefinition existingType) {
-    if (!isSameType(conflictingType, existingType)) {
+    if (!(isSameType(conflictingType, existingType) && isScalarType(conflictingType))) {
       throw new TypeConflictException(
           String.format("Type %s is conflicting with existing type %s", toDescriptiveString(conflictingType),
               toDescriptiveString(existingType)));
