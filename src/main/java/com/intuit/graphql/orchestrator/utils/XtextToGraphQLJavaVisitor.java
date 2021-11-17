@@ -204,6 +204,14 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   @Override
   public GraphQLSchemaElement caseScalarTypeDefinition(final ScalarTypeDefinition object) {
     final String me = object.getName();
+    // Newer versions of graphql-java have removed inbuilt scalar support, so providers
+    // will need to define scalar in the sdl file. Since we are on old graphql-java,
+    // we need to handle the conflict of scalars defined in sdl with the ones defined
+    // in older graphql-java.
+    GraphQLScalarType inBuiltScalar = STANDARD_SCALAR_TYPES.get(me);
+    if(inBuiltScalar != null){
+      return inBuiltScalar;
+    }
 
     GraphQLType graphQLType = graphQLObjectTypes.get(me);
     if (Objects.nonNull(graphQLType)) {
