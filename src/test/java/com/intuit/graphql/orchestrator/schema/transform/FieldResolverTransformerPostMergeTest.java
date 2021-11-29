@@ -16,6 +16,7 @@ import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
+import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
@@ -492,6 +493,41 @@ public class FieldResolverTransformerPostMergeTest {
     exceptionRule.expect(ResolverArgumentNotAFieldOfParentException.class);
     String expectedMessage = "Resolver argument value $af1 should be a reference to a field in "
         + "Parent Type AObjectType";
+    exceptionRule.expectMessage(expectedMessage);
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
+    xtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
+
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+        EXTENDED_OBJECT_TYPENAME);
+
+    TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(
+        EXTERNAL_ENUM_TYPENAME, extendedType);
+
+    assertThat(placeHolderTypeDefinition).isNotSameAs(externalEnumTypeDefinition);
+
+    // WHEN
+    transformer.transform(xtextGraph);
+  }
+
+  @Test
+  public void transformResolverArgumentHasInvalidArgumentValueThrowsException() {
+    // GIVEN
+
+    String schema =  ""
+        + "type Query { "
+        + "  a : AObjectType "
+        + "  b1(id: String): BEnumType "
+        + "} \n"
+        + "type AObjectType { } \n"
+        + "extend type AObjectType { "
+        + "  a : BEnumType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"{invalid object}\"}]) "
+        + "} "
+        + "enum BEnumType { } \n"
+        + RESOLVER_DIRECTIVE_DEFINITION;
+
+    exceptionRule.expect(StitchingException.class);
+    String expectedMessage = "Invalid resolver argument value: ResolverArgumentDefinition(name=id, value={invalid object})";
     exceptionRule.expectMessage(expectedMessage);
 
     XtextGraph xtextGraph = createTestXtextGraph(schema);
