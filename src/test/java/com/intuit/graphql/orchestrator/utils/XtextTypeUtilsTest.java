@@ -7,12 +7,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
+import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
 import com.intuit.graphql.graphQL.InputValueDefinition;
 import com.intuit.graphql.graphQL.ListType;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.PrimitiveType;
+import com.intuit.graphql.graphQL.ScalarTypeDefinition;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
+import com.intuit.graphql.orchestrator.xtext.XtextScalars;
 import org.junit.Test;
 
 public class XtextTypeUtilsTest {
@@ -115,5 +120,43 @@ public class XtextTypeUtilsTest {
 
     assertThat(toDescriptiveString(fieldDefinition.getDirectives())).contains("directive1").contains("description1")
         .contains("directive2").contains("description2");
+  }
+
+  @Test
+  public void throwsExceptionForObjectTypeNotValidAsInput() {
+    ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(objectTypeDefinition);
+
+    ListType listType = GraphQLFactoryDelegate.createListType();
+    listType.setType(namedType);
+
+    assertThat(XtextTypeUtils.isValidInputType(listType)).isFalse();
+  }
+
+  @Test
+  public void InputObjectTypeIsValidAsInput() {
+    InputObjectTypeDefinition inputObjectTypeDefinition = GraphQLFactoryDelegate.createInputObjectTypeDefinition();
+    inputObjectTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(inputObjectTypeDefinition);
+
+    ListType listType = GraphQLFactoryDelegate.createListType();
+    listType.setType(namedType);
+    assertThat(XtextTypeUtils.isValidInputType(listType)).isTrue();
+  }
+
+  @Test
+  public void EnumTypeIsValidAsInput() {
+    EnumTypeDefinition enumTypeDefinition = GraphQLFactoryDelegate.createEnumTypeDefinition();
+    enumTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(enumTypeDefinition);
+    assertThat(XtextTypeUtils.isValidInputType(namedType)).isTrue();
+  }
+
+  @Test
+  public void ScalarTypeIsValidAsInput() {
+    PrimitiveType primitiveType = GraphQLFactoryDelegate.createPrimitiveType();
+    primitiveType.setType("String");
+    assertThat(XtextTypeUtils.isValidInputType(primitiveType)).isTrue();
   }
 }

@@ -126,4 +126,15 @@ public class XtextTypeUtils {
     }
     return StringUtils.EMPTY;
   }
+
+  public static boolean isValidInputType(NamedType namedType) {
+    //input fields are either scalars, enums, or other input objects
+    NamedType unwrappedNamedType = unwrapAll(namedType);
+    if (isObjectType(unwrappedNamedType)) {
+      TypeDefinition objectType = com.intuit.graphql.utils.XtextTypeUtils.getObjectType(unwrappedNamedType);
+      return (objectType instanceof InputObjectTypeDefinition) ||
+          (objectType instanceof EnumTypeDefinition);
+    }
+    return true;
+  }
 }

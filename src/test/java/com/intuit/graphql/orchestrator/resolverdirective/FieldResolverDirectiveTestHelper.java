@@ -41,7 +41,7 @@ public class FieldResolverDirectiveTestHelper {
       + "union BUnionType "
       + "enum BEnumType "
       + "directive @resolver(field: String, arguments: [ResolverArgument!]) on FIELD_DEFINITION "
-      + "type ResolverArgument { name : String! value : String! }\n";
+      + "input ResolverArgument { name : String! value : String! }\n";
 
   public static final String bSchema = "type Query { "
       + "    b1 (id : String) : BObjectType "
