@@ -10,7 +10,7 @@ type Pet {}
 directive @resolver(field: String!, arguments: [ResolverArgument!]) on FIELD_DEFINITION
 
 # define this as built-in type
-type ResolverArgument {
+input ResolverArgument {
     name : String!
     value : String!
 }
