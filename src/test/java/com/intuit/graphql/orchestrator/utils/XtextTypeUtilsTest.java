@@ -159,4 +159,12 @@ public class XtextTypeUtilsTest {
     primitiveType.setType("String");
     assertThat(XtextTypeUtils.isValidInputType(primitiveType)).isTrue();
   }
+
+  @Test
+  public void ScalarTypeDefinitionIsValidAsInput() {
+    ScalarTypeDefinition scalarTypeDefinition = GraphQLFactoryDelegate.createScalarTypeDefinition();
+    scalarTypeDefinition.setName("TestScalar");
+    NamedType namedType = createNamedType(scalarTypeDefinition);
+    assertThat(XtextTypeUtils.isValidInputType(namedType)).isTrue();
+  }
 }
