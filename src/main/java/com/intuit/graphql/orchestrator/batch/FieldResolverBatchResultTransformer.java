@@ -71,7 +71,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
 
     Map<String, Object> tempMap = batchData;
     for (int i = 0; i < lastIndex; i++) {
-      tempMap = (Map<String, Object>) batchData.get(resolverSelectedFields[i]);
+      tempMap = (Map<String, Object>) tempMap.get(resolverSelectedFields[i]);
     }
     String alias = createAlias(resolverSelectedFields[lastIndex], aliasCounter);
     return tempMap.get(alias);
