@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.intuit.graphql</groupId>
   <artifactId>graphql-orchestrator-java</artifactId>
-  <version>4.0.8-SNAPSHOT</version>
+  <version>4.0.8</version>
   <packaging>jar</packaging>
   <name>graphql-orchestrator-java</name>
   <description>GraphQL Orchestrator combines multiple graphql services into a single unified schema</description>
@@ -322,7 +322,7 @@
     <connection>scm:git:https://github.com/intuit/graphql-orchestrator-java
     </connection>
     <url>https://github.com/intuit/graphql-orchestrator-java</url>
-    <tag>HEAD</tag>
+    <tag>graphql-orchestrator-java-4.0.8</tag>
   </scm>
 
   <distributionManagement>
