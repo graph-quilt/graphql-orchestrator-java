@@ -133,6 +133,7 @@ public class XtextTypeUtils {
     if (isObjectType(unwrappedNamedType)) {
       TypeDefinition objectType = com.intuit.graphql.utils.XtextTypeUtils.getObjectType(unwrappedNamedType);
       return (objectType instanceof InputObjectTypeDefinition) ||
+          (objectType instanceof ScalarTypeDefinition) ||
           (objectType instanceof EnumTypeDefinition);
     }
     return true;
