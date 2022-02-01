@@ -13,6 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.intuit.graphql.graphQL.*;
+import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverException;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
@@ -40,7 +41,7 @@ public class FieldResolverTransformerPostMergeTest {
   private static UnionTypeDefinition externalUnionTypeDefinition;
   private static EnumTypeDefinition externalEnumTypeDefinition;
 
-  private Transformer<XtextGraph, XtextGraph> transformer = new FieldResolverTransformerPostMerge();
+  private final Transformer<XtextGraph, XtextGraph> transformer = new FieldResolverTransformerPostMerge();
 
   @Rule
   public ExpectedException exceptionRule = ExpectedException.none();
@@ -545,4 +546,91 @@ public class FieldResolverTransformerPostMergeTest {
     transformer.transform(xtextGraph);
   }
 
+  @Test
+  public void transformFieldResolverHasDifferentTypeThanTargetThrowsException() {
+    // GIVEN
+    String schema =
+        ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): [BObjectType] "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : BObjectType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
+    xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
+
+    ObjectTypeDefinition extendedType =
+        (ObjectTypeDefinition) xtextGraph.getType(EXTENDED_OBJECT_TYPENAME);
+
+    TypeDefinition placeHolderTypeDefinition =
+        getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
+
+    assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
+
+    String expectedMessage = "Field resolver type does not match the type of target field.  "
+        + "fieldName=a,  parentTypeName=AObjectType,  "
+        + "resolverDirectiveDefinition=ResolverDirectiveDefinition(field=b1, arguments=[ResolverArgumentDefinition(name=id, value=$af1)])";
+    exceptionRule.expect(FieldResolverException.class);
+    exceptionRule.expectMessage(expectedMessage);
+
+    // WHEN..THEN throws error
+    transformer.transform(xtextGraph);
+  }
+
+  @Test
+  public void transformFieldResolverAndTargetFieldHasSameArrayTypeProcessingSucceeds() {
+    // GIVEN
+    String schema =
+        ""
+            + "type Query { "
+            + "  a : AObjectType "
+            + "  b1(id: String): [BObjectType] "
+            + "} \n"
+            + "type AObjectType { "
+            + "  af1 : String "
+            + "} \n"
+            + "extend type AObjectType { "
+            + "  a : [BObjectType] @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+            + "} "
+            + "type BObjectType \n"
+            + RESOLVER_DIRECTIVE_DEFINITION;
+
+    XtextGraph xtextGraph = createTestXtextGraph(schema);
+    xtextGraph.getTypes().put("BObjectType", externalObjectTypeDefinition);
+
+    ObjectTypeDefinition extendedType =
+        (ObjectTypeDefinition) xtextGraph.getType("AObjectType");
+
+    TypeDefinition placeHolderTypeDefinition =
+        getTypeFromFieldDefinitions("BObjectType", extendedType);
+
+    assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
+
+    // WHEN
+    XtextGraph transformedSource = transformer.transform(xtextGraph);
+
+    // THEN
+    TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
+        EXTERNAL_OBJECT_TYPENAME, extendedType);
+    assertThat(replacementTypeDefinition).isSameAs(externalObjectTypeDefinition);
+
+    FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
+    assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
+    assertThat(fieldResolverContext.getTargetFieldContext().getParentType()).isEqualTo("Query");
+
+    ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
+    assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
+
+    FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
+    assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+  }
 }
