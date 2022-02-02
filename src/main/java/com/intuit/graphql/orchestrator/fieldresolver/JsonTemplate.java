@@ -4,22 +4,24 @@ import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.StringResourceLoader;
 import org.apache.velocity.runtime.resource.util.StringResourceRepository;
 
 import java.io.StringWriter;
 import java.util.Map;
 
+/**
+ * This uses org.apache.velocity.app.VelocityEngine in a separate instance mode.  Meaning this class should be instantiated
+ * for every use.
+ */
 public class JsonTemplate {
 
     VelocityEngine engine = new VelocityEngine();
 
     public JsonTemplate(String stringTemplate) {
-        engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.NullLogChute");
-        engine.setProperty(Velocity.RESOURCE_LOADER, "string");
-        engine.addProperty("string.resource.loader.class", StringResourceLoader.class.getName());
-        engine.addProperty("string.resource.loader.repository.static", "false");
+        engine.setProperty(Velocity.RESOURCE_LOADERS, "string");
+        engine.addProperty("resource.loader.string.class", StringResourceLoader.class.getName());
+        engine.addProperty("resource.loader.string.repository.static", "false");
         engine.init();
 
         StringResourceRepository repo = (StringResourceRepository) engine.getApplicationAttribute(StringResourceLoader.REPOSITORY_NAME_DEFAULT);
