@@ -103,6 +103,21 @@ public class XtextTypeUtils {
     return StringUtils.equals(typeName(lType), typeName(rType));
   }
 
+  public static boolean isCompatible(NamedType stubType, NamedType targetType) {
+    if (isWrapped(stubType) != isWrapped(targetType)) {
+      return false;
+    }
+    if (isWrapped(stubType) && isWrapped(targetType)) {
+      return isCompatible(unwrapOne(stubType), unwrapOne(targetType));
+    }
+    if (isNonNull(stubType) && !isNonNull(targetType)) {
+      // e.g. stubType=A! targetType=A
+      // subtype should be less restrictive
+      return false;
+    }
+    return StringUtils.equals(typeName(stubType), typeName(targetType));
+  }
+
   public static String toDescriptiveString(ArgumentsDefinition argumentsDefinition) {
     if (Objects.nonNull(argumentsDefinition)) {
       StringBuilder result = new StringBuilder();

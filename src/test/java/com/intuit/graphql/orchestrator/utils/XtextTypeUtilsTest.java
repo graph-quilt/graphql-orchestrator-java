@@ -167,4 +167,111 @@ public class XtextTypeUtilsTest {
     NamedType namedType = createNamedType(scalarTypeDefinition);
     assertThat(XtextTypeUtils.isValidInputType(namedType)).isTrue();
   }
+
+  @Test
+  public void isCompatibleScalarsTest() {
+
+    PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType();
+    primitiveTypeStub.setType("String");
+
+    PrimitiveType primitiveTypeTarget = GraphQLFactoryDelegate.createPrimitiveType();
+    primitiveTypeTarget.setType("String");
+
+    // both nullable
+    assertThat(XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)).isTrue();
+
+    primitiveTypeStub.setNonNull(false);
+    primitiveTypeTarget.setNonNull(true);
+    assertThat(XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)).isTrue();
+
+    // stud type should be less restrictive
+    primitiveTypeStub.setNonNull(true);
+    primitiveTypeTarget.setNonNull(false);
+    assertThat(XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)).isFalse();
+
+    primitiveTypeStub.setNonNull(true);
+    primitiveTypeTarget.setNonNull(true);
+    assertThat(XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)).isTrue();
+  }
+
+  @Test
+  public void isCompatibleWrappedTypesTest() {
+
+    ListType listType = GraphQLFactoryDelegate.createListType();
+    ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(objectTypeDefinition);
+    listType.setType(namedType); //[Arg]
+
+    ListType outerlistType = GraphQLFactoryDelegate.createListType();
+    outerlistType.setType(listType); //[[Arg]]
+
+    assertThat(XtextTypeUtils.isCompatible(listType, outerlistType)).isFalse();
+    assertThat(XtextTypeUtils.isCompatible(outerlistType, listType)).isFalse();
+  }
+
+  @Test
+  public void isCompatibleWrappedNonNullTypesTest() {
+
+    ListType listType = GraphQLFactoryDelegate.createListType();
+    ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(objectTypeDefinition);
+    namedType.setNonNull(true);
+    listType.setType(namedType); //[Arg!]
+
+    ListType listType2 = GraphQLFactoryDelegate.createListType();
+    ObjectTypeDefinition objectTypeDefinition2 = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition2.setName("Arg1");
+    NamedType namedType2 = createNamedType(objectTypeDefinition2);
+    listType2.setType(namedType2); //[Arg]
+
+    assertThat(XtextTypeUtils.isCompatible(listType, listType2)).isFalse();
+    assertThat(XtextTypeUtils.isCompatible(listType2, listType)).isTrue(); // OK, less permissive
+
+  }
+
+  @Test
+  public void isCompatibleSameTypeWrappingNonNullTypesTest() {
+
+    ListType listType = GraphQLFactoryDelegate.createListType();
+    ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(objectTypeDefinition);
+    namedType.setNonNull(true);
+    listType.setType(namedType);
+    listType.setNonNull(true);//[Arg!]!
+
+    ListType listType2 = GraphQLFactoryDelegate.createListType();
+    ObjectTypeDefinition objectTypeDefinition2 = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition2.setName("Arg1");
+    NamedType namedType2 = createNamedType(objectTypeDefinition2);
+    namedType2.setNonNull(true);
+    listType2.setType(namedType2);
+    listType2.setNonNull(true); //[Arg!]!
+
+    assertThat(XtextTypeUtils.isCompatible(listType, listType2)).isTrue();
+    assertThat(XtextTypeUtils.isCompatible(listType2, listType)).isTrue();
+  }
+
+  @Test
+  public void isCompatibleWrappedAndNonWrappedTypeTest() {
+
+    ListType listType = GraphQLFactoryDelegate.createListType();
+    ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition.setName("Arg1");
+    NamedType namedType = createNamedType(objectTypeDefinition);
+    namedType.setNonNull(true);
+    listType.setType(namedType);//[Arg1]
+
+    ObjectTypeDefinition objectTypeDefinition2 = GraphQLFactoryDelegate.createObjectTypeDefinition();
+    objectTypeDefinition2.setName("Arg1");
+    NamedType namedType2 = createNamedType(objectTypeDefinition2);
+    namedType2.setNonNull(true); // Arg1
+
+    assertThat(XtextTypeUtils.isCompatible(listType, namedType2)).isFalse();
+    assertThat(XtextTypeUtils.isCompatible(namedType2, listType)).isFalse();
+  }
+
+
 }
