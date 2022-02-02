@@ -575,7 +575,7 @@ public class FieldResolverTransformerPostMergeTest {
 
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
 
-    String expectedMessage = "Field resolver type does not match the type of target field.  "
+    String expectedMessage = "The type of field with @resolver is not compatible with target field type.  "
         + "fieldName=a,  parentTypeName=AObjectType,  "
         + "resolverDirectiveDefinition=ResolverDirectiveDefinition(field=b1, arguments=[ResolverArgumentDefinition(name=id, value=$af1)])";
     exceptionRule.expect(FieldResolverException.class);
