@@ -75,7 +75,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     NamedType fieldResolverType = fieldResolverContext.getFieldDefinition().getNamedType();
     NamedType targetFieldType = targetFieldDefinition.getNamedType();
 
-    if (!XtextTypeUtils.compareTypes(fieldResolverType, targetFieldType)) {
+    if (!XtextTypeUtils.isCompatible(fieldResolverType, targetFieldType)) {
       String errorMessage = "Field resolver type does not match the type of target field.";
       throw new FieldResolverException(errorMessage, fieldResolverContext);
     }
