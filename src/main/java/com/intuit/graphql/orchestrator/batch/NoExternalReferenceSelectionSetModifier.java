@@ -75,10 +75,9 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
     return TraversalControl.CONTINUE;
   }
 
-  // Tests needed
+  // Tests needed for fieldReference not selected in Parent Selection
   // Queries that has field with resolver selected in a Selection as (Field),
   // in FragmentSpread and Inline Fragment
-  //
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     GraphQLType parentType = getParentType(context);
