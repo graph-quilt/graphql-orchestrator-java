@@ -14,11 +14,11 @@ import java.util.Map;
  * This uses org.apache.velocity.app.VelocityEngine in a separate instance mode.  Meaning this class should be instantiated
  * for every use.
  */
-public class JsonTemplate {
+public class ValueTemplate {
 
-    VelocityEngine engine = new VelocityEngine();
+    private final VelocityEngine engine = new VelocityEngine();
 
-    public JsonTemplate(String stringTemplate) {
+    public ValueTemplate(String stringTemplate) {
         engine.setProperty(Velocity.RESOURCE_LOADERS, "string");
         engine.addProperty("resource.loader.string.class", StringResourceLoader.class.getName());
         engine.addProperty("resource.loader.string.repository.static", "false");
