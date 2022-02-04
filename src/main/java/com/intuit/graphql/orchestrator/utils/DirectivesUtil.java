@@ -21,12 +21,14 @@ class DirectivesUtil {
   static final String NO_LONGER_SUPPORTED = "No longer supported";
 
   static final GraphQLDirective DEPRECATED_DIRECTIVE;
+  static final GraphQLDirective KEY_DIRECTIVE;
 
   private DirectivesUtil() {
   }
 
   static {
     DEPRECATED_DIRECTIVE = createDeprecatedDirective();
+    KEY_DIRECTIVE = createKeyDirective();
   }
 
   /**
@@ -47,6 +49,20 @@ class DirectivesUtil {
         .validLocation(DirectiveLocation.FIELD_DEFINITION)
         .validLocation(DirectiveLocation.ENUM_VALUE)
         .build();
+  }
+
+
+  private static GraphQLDirective createKeyDirective() {
+    GraphQLArgument fieldsArgument = GraphQLArgument.newArgument()
+            .name("fields")
+            .type(Scalars.GraphQLString)
+            .build();
+
+    return GraphQLDirective.newDirective()
+            .name("key")
+            .argument(fieldsArgument)
+            .validLocation(DirectiveLocation.OBJECT)
+            .build();
   }
 
 

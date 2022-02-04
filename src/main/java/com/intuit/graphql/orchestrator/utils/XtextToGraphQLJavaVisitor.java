@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEPRECATED_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.buildDeprecationReason;
 import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 import static java.util.Objects.requireNonNull;
@@ -522,6 +523,7 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
   public void createBuiltInDirectives() {
     directiveDefinitions.put(DEPRECATED_DIRECTIVE.getName(), DEPRECATED_DIRECTIVE);
+    directiveDefinitions.put(KEY_DIRECTIVE.getName(), KEY_DIRECTIVE);
   }
 
   //Directives

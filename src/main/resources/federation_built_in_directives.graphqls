@@ -1,0 +1,1 @@
+directive @key(fields: String!) on OBJECT | INTERFACE

@@ -35,6 +35,7 @@ public interface ServiceProvider extends QueryExecutor {
   }
 
   enum ServiceType {
+    FEDERATION,
     GRAPHQL,
     REST
   }
