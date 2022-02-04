@@ -5,14 +5,13 @@ import graphql.schema.GraphQLType;
 
 public interface TypeConflictResolver<T extends TypeDefinition> {
 
-  /***
+  /**
+   * Resolves conflict
    *
-   * Returns the GraphQLType after conflict resolution, throws exception if it
-   * cannot resolve the conflict.
-   *
-   * @param conflictingType
-   * @param existingType
+   * @param conflictingType the new type ot resolve
+   * @param existingType existingType in the schema
    * @return ResolvedType
+   * @throws TypeConflictException if cannot resolve conflict.
    */
   GraphQLType resolve(T conflictingType, GraphQLType existingType) throws TypeConflictException;
 

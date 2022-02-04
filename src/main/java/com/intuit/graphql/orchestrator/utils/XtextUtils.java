@@ -158,6 +158,12 @@ public class XtextUtils {
 
   /**
    * Get all TypeExtensionDefinition for the given type name and class from the provided resourceset.
+   *
+   * @param name type name to search for
+   * @param type  xtext type definition class
+   * @param set xtext resource set
+   * @param <T> generic type that is sub class of {@link TypeExtensionDefinition} to return
+   * @return stream of TypeExtensionDefinitions for the given resource set
    */
   public static <T extends TypeExtensionDefinition> Stream<T> getAllTypeExtension(
       String name, Class<T> type, @NonNull XtextResourceSet set) {
@@ -166,7 +172,10 @@ public class XtextUtils {
   }
 
   /**
-   * Get all TypeDefinitions from the provided resourceset.
+   * Get all TypeDefinitions from the provided resource set.
+   *
+   * @param set resource set
+   * @return stream of type definitions from the given resource set.
    */
   public static Stream<TypeDefinition> getAllTypes(@NonNull XtextResourceSet set) {
     return getTypeSystemDefinition(set).map(TypeSystemDefinition::getType).filter(Objects::nonNull);

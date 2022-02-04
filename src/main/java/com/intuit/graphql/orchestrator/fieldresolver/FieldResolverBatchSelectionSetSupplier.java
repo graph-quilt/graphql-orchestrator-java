@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.*;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
@@ -26,8 +26,6 @@ import static graphql.language.AstValueHelper.astFromValue;
 
 @AllArgsConstructor
 public class FieldResolverBatchSelectionSetSupplier implements Supplier<SelectionSet> {
-
-    // TODO apply Single Responsibility Principle
 
     private final String[] resolverSelectedFields;
     private final List<DataFetchingEnvironment> dataFetchingEnvironments;
@@ -147,8 +145,8 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
     }
 
     private String compileTemplate(String stringTemplate, Map<String, Object> dataSource) {
-        JsonTemplate jsonTemplate = new JsonTemplate(stringTemplate);
-        return jsonTemplate.compile(dataSource);
+        ValueTemplate valueTemplate = new ValueTemplate(stringTemplate);
+        return valueTemplate.compile(dataSource);
     }
 
 }
