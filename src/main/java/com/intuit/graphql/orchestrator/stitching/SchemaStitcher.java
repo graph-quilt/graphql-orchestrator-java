@@ -26,6 +26,8 @@ public class SchemaStitcher {
   /**
    * Stitch the xtext using the provided {@code serviceProviders} and return the stitched graph. This action is cached;
    * subsequent calls will return the same {@link RuntimeGraph} instance.
+   *
+   * @return The stitched graph which is an instance of {@link RuntimeGraph}
    */
   public RuntimeGraph stitchGraph() {
     if (runtimeGraph == null) {
