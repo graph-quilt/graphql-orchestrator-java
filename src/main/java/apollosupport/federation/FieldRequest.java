@@ -1,5 +1,5 @@
 package apollosupport.federation;
 
-public class ExternalFieldsInfo {
+public class FieldRequest {
 
 }
