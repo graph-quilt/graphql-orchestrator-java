@@ -19,20 +19,9 @@ import org.eclipse.xtext.resource.XtextResourceSet;
 public class XtextGraphBuilder {
 
   public static XtextGraph build(ServiceProvider serviceProvider) {
-
-    if(serviceProvider.getSeviceType() == ServiceProvider.ServiceType.FEDERATION) {
-      try {
-        String federation_directives = IOUtils.toString(Files.newInputStream(Paths.get("src/main/resources/federation_built_in_directives.graphqls")));
-        for (Map.Entry<String, String> entry : serviceProvider.sdlFiles().entrySet() ) {
-          serviceProvider.sdlFiles().put(entry.getKey(), federation_directives + entry.getValue());
-        }
-      } catch (IOException ex) {
-        log.error("Failed to read resource");
-      }
-    }
-
     XtextResourceSet xtextResourceSet = XtextResourceSetBuilder.newBuilder()
         .files(serviceProvider.sdlFiles())
+        .isFederatedResourceSet(serviceProvider.getSeviceType()==ServiceProvider.ServiceType.FEDERATION)
         .build();
 
     final Map<Operation, ObjectTypeDefinition> operationMap = new EnumMap<>(Operation.class);
