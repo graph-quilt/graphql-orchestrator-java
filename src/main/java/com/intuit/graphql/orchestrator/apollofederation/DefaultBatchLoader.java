@@ -1,4 +1,4 @@
-package apollosupport.federation;
+package com.intuit.graphql.orchestrator.apollofederation;
 
 import com.intuit.graphql.orchestrator.batch.BatchResultTransformer;
 import com.intuit.graphql.orchestrator.batch.QueryExecutor;

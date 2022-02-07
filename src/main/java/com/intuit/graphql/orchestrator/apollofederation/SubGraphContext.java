@@ -1,4 +1,4 @@
-package apollosupport.federation;
+package com.intuit.graphql.orchestrator.apollofederation;
 
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.schema.GraphQLObjectType;

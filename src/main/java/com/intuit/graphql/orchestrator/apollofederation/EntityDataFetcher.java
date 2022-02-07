@@ -1,4 +1,4 @@
-package apollosupport.federation;
+package com.intuit.graphql.orchestrator.apollofederation;
 
 import graphql.GraphQLContext;
 import graphql.schema.DataFetcher;
@@ -6,10 +6,16 @@ import graphql.schema.DataFetchingEnvironment;
 import lombok.Data;
 
 /**
- * This {@link DataFetcher} is used to fetch fields for an Apollo Federation compliant sub-graph
+ * This {@link DataFetcher} is used for sending entity data request to a subgraph using
+ * <pre>
+ * {@code
+ * query {
+ *    _entities(...) {...}}
+ * }
+ * </pre>
  */
 @Data
-public class DefaultDataFetcher implements DataFetcher<Object> {
+public class EntityDataFetcher implements DataFetcher<Object> {
 
   private SubGraphContext subGraphContext;
 

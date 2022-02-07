@@ -1,4 +1,4 @@
-package apollosupport.federation;
+package com.intuit.graphql.orchestrator.apollofederation;
 
 import graphql.schema.DataFetchingEnvironment;
 
