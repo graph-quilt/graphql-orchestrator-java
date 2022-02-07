@@ -6,13 +6,16 @@ import graphql.schema.DataFetchingEnvironment;
 import lombok.Data;
 
 /**
- * A {@link DataFetcher} for an Apollo Federation compliant sub-graph.
- *
- * A sub-graph may own entites and/or extended entities owned by other subgraph.  This
- * metadata is available at {@link SubGraphContext}
+ * This {@link DataFetcher} is used for sending entity data request to a subgraph using
+ * <pre>
+ * {@code
+ * query {
+ *    _entities(...) {...}}
+ * }
+ * </pre>
  */
 @Data
-public class SubGraphDataFetcher implements DataFetcher<Object> {
+public class EntityDataFetcher implements DataFetcher<Object> {
 
   private SubGraphContext subGraphContext;
 

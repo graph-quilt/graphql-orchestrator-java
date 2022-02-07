@@ -13,28 +13,22 @@ import lombok.RequiredArgsConstructor;
 import org.dataloader.BatchLoader;
 
 @RequiredArgsConstructor
-public class SubGraphBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>>  {
+public class EntityBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>>  {
 
   // TODO
   // private final BatchFieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultBatchFieldAuthorization();
 
   private final QueryExecutor queryExecutor;
-  private SubGraphContext subGraphContext;
   private final BatchResultTransformer batchResultTransformer;
   private final QueryResponseModifier queryResponseModifier;
   private final EntityRequestFactory entityRequestFactory;
-  private final FieldRequesteRequestFactory fieldRequesteRequestFactory;
 
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> environments) {
     GraphQLContext graphQLContext = environments.get(0).getContext();
     SubGraphQueryPlan subGraphQueryPlan = new SubGraphQueryPlan();
     for (DataFetchingEnvironment dataFetchingEnvironment : environments) {
-      if (shouldRequestForEntity(dataFetchingEnvironment)) {
-        subGraphQueryPlan.add(entityRequestFactory.createEntityRequest(dataFetchingEnvironment));
-      } else {
-        subGraphQueryPlan.add(fieldRequesteRequestFactory.createFieldFetchRequest(dataFetchingEnvironment));
-      }
+        subGraphQueryPlan.add(entityRequestFactory.createFrom(dataFetchingEnvironment));
     }
 
     ExecutionInput executionInput = subGraphQueryPlan.createExectionInput();
@@ -49,10 +43,6 @@ public class SubGraphBatchLoader implements BatchLoader<DataFetchingEnvironment,
           //hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
-  }
-
-  private boolean shouldRequestForEntity(DataFetchingEnvironment environment) {
-    return false;
   }
 
 }

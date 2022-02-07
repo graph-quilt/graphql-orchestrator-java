@@ -4,8 +4,9 @@ import graphql.schema.DataFetchingEnvironment;
 
 public class EntityRequestFactory {
 
-  public FieldRequest createEntityRequest(DataFetchingEnvironment dataFetchingEnvironment) {
-    //    Representation representation = Representation.createFrom(dataFetchingEnvironment); // TODO
+  public FieldRequest createFrom(DataFetchingEnvironment dataFetchingEnvironment) {
+    // TODO
+    //    Representation representation = Representation.createFrom(dataFetchingEnvironment);
     //    Field field = dataFetchingEnvironment.getField();
     //    return EntityRequest.create(representation, field.getSelectionSet());
     return null;
