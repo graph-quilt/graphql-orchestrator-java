@@ -17,15 +17,14 @@ import lombok.Data;
 @Data
 public class EntityDataFetcher implements DataFetcher<Object> {
 
-  private SubGraphContext subGraphContext;
+  private EntityFetchContext entityFetchContext;
 
   @Override
   public Object get(final DataFetchingEnvironment environment) {
     String dfeFieldName = environment.getField().getName();
     GraphQLContext context = environment.getContext();
-    context.put(dfeFieldName, subGraphContext);
     return environment
-        .getDataLoader(subGraphContext.getServiceMetadata().getServiceProvider().getNameSpace())
+        .getDataLoader(entityFetchContext.createDataLoaderKey())
         .load(environment);
   }
 
