@@ -1,6 +1,5 @@
 package com.intuit.graphql.orchestrator.apollofederation;
 
-import graphql.GraphQLContext;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.Data;
@@ -17,15 +16,18 @@ import lombok.Data;
 @Data
 public class EntityDataFetcher implements DataFetcher<Object> {
 
-  private EntityFetchContext entityFetchContext;
+  private EntityExtensionContext entityExtensionContext;
 
   @Override
   public Object get(final DataFetchingEnvironment environment) {
-    String dfeFieldName = environment.getField().getName();
-    GraphQLContext context = environment.getContext();
     return environment
-        .getDataLoader(entityFetchContext.createDataLoaderKey())
-        .load(environment);
+        .getDataLoader(entityExtensionContext.createDataLoaderKey())
+        .load(EntityBatchLoadingEnvironment.builder()
+            .graphQLContext(environment.getContext())
+            .entityExtensionContext(entityExtensionContext)
+            .dataFetchingEnvironment(environment)
+            .build()
+        );
   }
 
 }
