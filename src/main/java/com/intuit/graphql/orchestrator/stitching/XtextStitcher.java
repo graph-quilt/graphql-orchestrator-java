@@ -28,6 +28,7 @@ import com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.KeyTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer;
@@ -142,7 +143,7 @@ public class XtextStitcher implements Stitcher {
 
     HashMap<String, BatchLoader> batchLoaderMap = new HashMap<>();
     xtextGraphMap.forEach((namespace, graph) -> {
-      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL) {
+      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || graph.getServiceProvider().getSeviceType() == ServiceType.FEDERATION) {
         batchLoaderMap.put(namespace,
             GraphQLServiceBatchLoader
                 .newQueryExecutorBatchLoader()
@@ -280,7 +281,8 @@ public class XtextStitcher implements Stitcher {
           new AllTypesTransformer(),
           new DirectivesTransformer(),
           new UnionAndInterfaceTransformer(),
-          new FieldResolverTransformerPreMerge()
+          new FieldResolverTransformerPreMerge(),
+          new KeyTransformer()
       );
     }
 

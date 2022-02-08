@@ -1,0 +1,15 @@
+type Query {
+    getSoldProducts: [Product]
+    getStoreByIdAndName(id: ID!, name: String!): Store
+}
+
+type Store @key(fields: "id name") {
+    id: ID
+    name: String
+    sold: [Product]
+    stock: [Product]
+}
+
+type Product {
+    name: String
+}

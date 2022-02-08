@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.xtext.EcoreUtil2;
@@ -22,6 +24,7 @@ import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
 
+@Slf4j
 /**
  * The Xtext resource set builder.
  */
@@ -30,6 +33,9 @@ public class XtextResourceSetBuilder {
   private XtextResourceSet graphqlResourceSet;
   private static Injector GRAPHQL_INJECTOR = new GraphQLStandaloneSetupGenerated().createInjectorAndDoEMFRegistration();
   private Map<String, String> files = new ConcurrentHashMap<>();
+  private boolean isFederatedResourceSet = false;
+
+  public static final String FEDERATION_DIRECTIVES = getFederationDirectives();
 
   private XtextResourceSetBuilder() {
   }
@@ -57,6 +63,11 @@ public class XtextResourceSetBuilder {
     return this;
   }
 
+  public XtextResourceSetBuilder isFederatedResourceSet(boolean isFederatedResourceSet) {
+    this.isFederatedResourceSet = isFederatedResourceSet;
+    return this;
+  }
+
   /**
    * Build xtext resource set.
    *
@@ -66,6 +77,10 @@ public class XtextResourceSetBuilder {
     graphqlResourceSet = GRAPHQL_INJECTOR.getInstance(XtextResourceSet.class);
     files.forEach((fileName, content) -> {
       try {
+        if(isFederatedResourceSet) {
+          content += FEDERATION_DIRECTIVES;
+        }
+
         createGraphqlResourceFromString(content, fileName);
       } catch (IOException e) {
         throw new SchemaParseException("Unable to parse file:" + fileName, e);
@@ -118,5 +133,16 @@ public class XtextResourceSetBuilder {
     return newBuilder()
         .file(fileName, file)
         .build();
+  }
+
+  private static String getFederationDirectives() {
+    String directives = "";
+    try {
+      directives = IOUtils.resourceToString("federation_built_in_directives.graphqls", null, ClassLoader.getSystemClassLoader());
+    } catch (IOException ex) {
+      log.error("Failed to read resource");
+    }
+
+    return directives;
   }
 }
