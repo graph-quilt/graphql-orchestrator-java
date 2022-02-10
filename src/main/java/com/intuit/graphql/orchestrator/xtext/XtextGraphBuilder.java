@@ -21,7 +21,7 @@ public class XtextGraphBuilder {
   public static XtextGraph build(ServiceProvider serviceProvider) {
     XtextResourceSet xtextResourceSet = XtextResourceSetBuilder.newBuilder()
         .files(serviceProvider.sdlFiles())
-        .isFederatedResourceSet(serviceProvider.getSeviceType()==ServiceProvider.ServiceType.FEDERATION)
+        .isFederatedResourceSet(serviceProvider.getSeviceType()==ServiceProvider.ServiceType.APOLLO_SUBGRAPH)
         .build();
 
     final Map<Operation, ObjectTypeDefinition> operationMap = new EnumMap<>(Operation.class);
