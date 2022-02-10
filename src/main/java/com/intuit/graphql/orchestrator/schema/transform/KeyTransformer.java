@@ -1,21 +1,17 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
 import com.intuit.graphql.graphQL.Argument;
-import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.Directive;
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.keydirective.KeyDirectiveValidator;
-import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
-import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
-import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.VisibleForTesting;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createArgumentsDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
 
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
@@ -28,12 +24,15 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
 
   @Override
   public XtextGraph transform(final XtextGraph source) {
+    List<TypeDefinition> entities = source.getTypes().values().stream()
+            .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+            .collect(Collectors.toList());
 
-    for (final ObjectTypeDefinition objectTypeDefinition : source.objectTypeDefinitionsByName().values()) {
-      for (final Directive directive : (List<Directive>)objectTypeDefinition.getDirectives()) {
-        if(directive.getDefinition().getName().equals("key")) {
+    for (final TypeDefinition typeDefinition : entities) {
+      for (final Directive directive : (List<Directive>)typeDefinition.getDirectives()) {
+        if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
           List<Argument> arguments = (List<Argument>)directive.getArguments();
-          validator.validateKeyArguments(objectTypeDefinition, arguments);
+          validator.validateKeyArguments(typeDefinition, arguments);
         }
       }
     }

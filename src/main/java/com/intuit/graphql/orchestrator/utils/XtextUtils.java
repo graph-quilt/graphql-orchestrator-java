@@ -32,6 +32,12 @@ public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
 
+  public static final String FEDERATION_KEY_DIRECTIVE = "key";
+  public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
+  public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
+  public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
+  public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
+
   private XtextUtils() {
   }
 
@@ -258,6 +264,11 @@ public class XtextUtils {
       childFields = ((InterfaceTypeDefinition) typeDefinition).getFieldDefinition();
     }
     return childFields;
+  }
+
+  public static boolean typeContainsDirective(TypeDefinition typeDefinition, String directiveName) {
+    return typeDefinition.getDirectives().stream()
+            .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
 
 }
