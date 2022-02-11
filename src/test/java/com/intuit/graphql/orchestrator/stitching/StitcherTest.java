@@ -378,11 +378,11 @@ public class StitcherTest {
   public void testTopLevelFederationStitching() {
     ServiceProvider provider1 = serviceProvider(DEFAULT_URL, "Employee",
             TestHelper.getFileMapFromList("top_level/federation/employee.graphqls"),
-            ServiceType.APOLLO_SUBGRAPH);
+            ServiceType.FEDERATION_SUBGRAPH);
 
     ServiceProvider provider2 = serviceProvider(DEFAULT_URL, "Inventory",
             TestHelper.getFileMapFromList("top_level/federation/inventory.graphqls"),
-            ServiceType.APOLLO_SUBGRAPH);
+            ServiceType.FEDERATION_SUBGRAPH);
 
     List<ServiceProvider> serviceContextList = Arrays.asList(provider1, provider2);
 
