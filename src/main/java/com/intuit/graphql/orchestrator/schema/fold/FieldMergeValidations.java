@@ -11,7 +11,6 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InputValueDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.orchestrator.schema.transform.FieldMergeException;
-import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import graphql.VisibleForTesting;
 import java.util.Objects;
 import org.apache.commons.collections4.CollectionUtils;
@@ -67,13 +66,13 @@ public class FieldMergeValidations {
         InputValueDefinition rightArg = argDefRight.getInputValueDefinition().stream()
             .filter(arg -> StringUtils.equals(leftArg.getName(), arg.getName()))
             .findFirst().orElseThrow(() -> new FieldMergeException(String
-                .format(MISSING_ARGUMENT, leftArg.getName(), XtextUtils.toDescriptiveString(leftArg.getNamedType()))));
+                .format(MISSING_ARGUMENT, leftArg.getName(), toDescriptiveString(leftArg.getNamedType()))));
 
         //compare types
         if (!compareTypes(leftArg.getNamedType(), rightArg.getNamedType())) {
           throw new FieldMergeException(
-              String.format(UNEQUAL_ARGUMENTS, XtextUtils.toDescriptiveString(leftArg.getNamedType()),
-                  XtextUtils.toDescriptiveString(rightArg.getNamedType())));
+              String.format(UNEQUAL_ARGUMENTS, toDescriptiveString(leftArg.getNamedType()),
+                  toDescriptiveString(rightArg.getNamedType())));
         }
 
         //compare directives
@@ -152,8 +151,8 @@ public class FieldMergeValidations {
 
     if (!StringUtils.equals(typeName(newcomerNamedType), typeName(currentNamedType))) {
       throw new FieldMergeException(String.format(FIELD_NOT_ELIGIBLE, parentType, current.getName(),
-          String.format(TYPE_MISMATCH, XtextUtils.toDescriptiveString(currentNamedType),
-              XtextUtils.toDescriptiveString(newcomerNamedType))));
+          String.format(TYPE_MISMATCH, toDescriptiveString(currentNamedType),
+              toDescriptiveString(newcomerNamedType))));
     }
     checkObjectType(parentType, current);
     checkObjectType(parentType, newcomer);
@@ -166,7 +165,7 @@ public class FieldMergeValidations {
     NamedType namedType = fieldDefinition.getNamedType();
     if (!isObjectType(namedType)) {
       throw new FieldMergeException(String.format(FIELD_NOT_ELIGIBLE, parent, fieldDefinition.getName(),
-          String.format(NOT_OBJECT_TYPE, XtextUtils.toDescriptiveString(namedType))));
+          String.format(NOT_OBJECT_TYPE, toDescriptiveString(namedType))));
     }
   }
 
