@@ -1,6 +1,8 @@
 package com.intuit.graphql.orchestrator.apollofederation;
 
 import com.intuit.graphql.orchestrator.batch.BatchResultTransformer;
+import com.intuit.graphql.orchestrator.batch.DefaultBatchResultTransformer;
+import com.intuit.graphql.orchestrator.batch.DefaultQueryResponseModifier;
 import com.intuit.graphql.orchestrator.batch.QueryExecutor;
 import com.intuit.graphql.orchestrator.batch.QueryResponseModifier;
 import graphql.ExecutionInput;
@@ -10,20 +12,25 @@ import graphql.schema.DataFetchingEnvironment;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.dataloader.BatchLoader;
 
-@RequiredArgsConstructor
 public class EntityBatchLoader implements BatchLoader<EntityBatchLoadingEnvironment, DataFetcherResult<Object>>  {
 
   // TODO
   // private final BatchFieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultBatchFieldAuthorization();
 
-  private final QueryExecutor baseServiceQueryExecutor;
+  //private final QueryExecutor baseServiceQueryExecutor;
   private final QueryExecutor queryExecutor;
-  private final BatchResultTransformer batchResultTransformer;
-  private final QueryResponseModifier queryResponseModifier;
-  private final EntityRequestFactory entityRequestFactory;
+  private final BatchResultTransformer batchResultTransformer = new EntityBatchResultTransformer();
+  private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
+  private final EntityRequestFactory entityRequestFactory = new EntityRequestFactory();
+
+  private final EntityExtensionDefinition entityExtensionDefinition;
+
+  public EntityBatchLoader(EntityExtensionDefinition entityExtensionDefinition) {
+    this.entityExtensionDefinition = entityExtensionDefinition;
+    this.queryExecutor = entityExtensionDefinition.getServiceMetadata().getServiceProvider();
+  }
 
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(List<EntityBatchLoadingEnvironment> environments) {

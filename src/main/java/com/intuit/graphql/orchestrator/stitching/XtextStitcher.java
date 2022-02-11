@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.stitching;
 
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
@@ -9,6 +10,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
+import com.intuit.graphql.orchestrator.apollofederation.EntityBatchLoader;
+import com.intuit.graphql.orchestrator.apollofederation.EntityDataFetcher;
+import com.intuit.graphql.orchestrator.apollofederation.EntityExtensionDefinition;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
 import com.intuit.graphql.orchestrator.batch.FieldResolverBatchLoader;
 import com.intuit.graphql.orchestrator.batch.GraphQLServiceBatchLoader;
@@ -29,6 +33,7 @@ import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformer
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.KeyTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.KeyTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer;
@@ -119,6 +124,12 @@ public class XtextStitcher implements Stitcher {
 
     });
 
+    stitchedTransformedGraph.getEntityExtensionDefinitionMap().keySet().forEach(typeName-> {
+      EntityExtensionDefinition entityExtensionDefinition = stitchedTransformedGraph.getEntityExtensionDefinitionMap().get(typeName);
+      EntityBatchLoader entityBatchLoader = new EntityBatchLoader(entityExtensionDefinition);
+      batchLoaders.put(entityExtensionDefinition.createDataLoaderKey(), entityBatchLoader);
+    });
+
     final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
 
     final RuntimeGraph.Builder runtimeGraphBuilder = createRuntimeGraph(stitchedTransformedGraph);
@@ -199,6 +210,9 @@ public class XtextStitcher implements Stitcher {
         );
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
+        );
+      } else if (type == ENTITY_FETCHER) {
+        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionContext())
         );
       }
     });
@@ -293,6 +307,7 @@ public class XtextStitcher implements Stitcher {
       return Arrays.asList(
           new ResolverArgumentTransformer(),
           new FieldResolverTransformerPostMerge(),
+          new KeyTransformerPostMerge(),
           new GraphQLAdapterTransformer()
       );
     }

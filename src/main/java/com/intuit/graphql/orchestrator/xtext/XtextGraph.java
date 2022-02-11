@@ -4,15 +4,21 @@ import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.apollofederation.EntityExtensionContext;
+import com.intuit.graphql.orchestrator.apollofederation.EntityExtensionDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import graphql.schema.FieldCoordinates;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,7 +27,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.Getter;
+import org.apache.commons.collections4.MapUtils;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.xtext.resource.XtextResourceSet;
 
 /**
@@ -39,6 +48,10 @@ public class XtextGraph implements ServiceMetadata {
   private final Set<DirectiveDefinition> directives;
   private final Map<String, TypeDefinition> types;
   private final List<FieldResolverContext> fieldResolverContexts;
+  private final Map<String, TypeDefinition> entitiesMap = new HashMap<>();
+  private final Map<FieldCoordinates, EntityExtensionContext> entityFieldExtensionsMap;
+  private final Map<String, EntityExtensionDefinition> entityExtensionDefinitionMap;
+  private final Set<FieldCoordinates> fieldCoordinateSet;
 
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
@@ -64,6 +77,9 @@ public class XtextGraph implements ServiceMetadata {
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
     resolverArgumentFields = builder.resolverArgumentFields;
     fieldResolverContexts = builder.fieldResolverContexts;
+    fieldCoordinateSet = builder.fieldCoordinateSet;
+    entityExtensionDefinitionMap = builder.entityExtensionDefinitionMap;
+    entityFieldExtensionsMap = builder.entityFieldExtensionsMap;
   }
 
   /**
@@ -93,6 +109,7 @@ public class XtextGraph implements ServiceMetadata {
     builder.hasFieldResolverDefinition = copy.hasFieldResolverDefinition;
     builder.resolverArgumentFields = copy.resolverArgumentFields;
     builder.fieldResolverContexts = copy.fieldResolverContexts;
+    builder.entityFieldExtensionsMap = copy.entityFieldExtensionsMap;
     return builder;
   }
 
@@ -128,6 +145,16 @@ public class XtextGraph implements ServiceMetadata {
   @Override
   public boolean hasFieldResolverDirective() {
     return hasFieldResolverDefinition;
+  }
+
+  @Override
+  public boolean isApolloSubgraph() {
+    return MapUtils.isNotEmpty(this.entitiesMap);
+  }
+
+  @Override
+  public boolean isFieldExternal(FieldCoordinates fieldCoordinates) {
+    return !fieldCoordinateSet.contains(fieldCoordinates);
   }
 
   /**
@@ -214,6 +241,20 @@ public class XtextGraph implements ServiceMetadata {
     return builder.build();
   }
 
+  public void addToEntities(TypeDefinition typeDefinition) {
+    this.entitiesMap.put(typeDefinition.getName(), typeDefinition);
+  }
+
+  public void addToEntitiesExtension(String typeName, EntityExtensionDefinition entityExtensionDefinition) {
+    this.entityExtensionDefinitionMap.put(typeName, entityExtensionDefinition);
+
+  }
+
+  public void addToEntitiesExtensionFields(FieldCoordinates fieldCoordinate, EntityExtensionContext entityExtensionContext) {
+    this.entityFieldExtensionsMap.put(fieldCoordinate, entityExtensionContext);
+  }
+
+
   /**
    * The type Builder.
    */
@@ -229,6 +270,9 @@ public class XtextGraph implements ServiceMetadata {
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
+    private Set<FieldCoordinates> fieldCoordinateSet = new HashSet<>();
+    private Map<FieldCoordinates, EntityExtensionContext> entityFieldExtensionsMap = new HashMap<>();
+    private Map<String, EntityExtensionDefinition> entityExtensionDefinitionMap = new HashMap<>();
 
     private Builder() {
     }
@@ -357,6 +401,16 @@ public class XtextGraph implements ServiceMetadata {
       return this;
     }
 
+    public Builder entityFieldExtensionsMap(Map<FieldCoordinates, EntityExtensionContext> entityFieldExtensionsMap) {
+      this.entityFieldExtensionsMap.putAll(entityFieldExtensionsMap);
+      return this;
+    }
+
+    public Builder entityExtensionDefinitionMap(Map<String, EntityExtensionDefinition> entityFieldExtensionsMap) {
+      this.entityExtensionDefinitionMap.putAll(entityFieldExtensionsMap);
+      return this;
+    }
+
     public Builder clearFieldResolverContexts() {
       this.fieldResolverContexts.clear();
       return this;
@@ -368,7 +422,31 @@ public class XtextGraph implements ServiceMetadata {
      * @return the runtime graph
      */
     public XtextGraph build() {
+      fieldCoordinateSet.addAll(getAllFieldCoordinates(types));
       return new XtextGraph(this);
+    }
+
+    private Set<? extends FieldCoordinates> getAllFieldCoordinates(Map<String, TypeDefinition> types) {
+      return types.values().stream()
+          .flatMap(typeDefinition -> getTypeFieldCoordinates(typeDefinition).stream())
+          .collect(Collectors.toSet());
+    }
+
+    private Set<FieldCoordinates> getTypeFieldCoordinates(TypeDefinition typeDefinition) {
+      if (typeDefinition instanceof InterfaceTypeDefinition) {
+        InterfaceTypeDefinition interfaceTypeDefinition = (InterfaceTypeDefinition) typeDefinition;
+        return toFieldCoordinates(interfaceTypeDefinition.getName(), interfaceTypeDefinition.getFieldDefinition());
+      } else if (typeDefinition instanceof ObjectTypeDefinition) {
+        ObjectTypeDefinition objectTypeDefinition = (ObjectTypeDefinition) typeDefinition;
+        return toFieldCoordinates(objectTypeDefinition.getName(), objectTypeDefinition.getFieldDefinition());
+      }
+      return Collections.emptySet();
+    }
+
+    private Set<FieldCoordinates> toFieldCoordinates(String parentTypeName, EList<FieldDefinition> fieldDefinition) {
+      return fieldDefinition.stream()
+          .map(fd -> FieldCoordinates.coordinates(parentTypeName, fd.getName()))
+          .collect(Collectors.toSet());
     }
   }
 }

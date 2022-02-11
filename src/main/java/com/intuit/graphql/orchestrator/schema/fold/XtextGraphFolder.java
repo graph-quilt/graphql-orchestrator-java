@@ -37,6 +37,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
 
   private Map<FieldContext, DataFetcherContext> accCodeRegistry;
   private Map<String, TypeDefinition> nestedTypes;
+  private Map<String, TypeDefinition> entityTypes = new HashMap<>();
 
   @Override
   public XtextGraph fold(XtextGraph initVal, Collection<XtextGraph> list) {
@@ -65,7 +66,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
           merge(accumulator.getOperationType(op), current.getOperationType(op), current.getServiceProvider()));
     }
 
-    resolveTypeConflicts(accumulator.getTypes(), current.getTypes(), current);
+    resolveTypeConflicts(accumulator.getTypes(), current.getTypes(), accumulator, current);
 
     // transform the current graph with the new operation and code registry builder
     return accumulator.transform(builder -> {
@@ -75,11 +76,13 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       builder.types(nestedTypes);
       builder.directives(current.getDirectives());
       builder.fieldResolverContexts(current.getFieldResolverContexts());
+      builder.entityFieldExtensionsMap(current.getEntityFieldExtensionsMap());
+      builder.entityExtensionDefinitionMap(current.getEntityExtensionDefinitionMap());
     });
   }
 
   private void resolveTypeConflicts(final Map<String, TypeDefinition> existing,
-      final Map<String, TypeDefinition> current, final XtextGraph currentGraph) throws TypeConflictException {
+      final Map<String, TypeDefinition> current, XtextGraph accumulator, final XtextGraph currentGraph) throws TypeConflictException {
 
     final Set<String> operationTypeNames = currentGraph.getOperationMap().values().stream()
         .map(TypeDefinition::getName)
@@ -92,6 +95,27 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       }
 
       TypeDefinition existingType = existing.get(typeName);
+
+
+      if (typeName.equals("Movie") && Objects.nonNull(existingType)) {
+        // assumption: entities are only allowed from Federated Service
+        // This should be a check if `typeName` is an existing Entity
+        // merge and continue
+        // this is for demo only
+        ObjectTypeDefinition incomingObjectType  = (ObjectTypeDefinition) current.get(typeName);
+        ObjectTypeDefinition existingObjectType  = (ObjectTypeDefinition) existingType;
+        // need to check if incomingObjectType has @extend and existingObjectType is entity (singleton) that is already in accumulator
+        FieldDefinition recommendation = incomingObjectType.getFieldDefinition().stream()
+            .filter(fd -> fd.getName().equals("recommendations"))
+            .findFirst().get();
+        existingObjectType.getFieldDefinition().add(recommendation);
+
+        currentGraph.removeType(incomingObjectType);
+        // need to make sure accumulator and current grapqh
+        // is properly updated. see other attributes
+        continue;
+      }
+
       if (Objects.nonNull(existingType) && !nestedTypes.containsKey(existingType.getName())) {
         TypeDefinition conflictingType = current.get(typeName);
         XtextTypeConflictResolver.INSTANCE.resolve(conflictingType, existingType);
@@ -125,9 +149,9 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
         // XtextNestedTypeConflictResolver.INSTANCE.resolve(newField.getNamedType(), currentField.get().getNamedType());
 
         // nested merge begins
-        current.getFieldDefinition().remove(currentField.get());
-        FieldDefinition nestedField = merge(parentType, currentField.get(), newField, newComerServiceProvider);
-        current.getFieldDefinition().add(nestedField);
+          current.getFieldDefinition().remove(currentField.get());
+          FieldDefinition nestedField = merge(parentType, currentField.get(), newField, newComerServiceProvider);
+          current.getFieldDefinition().add(nestedField);
 
         collectNestedTypes(nestedField);
       } else {

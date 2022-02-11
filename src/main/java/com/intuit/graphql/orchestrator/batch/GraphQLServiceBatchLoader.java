@@ -114,7 +114,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
-            .map(field -> serviceMetadata.hasFieldResolverDirective()
+            .map(field -> (serviceMetadata.hasFieldResolverDirective() || serviceMetadata.isApolloSubgraph())
                 ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType())
                 : field
             )
@@ -271,7 +271,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       GraphQLType typeCondition) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(typeCondition)));
+        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(typeCondition), serviceMetadata));
 
   }
 
@@ -305,7 +305,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (Field) AST_TRANSFORMER.transform(origField,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType)));
+        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType), serviceMetadata));
   }
 
   private GraphQLSchema getSchema(List<DataFetchingEnvironment> environments) {

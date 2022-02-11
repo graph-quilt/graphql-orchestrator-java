@@ -1,10 +1,12 @@
 package com.intuit.graphql.orchestrator.apollofederation;
 
 import static graphql.language.AstPrinter.printAstCompact;
+import static graphql.language.TypeName.newTypeName;
 
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.introspection.Introspection;
+import graphql.language.Argument;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.InlineFragment;
@@ -12,8 +14,11 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.SelectionSet;
 import graphql.language.TypeName;
+import graphql.language.VariableDefinition;
+import graphql.language.VariableReference;
 import graphql.schema.GraphQLFieldsContainer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +29,20 @@ public class EntityQuery {
   private final GraphQLContext graphQLContext;
   List<Map<String, Object>> variables = new ArrayList<>();
   private SelectionSet.Builder entitiesSelectionSetBuilder = SelectionSet.newSelectionSet();
-  Field.Builder entitiesFieldBuilder = Field.newField().name("entities");
+  Argument representationsArguments = Argument.newArgument()
+      .name("representations")
+      .value(VariableReference.newVariableReference()
+          .name("REPRESENTATIONS")
+          .build())
+      .build();
+  Field.Builder entitiesFieldBuilder = Field.newField()
+      .name("_entities")
+      .arguments(Collections.singletonList(representationsArguments));
+
+  VariableDefinition variableDefinition = VariableDefinition.newVariableDefinition()
+      .name("REPRESENTATIONS")
+      .type(newTypeName("[_Any!]!").build())
+      .build();
 
   public EntityQuery(GraphQLContext graphQLContext) {
     this.graphQLContext = graphQLContext;
@@ -34,13 +52,14 @@ public class EntityQuery {
   public ExecutionInput createExecutionInput() {
     Field entitiesField = entitiesFieldBuilder.selectionSet(entitiesSelectionSetBuilder.build()).build();
     queryOperationBuilder.selectionSet(SelectionSet.newSelectionSet().selection(entitiesField).build());
+    queryOperationBuilder.variableDefinitions(Collections.singletonList(variableDefinition));
     Document document = Document.newDocument()
         //.definitions(fragmentDefinitions)
         .definition(queryOperationBuilder.build())
         .build();
 
     Map<String, Object> representations = new HashMap<>();
-    representations.put("representations", variables);
+    representations.put("REPRESENTATIONS", variables);
 
     return ExecutionInput.newExecutionInput()
         .context(graphQLContext)

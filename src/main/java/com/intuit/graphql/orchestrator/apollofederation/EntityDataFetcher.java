@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator.apollofederation;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 /**
  * This {@link DataFetcher} is used for sending entity data request to a subgraph using
@@ -13,10 +13,10 @@ import lombok.Data;
  * }
  * </pre>
  */
-@Data
+@RequiredArgsConstructor
 public class EntityDataFetcher implements DataFetcher<Object> {
 
-  private EntityExtensionContext entityExtensionContext;
+  private final EntityExtensionContext entityExtensionContext; // Field added in entity
 
   @Override
   public Object get(final DataFetchingEnvironment environment) {
