@@ -23,8 +23,9 @@ import java.util.stream.Collectors;
  */
 public class KeyDirectiveValidator {
 
-  public void validateKeyArguments(TypeDefinition typeDefinition,
-      List<Argument> argumentList) throws InvalidLocationForKeyDirective, EmptyFieldsArgumentKeyDirective, InvalidKeyDirectiveFieldReference, NoFieldsArgumentForKeyDirective, MultipleArgumentsForKeyDirective {
+  public void validate(TypeDefinition typeDefinition,
+      List<Argument> argumentList) throws InvalidLocationForKeyDirective, EmptyFieldsArgumentKeyDirective,
+          InvalidKeyDirectiveFieldReference, NoFieldsArgumentForKeyDirective, MultipleArgumentsForKeyDirective {
 
     String containerName = typeDefinition.getName();
 

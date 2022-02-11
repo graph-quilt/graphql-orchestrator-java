@@ -20,7 +20,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirec
 public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
 
   @VisibleForTesting
-  KeyDirectiveValidator validator = new KeyDirectiveValidator();
+  KeyDirectiveValidator keyDirectiveValidator = new KeyDirectiveValidator();
 
   @Override
   public XtextGraph transform(final XtextGraph source) {
@@ -29,10 +29,10 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
             .collect(Collectors.toList());
 
     for (final TypeDefinition typeDefinition : entities) {
-      for (final Directive directive : (List<Directive>)typeDefinition.getDirectives()) {
+      for (final Directive directive : typeDefinition.getDirectives()) {
         if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
-          List<Argument> arguments = (List<Argument>)directive.getArguments();
-          validator.validateKeyArguments(typeDefinition, arguments);
+          List<Argument> arguments = directive.getArguments();
+          keyDirectiveValidator.validate(typeDefinition, arguments);
         }
       }
     }
