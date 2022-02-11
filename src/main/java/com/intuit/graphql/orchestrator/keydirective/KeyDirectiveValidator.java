@@ -4,6 +4,7 @@ import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
 import com.intuit.graphql.orchestrator.keydirective.exceptions.MultipleArgumentsForKeyDirective;
@@ -17,17 +18,17 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * This class helps break up the {@link com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer} by
- * validating if the ObjectTypeDefinition key directive is valid.
+ * This class helps break up the {@link com.intuit.graphql.orchestrator.schema.transform.KeyTransformer} by
+ * validating if the TypeDefinition key directive is valid.
  */
 public class KeyDirectiveValidator {
 
-  public void validateKeyArguments(ObjectTypeDefinition objectTypeDefinition,
+  public void validateKeyArguments(TypeDefinition typeDefinition,
       List<Argument> argumentList) throws InvalidLocationForKeyDirective, EmptyFieldsArgumentKeyDirective, InvalidKeyDirectiveFieldReference, NoFieldsArgumentForKeyDirective, MultipleArgumentsForKeyDirective {
 
-    String containerName = objectTypeDefinition.getName();
+    String containerName = typeDefinition.getName();
 
-    validateKeyDirectiveLocation(objectTypeDefinition, containerName);
+    validateKeyDirectiveLocation(typeDefinition, containerName);
     validateKeyArgumentSize(argumentList, containerName);
 
     Optional<Argument> argument = argumentList.stream().findFirst();
@@ -37,9 +38,13 @@ public class KeyDirectiveValidator {
       final List<String> keyFieldList = Arrays.asList(argument.get().getValueWithVariable().getStringValue().trim().split(" "));
       validateKeyFieldsArgumentSize(keyFieldList, containerName);
 
-      final List<String> existingFieldDefinitions = ((List<FieldDefinition>) objectTypeDefinition.getFieldDefinition()).stream().map(FieldDefinition::getName).collect(Collectors.toList());
+      final List<String> existingFieldDefinitions = getTypeFieldDefinitions(typeDefinition).stream().map(FieldDefinition::getName).collect(Collectors.toList());
       validateKeyFieldReferences(existingFieldDefinitions, keyFieldList, containerName);
     }
+  }
+
+  private List<FieldDefinition> getTypeFieldDefinitions(TypeDefinition typeDefinition) {
+    return (typeDefinition instanceof InterfaceTypeDefinition) ? ((InterfaceTypeDefinition) typeDefinition).getFieldDefinition() : ((ObjectTypeDefinition) typeDefinition).getFieldDefinition();
   }
 
   private void validateKeyArgumentSize(List<Argument> argumentList, String containerName) throws MultipleArgumentsForKeyDirective {
@@ -48,9 +53,9 @@ public class KeyDirectiveValidator {
     }
   }
 
-  private void validateKeyDirectiveLocation(ObjectTypeDefinition objectTypeDefinition, String containerName) throws InvalidLocationForKeyDirective {
-    if(!(objectTypeDefinition.eContainer() instanceof TypeSystemDefinition || objectTypeDefinition.eContainer() instanceof InterfaceTypeDefinition)) {
-      throw new InvalidLocationForKeyDirective(containerName, objectTypeDefinition.eContainer().eClass().getInstanceClassName());
+  private void validateKeyDirectiveLocation(TypeDefinition typeDefinition, String containerName) throws InvalidLocationForKeyDirective {
+    if(!(typeDefinition.eContainer() instanceof TypeSystemDefinition || typeDefinition.eContainer() instanceof InterfaceTypeDefinition)) {
+      throw new InvalidLocationForKeyDirective(containerName, typeDefinition.eContainer().eClass().getInstanceClassName());
     }
   }
 

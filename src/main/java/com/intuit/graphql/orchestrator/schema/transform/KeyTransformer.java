@@ -17,6 +17,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
+
+
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
  *  directive, this class will validate the fields to the key directive by ensuring they exist
@@ -28,16 +32,20 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
 
   @Override
   public XtextGraph transform(final XtextGraph source) {
+    List<TypeDefinition> entities = source.getTypes().values().stream()
+            .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+            .collect(Collectors.toList());
 
-    for (final ObjectTypeDefinition objectTypeDefinition : source.objectTypeDefinitionsByName().values()) {
-      for (final Directive directive : (List<Directive>)objectTypeDefinition.getDirectives()) {
-        if(directive.getDefinition().getName().equals("key")) {
+    for (final TypeDefinition typeDefinition : entities) {
+      for (final Directive directive : (List<Directive>)typeDefinition.getDirectives()) {
+        if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
           List<Argument> arguments = (List<Argument>)directive.getArguments();
-          validator.validateKeyArguments(objectTypeDefinition, arguments);
+          validator.validateKeyArguments(typeDefinition, arguments);
         }
       }
     }
 
+    // This is temporary code
     source.getTypes().values().stream()
         .forEach(typeDefinition -> {
           if (hasKeyDirective(typeDefinition) && hasExtends(typeDefinition)) {
