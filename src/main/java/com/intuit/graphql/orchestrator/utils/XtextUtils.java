@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
@@ -15,7 +13,6 @@ import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.utils.XtextTypeUtils;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -29,8 +26,6 @@ import org.eclipse.xtext.resource.XtextResourceSet;
  * The Xtext utils to get information from the XText AST.
  */
 public class XtextUtils {
-
-  public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
 
   private XtextUtils() {
   }
@@ -236,28 +231,4 @@ public class XtextUtils {
     TypeDefinition typeDefinition = XtextTypeUtils.getObjectType(type);
     return Objects.nonNull(typeDefinition) && typeDefinition instanceof ObjectTypeDefinition;
   }
-
-  public static String toDescriptiveString(TypeDefinition typeDefinition) {
-    return String.format(XTEXT_TYPE_FORMAT, typeDefinition.getName(), typeDefinition.eClass().getName(),
-        typeDefinition.getDesc());
-  }
-
-  public static String toDescriptiveString(NamedType namedType) {
-    TypeDefinition objectType = XtextTypeUtils.getObjectType(namedType);
-    return Objects.nonNull(objectType) ? toDescriptiveString(objectType)
-        : String.format(XTEXT_TYPE_FORMAT, XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
-  }
-
-  public static List<FieldDefinition> getChildFields(TypeDefinition typeDefinition) {
-    Objects.requireNonNull(typeDefinition);
-
-    List<FieldDefinition> childFields;
-    if (typeDefinition instanceof ObjectTypeDefinition) {
-      childFields = ((ObjectTypeDefinition) typeDefinition).getFieldDefinition();
-    } else {
-      childFields = ((InterfaceTypeDefinition) typeDefinition).getFieldDefinition();
-    }
-    return childFields;
-  }
-
 }

@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getChildFields;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class FieldResolverDirectiveUtil {
 
@@ -75,7 +75,7 @@ public class FieldResolverDirectiveUtil {
   public static boolean isReferenceToFieldInParentType(String resolverArgValue, TypeDefinition parentType) {
     if (isFieldReference(resolverArgValue)) {
       String fieldName = getNameFromFieldReference(resolverArgValue);
-      List<FieldDefinition> childFields = getChildFields(parentType);
+      List<FieldDefinition> childFields = getFieldDefinitions(parentType);
       return childFields.stream().anyMatch(fieldDefinition -> StringUtils.equals(fieldDefinition.getName(), fieldName));
     } else {
       throw new NotAValidFieldReference(resolverArgValue);
@@ -115,7 +115,7 @@ public class FieldResolverDirectiveUtil {
   public static List<FieldResolverContext> createFieldResolverContexts(
       TypeDefinition typeDefinition, XtextGraph xtextGraph) {
 
-    List<FieldDefinition> childFields = getChildFields(typeDefinition);
+    List<FieldDefinition> childFields = getFieldDefinitions(typeDefinition);
     return childFields.stream()
         .map(childFieldDefinition -> {
           List<Directive> directives = getResolverDirective(childFieldDefinition);
