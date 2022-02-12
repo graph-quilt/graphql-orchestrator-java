@@ -23,6 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class is used to create a downstream query to make an entity fetch.
+ *
+ * TODO make this reusable both for extending service and base service.
+ */
 public class EntityQuery {
 
   private final OperationDefinition.Builder queryOperationBuilder = OperationDefinition.newOperationDefinition();
@@ -65,7 +70,7 @@ public class EntityQuery {
         .context(graphQLContext)
         .root(document)
         .query(printAstCompact(document))
-        .variables(representations) // TODO if if not empty or throw exception
+        .variables(representations) // TODO if not empty or throw exception
         .build();
   }
 
@@ -85,6 +90,8 @@ public class EntityQuery {
     extensionDefinition.getKeyDirectiveDefinitions().stream()
             .flatMap(keyDirectiveDefinition -> keyDirectiveDefinition.getKeyFieldNames().stream())
             .forEach(keyFieldName -> entityRepresentation.put(keyFieldName, dataSource.get(keyFieldName)));
+
+    // make a call back to the backend.
 
     variables.add(entityRepresentation);
 

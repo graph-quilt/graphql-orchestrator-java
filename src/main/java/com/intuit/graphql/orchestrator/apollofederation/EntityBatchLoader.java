@@ -57,13 +57,18 @@ public class EntityBatchLoader
     EntityQuery entityQuery = new EntityQuery(graphQLContext);
 
     for (EntityBatchLoadingEnvironment batchLoadingEnvironment : environments) {
+      // TODO
+      //  using @requires definition in EntityExtensionContext, get the required fields.
+      //  if not present in dataFetchingEnvironment.source, make a call back to the base service
+      //  Note: @requires definition, @key directive definitions should not be present
+      //  in runtime schema
       entityQuery.add(batchLoadingEnvironment);
     }
 
-    // TODO CallBack base service
-    // It is possible that the type of the current field is the BaseType and
-    // if the one or more fields in a sub-selection belongs to the BaseType, an _entities() must
-    // be sent to the base service.
+    // TODO CallBack base service for selected fields not provided
+    //  It is possible that the type of the current field is the BaseType and
+    //  if the one or more fields in a sub-selection belongs to the BaseType, an _entities() must
+    //  be sent to the base service.
     ExecutionInput executionInput = entityQuery.createExecutionInput();
     QueryExecutor queryExecutor = entityExtensionDefinition.getServiceProvider();
     return queryExecutor
