@@ -5,66 +5,82 @@ import static graphql.language.TypeName.newTypeName;
 
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
-import graphql.introspection.Introspection;
 import graphql.language.Argument;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.InlineFragment;
 import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
+import graphql.language.Selection;
 import graphql.language.SelectionSet;
-import graphql.language.TypeName;
 import graphql.language.VariableDefinition;
 import graphql.language.VariableReference;
-import graphql.schema.GraphQLFieldsContainer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
+import org.apache.commons.collections4.CollectionUtils;
 
-/**
- * This class is used to create a downstream query to make an entity fetch.
- *
- * TODO make this reusable both for extending service and base service.
- */
+/** This class is used to create a downstream query to make an entity fetch. */
+@Builder
 public class EntityQuery {
 
-  private final OperationDefinition.Builder queryOperationBuilder = OperationDefinition.newOperationDefinition();
+  private static final String REPRESENTATIONS_VAR_NAME = "REPRESENTATIONS";
+  private static final String REPRESENTATIONS_ARG_NAME = "representations";
+  private static final String REPRESENTATIONS_TYPE_NAME = "[_Any!]!";
+
+  private static final VariableDefinition VARIABLE_DEFINITION =
+      VariableDefinition.newVariableDefinition()
+          .name(REPRESENTATIONS_VAR_NAME)
+          .type(newTypeName(REPRESENTATIONS_TYPE_NAME).build())
+          .build();
+
+  private static final Argument REPRESENTATIONS_ARGUMENT =
+      Argument.newArgument()
+          .name(REPRESENTATIONS_ARG_NAME)
+          .value(VariableReference.newVariableReference().name(REPRESENTATIONS_VAR_NAME).build())
+          .build();
+
+  private static final String _ENTITIES_FIELD_NAME = "_entities";
+
+  // required constructor arguments
   private final GraphQLContext graphQLContext;
-  List<Map<String, Object>> variables = new ArrayList<>();
-  private SelectionSet.Builder entitiesSelectionSetBuilder = SelectionSet.newSelectionSet();
-  Argument representationsArguments = Argument.newArgument()
-      .name("representations")
-      .value(VariableReference.newVariableReference()
-          .name("REPRESENTATIONS")
-          .build())
-      .build();
-  Field.Builder entitiesFieldBuilder = Field.newField()
-      .name("_entities")
-      .arguments(Collections.singletonList(representationsArguments));
-
-  VariableDefinition variableDefinition = VariableDefinition.newVariableDefinition()
-      .name("REPRESENTATIONS")
-      .type(newTypeName("[_Any!]!").build())
-      .build();
-
-  public EntityQuery(GraphQLContext graphQLContext) {
-    this.graphQLContext = graphQLContext;
-    queryOperationBuilder.operation(Operation.QUERY);
-  }
+  private final List<InlineFragment> inlineFragments;
+  private final List<Map<String, Object>> variables;
 
   public ExecutionInput createExecutionInput() {
-    Field entitiesField = entitiesFieldBuilder.selectionSet(entitiesSelectionSetBuilder.build()).build();
-    queryOperationBuilder.selectionSet(SelectionSet.newSelectionSet().selection(entitiesField).build());
-    queryOperationBuilder.variableDefinitions(Collections.singletonList(variableDefinition));
-    Document document = Document.newDocument()
-        //.definitions(fragmentDefinitions)
-        .definition(queryOperationBuilder.build())
-        .build();
+    if (CollectionUtils.isEmpty(inlineFragments)) {
+      throw new IllegalStateException(
+          "Failed to create ExecutionInput for entity request.  InlineFragments not found");
+    }
+
+    List<Selection<?>> selections = new ArrayList<>(inlineFragments);
+
+    Field entitiesField =
+        Field.newField()
+            .name(_ENTITIES_FIELD_NAME)
+            .arguments(Collections.singletonList(REPRESENTATIONS_ARGUMENT))
+            .selectionSet(SelectionSet.newSelectionSet().selections(selections).build())
+            .build();
+
+    OperationDefinition queryOperation =
+        OperationDefinition.newOperationDefinition()
+            .operation(Operation.QUERY)
+            .selectionSet(SelectionSet.newSelectionSet().selection(entitiesField).build())
+            .variableDefinitions(Collections.singletonList(VARIABLE_DEFINITION))
+            .build();
+
+    Document document =
+        Document.newDocument()
+            // TODO in case the original selectionset has fragment definitions
+            // .definitions(fragmentDefinitions)
+            .definition(queryOperation)
+            .build();
 
     Map<String, Object> representations = new HashMap<>();
-    representations.put("REPRESENTATIONS", variables);
+    representations.put(REPRESENTATIONS_VAR_NAME, variables);
 
     return ExecutionInput.newExecutionInput()
         .context(graphQLContext)
@@ -74,63 +90,5 @@ public class EntityQuery {
         .build();
   }
 
-  public void add(EntityBatchLoadingEnvironment batchLoadingEnvironment) {
-
-    GraphQLFieldsContainer entityType = (GraphQLFieldsContainer) batchLoadingEnvironment.getDataFetchingEnvironment().getParentType();
-    String entityTypeName = entityType.getName();
-
-    // create representation
-    Map<String, Object> entityRepresentation = new HashMap<>();
-    entityRepresentation.put(Introspection.TypeNameMetaFieldDef.getName(), entityTypeName);
-
-    // add key values to represetation
-    Map<String, Object> dataSource = batchLoadingEnvironment.getDataFetchingEnvironment().getSource();
-    EntityExtensionDefinition extensionDefinition = batchLoadingEnvironment.getEntityExtensionContext()
-        .getThisEntityExtensionDefinition();
-    extensionDefinition.getKeyDirectiveDefinitions().stream()
-            .flatMap(keyDirectiveDefinition -> keyDirectiveDefinition.getKeyFieldNames().stream())
-            .forEach(keyFieldName -> entityRepresentation.put(keyFieldName, dataSource.get(keyFieldName)));
-
-    // make a call back to the backend.
-
-    variables.add(entityRepresentation);
-
-    // create inline fragment definition
-    Field originalField = batchLoadingEnvironment.getDataFetchingEnvironment().getField();
-    Field __typenameField = Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
-
-    SelectionSet fieldSelectionSet = batchLoadingEnvironment.getDataFetchingEnvironment().getField()
-        .getSelectionSet()
-        .transform(builder -> builder.selection(__typenameField));
-
-    InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
-    inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(entityTypeName).build());
-    inlineFragmentBuilder.selectionSet(SelectionSet.newSelectionSet()
-            .selection(Field.newField().selectionSet(fieldSelectionSet).name(originalField.getName()).build())
-        .build());
-    entitiesSelectionSetBuilder.selection(inlineFragmentBuilder.build());
-  }
 }
-//  recommendations {
-//    id
-//    title
-//  }
 
-//  query ($representations: [_Any!]!) {
-//    _entities(representations: $representations) {
-//    ... on Movie {
-//        recommendations {
-//          id
-//              __typename
-//        }
-//      }
-//    }
-//  }
-//
-//  VARIABLE:
-//  {
-//    "representations" : [ {
-//    "__typename" : "Movie",
-//        "id" : "1"
-//  } ]
-//  }
