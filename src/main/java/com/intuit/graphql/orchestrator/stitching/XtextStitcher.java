@@ -126,7 +126,9 @@ public class XtextStitcher implements Stitcher {
 
     stitchedTransformedGraph.getEntityExtensionDefinitionMap().keySet().forEach(typeName-> {
       EntityExtensionDefinition entityExtensionDefinition = stitchedTransformedGraph.getEntityExtensionDefinitionMap().get(typeName);
-      EntityBatchLoader entityBatchLoader = new EntityBatchLoader(entityExtensionDefinition);
+      EntityBatchLoader entityBatchLoader = EntityBatchLoader.builder()
+          .entityExtensionDefinition(entityExtensionDefinition)
+          .build();
       batchLoaders.put(entityExtensionDefinition.createDataLoaderKey(), entityBatchLoader);
     });
 

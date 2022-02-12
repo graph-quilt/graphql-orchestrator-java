@@ -23,7 +23,6 @@ public class EntityDataFetcher implements DataFetcher<Object> {
     return environment
         .getDataLoader(entityExtensionContext.createDataLoaderKey())
         .load(EntityBatchLoadingEnvironment.builder()
-            .graphQLContext(environment.getContext())
             .entityExtensionContext(entityExtensionContext)
             .dataFetchingEnvironment(environment)
             .build()
