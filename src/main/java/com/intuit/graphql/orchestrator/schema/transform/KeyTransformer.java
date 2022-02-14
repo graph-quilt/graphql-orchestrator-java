@@ -45,7 +45,7 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
       }
     }
 
-    return source.transform(builder -> builder.entities(entities));
+    return source.transform(builder -> builder.entitiesByTypeName(entities));
   }
 
 

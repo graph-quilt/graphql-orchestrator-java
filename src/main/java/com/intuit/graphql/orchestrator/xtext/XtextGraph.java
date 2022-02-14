@@ -52,7 +52,7 @@ public class XtextGraph implements ServiceMetadata {
    */
   private Map<String, ObjectTypeDefinition> objectTypeDefinitions;
 
-  private Map<String, TypeDefinition> entities;
+  private Map<String, TypeDefinition> entitiesByTypeName;
 
 
   private XtextGraph(Builder builder) {
@@ -166,8 +166,8 @@ public class XtextGraph implements ServiceMetadata {
     return objectTypeDefinitions;
   }
 
-  public Map<String, TypeDefinition> getEntities() {
-    return entities;
+  public Map<String, TypeDefinition> getEntitiesByTypeName() {
+    return entitiesByTypeName;
   }
 
   private void computeAndCacheCollections() {
@@ -370,7 +370,7 @@ public class XtextGraph implements ServiceMetadata {
       return this;
     }
 
-    public Builder entities(Map<String, TypeDefinition> entities) {
+    public Builder entitiesByTypeName(Map<String, TypeDefinition> entities) {
       requireNonNull(entities);
       this.entities.putAll(entities);
       return this;
