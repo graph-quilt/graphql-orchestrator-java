@@ -94,7 +94,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       TypeDefinition existingType = existing.get(typeName);
       if (Objects.nonNull(existingType) && !nestedTypes.containsKey(existingType.getName())) {
         TypeDefinition conflictingType = current.get(typeName);
-        XtextTypeConflictResolver.INSTANCE.resolve(conflictingType, existingType);
+        XtextTypeConflictResolver.INSTANCE.resolve(conflictingType, existingType, currentGraph.getServiceProvider().getSeviceType() == ServiceProvider.ServiceType.FEDERATION_SUBGRAPH);
       }
     }
   }
