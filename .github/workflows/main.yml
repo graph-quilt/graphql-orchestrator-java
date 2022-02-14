@@ -30,10 +30,18 @@ jobs:
     - name: Build with Maven
       if: ${{ github.ref != 'refs/heads/master' }}
       run: mvn -B package --file pom.xml
+      
+    - id: install-secret-key
+      name: Install gpg secret key
+      run: |
+        cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+        gpg --list-secret-keys --keyid-format LONG  
 
     - name: Publish Snapshot to OSS Maven Repository
       if: ${{ github.ref == 'refs/heads/master' }}
-      run: mvn -B --batch-mode deploy --file pom.xml
+      run: mvn -B --no-transfer-progress --batch-mode \
+        -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} \
+        clean deploy --file pom.xml 
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
