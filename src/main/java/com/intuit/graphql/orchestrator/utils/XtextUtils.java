@@ -27,6 +27,15 @@ import org.eclipse.xtext.resource.XtextResourceSet;
  */
 public class XtextUtils {
 
+  public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
+
+  //TODO Move federation constants to it's own class
+  public static final String FEDERATION_KEY_DIRECTIVE = "key";
+  public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
+  public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
+  public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
+  public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
+
   private XtextUtils() {
   }
 
@@ -231,4 +240,21 @@ public class XtextUtils {
     TypeDefinition typeDefinition = XtextTypeUtils.getObjectType(type);
     return Objects.nonNull(typeDefinition) && typeDefinition instanceof ObjectTypeDefinition;
   }
+
+  public static String toDescriptiveString(TypeDefinition typeDefinition) {
+    return String.format(XTEXT_TYPE_FORMAT, typeDefinition.getName(), typeDefinition.eClass().getName(),
+        typeDefinition.getDesc());
+  }
+
+  public static String toDescriptiveString(NamedType namedType) {
+    TypeDefinition objectType = XtextTypeUtils.getObjectType(namedType);
+    return Objects.nonNull(objectType) ? toDescriptiveString(objectType)
+        : String.format(XTEXT_TYPE_FORMAT, XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
+  }
+
+  public static boolean typeContainsDirective(TypeDefinition typeDefinition, String directiveName) {
+    return typeDefinition.getDirectives().stream()
+            .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
+  }
+
 }

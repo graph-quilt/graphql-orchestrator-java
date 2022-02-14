@@ -49,7 +49,6 @@ class DirectivesUtil {
         .build();
   }
 
-
   public static String buildDeprecationReason(List<GraphQLDirective> directives) {
     if (CollectionUtils.isNotEmpty(directives)) {
 
