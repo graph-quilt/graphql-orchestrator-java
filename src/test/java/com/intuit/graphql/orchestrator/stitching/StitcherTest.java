@@ -30,19 +30,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
 import org.junit.Test;
 
 @Slf4j
 public class StitcherTest {
 
   private final Stitcher stitcher = XtextStitcher.newBuilder().build();
+  private final String DEFAULT_URL = "http://localhost";
 
   @Test
   public void testTopLevelStitching() {
 
-    ServiceProvider provider1 = serviceProvider("http://localhost", "EPS", TestHelper.getFileMapFromList(
+    ServiceProvider provider1 = serviceProvider(DEFAULT_URL, "EPS", TestHelper.getFileMapFromList(
         "top_level/eps/schema2.graphqls"));
-    ServiceProvider provider2 = serviceProvider("http://localhost", "PERSON",
+    ServiceProvider provider2 = serviceProvider(DEFAULT_URL, "PERSON",
         TestHelper.getFileMapFromList("top_level/person/schema1.graphqls"));
     List<ServiceProvider> serviceContextList = Arrays.asList(provider1, provider2);
     RuntimeGraph runtimeGraph = stitcher.stitch(serviceContextList);
@@ -109,9 +111,9 @@ public class StitcherTest {
   @Test
   public void testNestedStitching() {
 
-    ServiceProvider provider1 = serviceProvider("http://localhost", "V4O", TestHelper.getFileMapFromList(
+    ServiceProvider provider1 = serviceProvider(DEFAULT_URL, "V4O", TestHelper.getFileMapFromList(
         "nested/v4os/schema.graphqls"));
-    ServiceProvider provider2 = serviceProvider("http://localhost", "TURBO",
+    ServiceProvider provider2 = serviceProvider(DEFAULT_URL, "TURBO",
         TestHelper.getFileMapFromList("nested/turbo/schema.graphqls"));
     List<ServiceProvider> serviceContextList = Arrays.asList(provider1, provider2);
     RuntimeGraph runtimeGraph = stitcher.stitch(serviceContextList);
@@ -217,7 +219,7 @@ public class StitcherTest {
   }
 
   @Test
-  public void throwsExceptionOnGoldenTypeConflict() {
+  public void makesCorrectGraphOnGoldenType() {
     String schema1 = "type Query { foo: PageInfo } type PageInfo { id: String }";
     String schema2 = "type Query { bar: PageInfo } type PageInfo { id: String }";
 
@@ -226,28 +228,42 @@ public class StitcherTest {
             TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
     );
 
-    assertThatThrownBy(() -> stitcher.stitch(services)).isInstanceOf(TypeConflictException.class);
+    RuntimeGraph runtimeGraph = stitcher.stitch(services);
+    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
+    assertThat(query).isNotNull();
 
+    assertThat(query.getFieldDefinition("foo")).isNotNull();
+    assertThat(query.getFieldDefinition("bar")).isNotNull();
+
+    assertThat(query.getFieldDefinition("foo").getType())
+            .isEqualTo(query.getFieldDefinition("bar").getType());
   }
 
   @Test
-  public void throwsExceptionOnGoldenInterfaceConflict() {
-    String schema1 = "type Query { foo: Nod } interface Nod { id: String } type foo implements Nod {id: String}";
-    String schema2 = "type Query { bar: Nod } interface Nod { id: String } type bar implements Nod {id: String}";
+  public void makesCorrectGraphOnGoldenInterface() {
+    String schema1 = "type Query { foo: Node } interface Node { id: String } type foo implements Node {id: String}";
+    String schema2 = "type Query { bar: Node } interface Node { id: String } type bar implements Node {id: String}";
 
     List<ServiceProvider> services = Arrays.asList(
             TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
             TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
     );
 
-    assertThatThrownBy(() -> stitcher.stitch(services)).isInstanceOf(TypeConflictException.class);
-  }
+    RuntimeGraph runtimeGraph = stitcher.stitch(services);
+    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
+    assertThat(query).isNotNull();
+
+    assertThat(query.getFieldDefinition("foo")).isNotNull();
+    assertThat(query.getFieldDefinition("bar")).isNotNull();
+
+    assertThat(query.getFieldDefinition("foo").getType())
+            .isEqualTo(query.getFieldDefinition("bar").getType());  }
 
   @Test
   public void NestedTypeDescriptionWithNamespaceAndEmptyDescription_TwoSchemaMergeTest() {
-    ServiceProvider provider1 = serviceProvider("http://localhost", "V4O", TestHelper.getFileMapFromList(
+    ServiceProvider provider1 = serviceProvider(DEFAULT_URL, "V4O", TestHelper.getFileMapFromList(
         "nested/v4os/schema.graphqls"));
-    ServiceProvider provider2 = serviceProvider("http://localhost", "TURBO",
+    ServiceProvider provider2 = serviceProvider(DEFAULT_URL, "TURBO",
         TestHelper.getFileMapFromList("nested/turbo/schema.graphqls"));
     List<ServiceProvider> serviceContextList = Arrays.asList(provider1, provider2);
     RuntimeGraph runtimeGraph = stitcher.stitch(serviceContextList);
@@ -372,7 +388,35 @@ public class StitcherTest {
     assertThat(aType.getDescription()).contains("description for schema2");
   }
 
+  @Test
+  public void testTopLevelFederationStitching() {
+    ServiceProvider provider1 = serviceProvider(DEFAULT_URL, "Employee",
+            TestHelper.getFileMapFromList("top_level/federation/employee.graphqls"),
+            ServiceType.FEDERATION_SUBGRAPH);
+
+    ServiceProvider provider2 = serviceProvider(DEFAULT_URL, "Inventory",
+            TestHelper.getFileMapFromList("top_level/federation/inventory.graphqls"),
+            ServiceType.FEDERATION_SUBGRAPH);
+
+    List<ServiceProvider> serviceContextList = Arrays.asList(provider1, provider2);
+
+    RuntimeGraph runtimeGraph = stitcher.stitch(serviceContextList);
+    final GraphQLSchema graphQLSchema = runtimeGraph.getExecutableSchema();
+    final GraphQLObjectType queryType = runtimeGraph.getOperation(Operation.QUERY);
+
+    assertThat(graphQLSchema).isNotNull();
+    assertThat(graphQLSchema.getQueryType().getFieldDefinitions().size()).isEqualTo(3);
+
+    assertThat(queryType.getFieldDefinition("employeeById")).isNotNull();
+    assertThat(queryType.getFieldDefinition("getSoldProducts")).isNotNull();
+    assertThat(queryType.getFieldDefinition("getStoreByIdAndName")).isNotNull();
+  }
+
   private ServiceProvider serviceProvider(String url, String namespace, Map<String, String> sdlFiles) {
-    return TestServiceProvider.newBuilder().namespace(namespace).sdlFiles(sdlFiles).build();
+    return serviceProvider(url, namespace, sdlFiles, ServiceType.GRAPHQL);
+  }
+
+  private ServiceProvider serviceProvider(String url, String namespace, Map<String, String> sdlFiles, ServiceType serviceType) {
+    return TestServiceProvider.newBuilder().namespace(namespace).sdlFiles(sdlFiles).serviceType(serviceType).build();
   }
 }

@@ -62,7 +62,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
         String serviceName = fieldResolverContext.getServiceNamespace();
         String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
         String fieldName = fieldDefinition.getName();
-        String placeHolderTypeDescription = XtextUtils.toDescriptiveString(fieldType);
+        String placeHolderTypeDescription = XtextTypeUtils.toDescriptiveString(fieldType);
 
         throw new ExternalTypeNotfoundException(serviceName, parentTypeName, fieldName, placeHolderTypeDescription);
       }
