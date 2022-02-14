@@ -32,7 +32,7 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
             .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
             .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-    if(entities.size() > 0 && source.getServiceProvider().getSeviceType() != ServiceProvider.ServiceType.FEDERATION_SUBGRAPH) {
+    if(entities.size() > 0 && !source.getServiceProvider().isFederationProvider()) {
       throw new InvalidLocationForFederationDirective(FEDERATION_KEY_DIRECTIVE);
     }
 
