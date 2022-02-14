@@ -52,6 +52,9 @@ public class XtextGraph implements ServiceMetadata {
    */
   private Map<String, ObjectTypeDefinition> objectTypeDefinitions;
 
+  private Map<String, TypeDefinition> entitiesByTypeName;
+
+
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
     xtextResourceSet = requireNonNull(builder.xtextResourceSet, "Resource Set cannot be null");
@@ -163,6 +166,10 @@ public class XtextGraph implements ServiceMetadata {
     return objectTypeDefinitions;
   }
 
+  public Map<String, TypeDefinition> getEntitiesByTypeName() {
+    return entitiesByTypeName;
+  }
+
   private void computeAndCacheCollections() {
     objectTypeDefinitions = new HashMap<>();
     for (final Entry<String, TypeDefinition> entry : types.entrySet()) {
@@ -226,6 +233,7 @@ public class XtextGraph implements ServiceMetadata {
     private Map<FieldContext, ArgumentsDefinition> resolverArgumentFields = new HashMap<>();
     private Set<DirectiveDefinition> directives = new HashSet<>();
     private Map<String, TypeDefinition> types = new HashMap<>();
+    private Map<String, TypeDefinition> entities = new HashMap<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
@@ -359,6 +367,12 @@ public class XtextGraph implements ServiceMetadata {
 
     public Builder clearFieldResolverContexts() {
       this.fieldResolverContexts.clear();
+      return this;
+    }
+
+    public Builder entitiesByTypeName(Map<String, TypeDefinition> entities) {
+      requireNonNull(entities);
+      this.entities.putAll(entities);
       return this;
     }
 
