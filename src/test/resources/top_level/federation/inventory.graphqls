@@ -8,8 +8,15 @@ type Store @key(fields: "id name") {
     name: String
     sold: [Product]
     stock: [Product]
+    personOfContact: Person
 }
 
 type Product {
     name: String
+}
+
+type Person {
+    id: ID
+    firstName: String
+    lastName: String
 }
