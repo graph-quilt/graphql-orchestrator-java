@@ -1,4 +1,4 @@
-package com.intuit.graphql.orchestrator.keydirective.exceptions;
+package com.intuit.graphql.orchestrator.federation.keydirective.exceptions;
 
 public class InvalidKeyDirectiveFieldReference extends KeyDirectiveException {
 

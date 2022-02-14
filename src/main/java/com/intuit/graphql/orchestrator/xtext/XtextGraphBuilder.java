@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.xtext.resource.XtextResourceSet;
 
-@Slf4j
 public class XtextGraphBuilder {
 
   public static XtextGraph build(ServiceProvider serviceProvider) {

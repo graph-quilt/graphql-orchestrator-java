@@ -3,7 +3,7 @@ package com.intuit.graphql.orchestrator.schema.transform;
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.VisibleForTesting;
 
