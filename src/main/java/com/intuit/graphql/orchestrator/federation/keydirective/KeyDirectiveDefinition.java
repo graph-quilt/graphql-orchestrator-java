@@ -1,10 +1,10 @@
-package com.intuit.graphql.orchestrator.keydirective;
+package com.intuit.graphql.orchestrator.federation.keydirective;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName;
 
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.KeyDirectiveException;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.KeyDirectiveException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

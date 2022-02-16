@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.resource.IResourceFactory;
@@ -75,17 +76,24 @@ public class XtextResourceSetBuilder {
    */
   public XtextResourceSet build() {
     graphqlResourceSet = GRAPHQL_INJECTOR.getInstance(XtextResourceSet.class);
-    files.forEach((fileName, content) -> {
-      try {
-        if(isFederatedResourceSet) {
-          content += FEDERATION_DIRECTIVES;
-        }
 
-        createGraphqlResourceFromString(content, fileName);
+    if(isFederatedResourceSet) {
+      String content = FEDERATION_DIRECTIVES + "\n" + StringUtils.join(files.values(), "\n");
+
+      try {
+        createGraphqlResourceFromString(content, "appended_federation");
       } catch (IOException e) {
-        throw new SchemaParseException("Unable to parse file:" + fileName, e);
+        throw new SchemaParseException("Unable to parse file: appended federation file", e);
       }
-    });
+    } else {
+      files.forEach((fileName, content) -> {
+        try {
+          createGraphqlResourceFromString(content, fileName);
+        } catch (IOException e) {
+          throw new SchemaParseException("Unable to parse file:" + fileName, e);
+        }
+      });
+    }
 
     List<Issue> issues = validate();
     if (!issues.isEmpty()) {

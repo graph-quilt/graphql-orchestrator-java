@@ -1,5 +1,8 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
+
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -8,18 +11,17 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.apollofederation.EntityExtensionContext;
 import com.intuit.graphql.orchestrator.apollofederation.EntityExtensionDefinition;
-import com.intuit.graphql.orchestrator.keydirective.KeyDirectiveDefinition;
-import com.intuit.graphql.orchestrator.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidLocationForFederationDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveDefinition;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.FEDERATION_KEY_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
-
 
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
@@ -28,24 +30,28 @@ import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirec
 public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
 
   @VisibleForTesting
-  KeyDirectiveValidator validator = new KeyDirectiveValidator();
+  KeyDirectiveValidator keyDirectiveValidator = new KeyDirectiveValidator();
 
   @Override
   public XtextGraph transform(final XtextGraph source) {
-    List<TypeDefinition> entities = source.getTypes().values().stream()
+    Map<String, TypeDefinition> entities = source.getTypes().values().stream()
             .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
-            .collect(Collectors.toList());
+            .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-    for (final TypeDefinition typeDefinition : entities) {
-      for (final Directive directive : (List<Directive>)typeDefinition.getDirectives()) {
+    if(entities.size() > 0 && !source.getServiceProvider().isFederationProvider()) {
+      throw new InvalidLocationForFederationDirective(FEDERATION_KEY_DIRECTIVE);
+    }
+
+    for(final TypeDefinition entityDefinitions : entities.values()) {
+      for (final Directive directive : entityDefinitions.getDirectives()) {
         if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
-          List<Argument> arguments = (List<Argument>)directive.getArguments();
-          validator.validateKeyArguments(typeDefinition, arguments);
+          List<Argument> arguments = directive.getArguments();
+          keyDirectiveValidator.validate(entityDefinitions, arguments);
         }
       }
     }
 
-    // This is temporary code
+    // TODO This is temporary code
     source.getTypes().values().stream()
         .forEach(typeDefinition -> {
           if (hasKeyDirective(typeDefinition) && hasExtends(typeDefinition)) {
@@ -53,7 +59,7 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
             source.addToEntitiesExtension(entityExtensionDefinition.getTypeName(), entityExtensionDefinition);
             List<EntityExtensionContext> entityExtensionContexts = createEntityExtensionContexts(typeDefinition, entityExtensionDefinition, source);
             entityExtensionContexts.forEach(entityExtensionContext ->
-              source.addToEntitiesExtensionFields(entityExtensionContext.getFieldCoordinate(), entityExtensionContext)
+                source.addToEntitiesExtensionFields(entityExtensionContext.getFieldCoordinate(), entityExtensionContext)
             );
           };
           if (hasKeyDirective(typeDefinition)) {
@@ -61,7 +67,7 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
           };
         });
 
-    return source;
+    return source.transform(builder -> builder.entitiesByTypeName(entities));
   }
 
   private EntityExtensionDefinition createEntityExtensionDefinition(TypeDefinition typeDefinition, XtextGraph source) {
@@ -97,13 +103,13 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
       return interfaceTypeDefinition.getFieldDefinition().stream()
           .filter(fieldDefinition -> !containsExternalDirective(fieldDefinition))
           .map(fieldDefinition ->
-            EntityExtensionContext.builder()
-                .fieldDefinition(fieldDefinition)
-                .parentTypeDefinition(typeDefinition)
-                .requiresTypeNameInjection(true)
-                .serviceMetadata(source)
-                .thisEntityExtensionDefinition(entityExtensionDefinition)
-                .build()
+              EntityExtensionContext.builder()
+                  .fieldDefinition(fieldDefinition)
+                  .parentTypeDefinition(typeDefinition)
+                  .requiresTypeNameInjection(true)
+                  .serviceMetadata(source)
+                  .thisEntityExtensionDefinition(entityExtensionDefinition)
+                  .build()
           )
           .collect(Collectors.toList());
     }
@@ -139,4 +145,8 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
     return fieldDefinition.getDirectives().stream()
         .anyMatch(directive -> directive.getDefinition().getName().equals("external"));
   }
+
 }
+
+
+

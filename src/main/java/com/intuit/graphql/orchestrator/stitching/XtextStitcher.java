@@ -156,7 +156,7 @@ public class XtextStitcher implements Stitcher {
 
     HashMap<String, BatchLoader> batchLoaderMap = new HashMap<>();
     xtextGraphMap.forEach((namespace, graph) -> {
-      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || graph.getServiceProvider().getSeviceType() == ServiceType.APOLLO_SUBGRAPH) {
+      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || graph.getServiceProvider().isFederationProvider()) {
         batchLoaderMap.put(namespace,
             GraphQLServiceBatchLoader
                 .newQueryExecutorBatchLoader()

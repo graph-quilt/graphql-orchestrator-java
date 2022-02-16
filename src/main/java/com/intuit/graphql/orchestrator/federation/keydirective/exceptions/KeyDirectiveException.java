@@ -1,4 +1,4 @@
-package com.intuit.graphql.orchestrator.keydirective.exceptions;
+package com.intuit.graphql.orchestrator.federation.keydirective.exceptions;
 
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
 

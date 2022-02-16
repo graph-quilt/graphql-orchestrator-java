@@ -1,4 +1,4 @@
-package com.intuit.graphql.orchestrator.keydirective;
+package com.intuit.graphql.orchestrator.federation.keydirective;
 
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -6,11 +6,13 @@ import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.MultipleArgumentsForKeyDirective;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.NoFieldsArgumentForKeyDirective;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.InvalidKeyDirectiveFieldReference;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.InvalidLocationForKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.MultipleArgumentsForKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.NoFieldsArgumentForKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidKeyDirectiveFieldReference;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidLocationForKeyDirective;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,9 +25,7 @@ import java.util.stream.Collectors;
  */
 public class KeyDirectiveValidator {
 
-  public void validateKeyArguments(TypeDefinition typeDefinition,
-      List<Argument> argumentList) throws InvalidLocationForKeyDirective, EmptyFieldsArgumentKeyDirective, InvalidKeyDirectiveFieldReference, NoFieldsArgumentForKeyDirective, MultipleArgumentsForKeyDirective {
-
+  public void validate(TypeDefinition typeDefinition, List<Argument> argumentList) {
     String containerName = typeDefinition.getName();
 
     validateKeyDirectiveLocation(typeDefinition, containerName);
@@ -35,6 +35,7 @@ public class KeyDirectiveValidator {
     if(argument.isPresent()) {
       validateKeyArgumentName(argument.get(), containerName);
 
+      //TODO Validate based on FieldSpec which is a selection set with {}
       final List<String> keyFieldList = Arrays.asList(argument.get().getValueWithVariable().getStringValue().trim().split(" "));
       validateKeyFieldsArgumentSize(keyFieldList, containerName);
 
@@ -60,19 +61,23 @@ public class KeyDirectiveValidator {
   }
 
   private void validateKeyArgumentName(Argument argument, String containerName) throws NoFieldsArgumentForKeyDirective {
-    if(!argument.getName().equals("fields")) {
+    if(!StringUtils.equals("fields", argument.getName())) {
       throw new NoFieldsArgumentForKeyDirective(containerName);
     }
   }
 
   private void validateKeyFieldsArgumentSize(List<String> keyFields, String containerName) throws EmptyFieldsArgumentKeyDirective {
-    if(keyFields.isEmpty() || keyFields.stream().anyMatch(field -> field.equals(""))) {
+    if(CollectionUtils.isEmpty(keyFields) || keyFields.stream().anyMatch(StringUtils::isEmpty)) {
       throw new EmptyFieldsArgumentKeyDirective(containerName);
     }
   }
 
   private  void validateKeyFieldReferences(List<String> existingFieldDefinitions, List<String> keyFieldRefereces, String containerName) throws InvalidKeyDirectiveFieldReference {
     for(String keyField : keyFieldRefereces) {
+      if(!existingFieldDefinitions.contains(keyField)) {
+        throw new InvalidKeyDirectiveFieldReference(keyField, containerName);
+      }
+
       if(existingFieldDefinitions.stream().noneMatch(definedField -> definedField.equals(keyField))) {
         throw new InvalidKeyDirectiveFieldReference(keyField, containerName);
       }

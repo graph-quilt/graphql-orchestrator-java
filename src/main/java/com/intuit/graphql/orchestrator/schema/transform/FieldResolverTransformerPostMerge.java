@@ -1,6 +1,20 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import com.intuit.graphql.graphQL.*;
+import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getParentTypeName;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
+import static java.util.stream.Collectors.toMap;
+
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputValueDefinition;
+import com.intuit.graphql.graphQL.ListType;
+import com.intuit.graphql.graphQL.NamedType;
+import com.intuit.graphql.graphQL.ObjectType;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverException;
 import com.intuit.graphql.orchestrator.fieldresolver.ResolverArgumentDefinitionValidator;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
@@ -8,22 +22,20 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinit
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
-import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.*;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
-import static java.util.stream.Collectors.toMap;
 
 public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
 
@@ -62,7 +74,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
         String serviceName = fieldResolverContext.getServiceNamespace();
         String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
         String fieldName = fieldDefinition.getName();
-        String placeHolderTypeDescription = XtextUtils.toDescriptiveString(fieldType);
+        String placeHolderTypeDescription = XtextTypeUtils.toDescriptiveString(fieldType);
 
         throw new ExternalTypeNotfoundException(serviceName, parentTypeName, fieldName, placeHolderTypeDescription);
       }

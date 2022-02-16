@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
@@ -15,7 +13,6 @@ import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.utils.XtextTypeUtils;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -32,6 +29,7 @@ public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
 
+  //TODO Move federation constants to it's own class
   public static final String FEDERATION_KEY_DIRECTIVE = "key";
   public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
   public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
@@ -254,21 +252,14 @@ public class XtextUtils {
         : String.format(XTEXT_TYPE_FORMAT, XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
   }
 
-  public static List<FieldDefinition> getChildFields(TypeDefinition typeDefinition) {
-    Objects.requireNonNull(typeDefinition);
-
-    List<FieldDefinition> childFields;
-    if (typeDefinition instanceof ObjectTypeDefinition) {
-      childFields = ((ObjectTypeDefinition) typeDefinition).getFieldDefinition();
-    } else {
-      childFields = ((InterfaceTypeDefinition) typeDefinition).getFieldDefinition();
-    }
-    return childFields;
-  }
-
   public static boolean typeContainsDirective(TypeDefinition typeDefinition, String directiveName) {
     return typeDefinition.getDirectives().stream()
             .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
+
+//  public static boolean typeContainsDirective(TypeDefinition typeDefinition, String directiveName) {
+//    return typeDefinition.getDirectives().stream()
+//            .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
+//  }
 
 }

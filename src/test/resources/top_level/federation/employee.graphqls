@@ -7,3 +7,9 @@ type Employee @key(fields: "id"){
     username: String!
     password: String!
 }
+
+type Person {
+    id: ID
+    firstName: String
+    lastName: String
+}

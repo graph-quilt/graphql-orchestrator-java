@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator.apollofederation;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
-import com.intuit.graphql.orchestrator.keydirective.KeyDirectiveDefinition;
+import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import java.util.List;
 import lombok.Builder;

@@ -34,8 +34,10 @@ public interface ServiceProvider extends QueryExecutor {
     return ServiceType.GRAPHQL;
   }
 
+  default boolean isFederationProvider() { return getSeviceType() == ServiceType.FEDERATION_SUBGRAPH; }
+
   enum ServiceType {
-    APOLLO_SUBGRAPH,
+    FEDERATION_SUBGRAPH,
     GRAPHQL,
     REST
   }

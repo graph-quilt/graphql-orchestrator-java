@@ -5,12 +5,12 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.ValueWithVariable;
-import com.intuit.graphql.orchestrator.keydirective.KeyDirectiveValidator;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.MultipleArgumentsForKeyDirective;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.NoFieldsArgumentForKeyDirective;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.InvalidKeyDirectiveFieldReference;
-import com.intuit.graphql.orchestrator.keydirective.exceptions.InvalidLocationForKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.MultipleArgumentsForKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.NoFieldsArgumentForKeyDirective;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidKeyDirectiveFieldReference;
+import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidLocationForKeyDirective;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EClass;
@@ -55,7 +55,7 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(objectTypeDefinitionMock.eContainer()).thenReturn(mockedFieldDefinition);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
         Assert.fail();
     }
 
@@ -67,7 +67,7 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(objectTypeDefinitionMock.eContainer()).thenReturn(mockedTypeSystemDefinition);
 
         List<Argument> argumentList = Arrays.asList(argumentMock, argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
 
         Assert.fail();
     }
@@ -82,7 +82,7 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(argumentMock.getName()).thenReturn("field");
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
 
         Assert.fail();
     }
@@ -101,7 +101,7 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
 
         Assert.fail();
     }
@@ -138,9 +138,9 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
 
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
         Assert.fail();
     }
 
@@ -176,7 +176,7 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Collections.singletonList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
     }
 
     @Test(expected = InvalidKeyDirectiveFieldReference.class)
@@ -212,9 +212,9 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
 
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
         Assert.fail();
     }
 
@@ -251,6 +251,6 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Collections.singletonList(argumentMock);
-        keyDirectiveValidator.validateKeyArguments(objectTypeDefinitionMock, argumentList);
+        keyDirectiveValidator.validate(objectTypeDefinitionMock, argumentList);
     }
 }
