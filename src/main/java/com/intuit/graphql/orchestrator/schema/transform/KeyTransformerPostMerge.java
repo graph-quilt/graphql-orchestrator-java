@@ -1,12 +1,10 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static java.lang.String.format;
-
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
 import com.intuit.graphql.orchestrator.federation.extendsdirective.EntityExtension;
-import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.EntityExtensionException;
+import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.BaseTypeNotFoundException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +26,10 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
           String entityTypename = entityTypeExtension.getName();
           TypeDefinition entityBaseType = entitiesByTypename.get(entityTypename);
           if (Objects.isNull(entityBaseType)) {
-            // TODO, add source namespace if possible sourceService=%s
-            String errMsg = format("Basetype does not found.  typename=%s", entityTypename);
-            throw new EntityExtensionException(errMsg);
+            // TODO,
+            //   1. Can this check be done before postMerge?  What if the base service has not registered or was processed late?
+            //   2. Add source namespace sourceService=extensionMetadata.getServiceMetadata().getNamespace()
+            throw new BaseTypeNotFoundException(entityTypename);
           }
           return new EntityExtension(entityBaseType, entityTypeExtension);
         })
