@@ -221,6 +221,11 @@ public class XtextGraph implements ServiceMetadata {
     return builder.build();
   }
 
+  public Map<String, List<TypeDefinition>> getEntityExtensionsByNamespace() {
+    // TODO
+    throw new RuntimeException("TODO Implement function");
+  }
+
   /**
    * The type Builder.
    */
