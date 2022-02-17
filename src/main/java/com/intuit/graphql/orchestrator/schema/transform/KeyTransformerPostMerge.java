@@ -3,7 +3,6 @@ package com.intuit.graphql.orchestrator.schema.transform;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
-import com.intuit.graphql.orchestrator.federation.extendsdirective.EntityExtension;
 import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.BaseTypeNotFoundException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.List;
@@ -31,7 +30,7 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
             //   2. Add source namespace sourceService=extensionMetadata.getServiceMetadata().getNamespace()
             throw new BaseTypeNotFoundException(entityTypename);
           }
-          return new EntityExtension(entityBaseType, entityTypeExtension);
+          return EntityTypeMerger.createEntityTypeMergerContext(entityBaseType, entityTypeExtension);
         })
         .forEach(entityTypeMerger::mergeIntoBaseType);
 

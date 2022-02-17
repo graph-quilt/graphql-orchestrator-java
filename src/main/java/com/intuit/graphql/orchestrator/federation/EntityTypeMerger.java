@@ -8,17 +8,23 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.extendsdirective.EntityExtension;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 public class EntityTypeMerger {
 
-  public void mergeIntoBaseType(EntityExtension entityExtension) {
-    TypeDefinition baseType = entityExtension.getBaseType();
-    TypeDefinition typeExtension = entityExtension.getTypeExtension();
+  public static EntityMergingContext createEntityTypeMergerContext(
+      TypeDefinition entityBaseType, TypeDefinition entityTypeExtension) {
+    return new EntityMergingContext(entityBaseType, entityTypeExtension);
+  }
+
+  public void mergeIntoBaseType(EntityMergingContext entityMergingContext) {
+    TypeDefinition baseType = entityMergingContext.getBaseType();
+    TypeDefinition typeExtension = entityMergingContext.getTypeExtension();
 
     // specification: directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
     if (isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)) {
@@ -54,5 +60,13 @@ public class EntityTypeMerger {
             .collect(Collectors.toList());
     baseTypeFields.addAll(newFieldDefinitions);
   }
+
+  @AllArgsConstructor
+  @Getter
+  public static class EntityMergingContext {
+    private TypeDefinition baseType;
+    private TypeDefinition typeExtension;
+  }
+
 
 }
