@@ -1,58 +1,56 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
+import static java.lang.String.format;
 import static org.apache.commons.collections4.CollectionUtils.containsAny;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 public class EntityTypeMerger {
 
-  public static EntityMergingContext createEntityTypeMergerContext(
-      TypeDefinition entityBaseType, TypeDefinition entityTypeExtension) {
-    return new EntityMergingContext(entityBaseType, entityTypeExtension);
-  }
-
-  public void mergeIntoBaseType(EntityMergingContext entityMergingContext) {
+  public TypeDefinition mergeIntoBaseType(EntityMergingContext entityMergingContext) {
     TypeDefinition baseType = entityMergingContext.getBaseType();
     TypeDefinition typeExtension = entityMergingContext.getTypeExtension();
+    checkEntityTypesCanBeMerged(entityMergingContext);
+    merge(getFieldDefinitions(baseType), getFieldDefinitions(typeExtension));
+    return baseType;
+  }
 
+  private void checkEntityTypesCanBeMerged(EntityMergingContext entityMergingContext) {
+    TypeDefinition baseType = entityMergingContext.getBaseType();
+    TypeDefinition typeExtension = entityMergingContext.getTypeExtension();
     // specification: directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
-    if (isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)) {
-      List<FieldDefinition> baseTypeFields = ((InterfaceTypeDefinition) baseType).getFieldDefinition();
-      List<FieldDefinition> typeExtensionFields = ((InterfaceTypeDefinition) typeExtension).getFieldDefinition();
-      merge(baseTypeFields, typeExtensionFields);
-    } else if (isObjectTypeDefinition(baseType) && isObjectTypeDefinition(typeExtension)) {
-      List<FieldDefinition> baseTypeFields = ((ObjectTypeDefinition) baseType).getFieldDefinition();
-      List<FieldDefinition> typeExtensionFields = ((ObjectTypeDefinition) typeExtension).getFieldDefinition();
-      merge(baseTypeFields, typeExtensionFields);
-    } else {
-      // TODO this should be throw somewhere
-      throw new TypeConflictException("");
+    if (!(isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)
+        || isObjectTypeDefinition(baseType) && isObjectTypeDefinition(typeExtension))) {
+      String errMsgTemplate =
+          "Failed to merge entity extension to base type. typename%s, serviceNamespace=%s";
+      throw new TypeConflictException(
+          format(
+              errMsgTemplate,
+              entityMergingContext.getTypename(),
+              entityMergingContext.getServiceNamespace()));
     }
+    // TODO check if this is beging done alreaduy
+    //   @key is subset - yes
+    //   @external fields are vlid
+    //   @require fields are valid
+    //   new fields are not present in base type
+    throw new RuntimeException("TODO Implementation");
   }
 
   private void merge(
       List<FieldDefinition> baseTypeFields, List<FieldDefinition> typeExtensionFields) {
-    // TODO
-    // Assumption: in TypeConflictResolver, checkEntityTypesCanBeMerged(entityBaseType,
-    // entityTypeExtension);
-    //   @key is subset
-    //   @external fields are vlid
-    //   @require fields are valid
-    //   new fields are not present in base type
-    Set<String> baseTypeFieldNames = baseTypeFields.stream()
-        .map(fieldDefinition -> fieldDefinition.getName())
-        .collect(Collectors.toSet());
+    Set<String> baseTypeFieldNames =
+        baseTypeFields.stream().map(FieldDefinition::getName).collect(Collectors.toSet());
 
     List<FieldDefinition> newFieldDefinitions =
         typeExtensionFields.stream()
@@ -61,12 +59,12 @@ public class EntityTypeMerger {
     baseTypeFields.addAll(newFieldDefinitions);
   }
 
-  @AllArgsConstructor
+  @Builder
   @Getter
   public static class EntityMergingContext {
+    private String typename;
+    private String serviceNamespace;
     private TypeDefinition baseType;
     private TypeDefinition typeExtension;
   }
-
-
 }
