@@ -164,11 +164,12 @@ public class XtextTypeUtils {
           //removes from map since we know that it is shared and compatible
           // doing so to leave behind only unique fields that need to be checked
           possibleConflictingFieldMap.remove(possibleConflictingSharedField.getName());
-        } else {
+        } else if(possibleConflictingSharedField.getNamedType().isNonNull()) {
           throw new TypeConflictException(
-                  String.format("Type %s is conflicting with existing type %s",
+                  String.format("Type %s is conflicting with existing type %s. Both types must be able to resolve %s",
                           toDescriptiveString(existingTypeDefinition),
-                          toDescriptiveString(conflictingTypeDefinition)
+                          toDescriptiveString(conflictingTypeDefinition),
+                          possibleConflictingSharedField.getName()
                   )
           );
         }
@@ -241,8 +242,10 @@ public class XtextTypeUtils {
     return !entityComparison && fieldDefinition.getNamedType().isNonNull();
   }
 
+
+  //todo I need to change this it matters that the field exists in both; not that one is null and the other is non null
   public static boolean areCompatibleSharedFields(FieldDefinition fieldDefinition1, FieldDefinition fieldDefinition2) {
-    return fieldDefinition1.getNamedType().isNonNull() == fieldDefinition2.getNamedType().isNonNull() &&
+    return
             areCompatibleTypes(fieldDefinition1.getNamedType(), fieldDefinition2.getNamedType());
   }
 
