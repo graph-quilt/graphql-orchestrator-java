@@ -33,6 +33,9 @@ import com.intuit.graphql.orchestrator.schema.SchemaParseException;
 import com.intuit.graphql.orchestrator.schema.transform.ExplicitTypeResolver;
 import graphql.Scalars;
 import graphql.introspection.Introspection.DirectiveLocation;
+import graphql.language.StringValue;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLEnumType;
@@ -74,9 +77,31 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private final Map<String, GraphQLType> graphQLObjectTypes;
   public final Map<String, GraphQLDirective> directiveDefinitions;
 
+  private static final GraphQLScalarType FIELD_SET_SCALAR;
+
   static {
     STANDARD_SCALAR_TYPES = ScalarInfo.STANDARD_SCALARS.stream()
         .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity()));
+
+//    TODO REMOVE ONCE GRAPH-QL JAVA IS UPGRADED.....FIELD SET WILL ALREADY BE IN STANDARD SCALARS
+    FIELD_SET_SCALAR = new GraphQLScalarType("_FieldSet", "A selection set",  new Coercing<String, String>() {
+      public String serialize(Object input) {
+        return input.toString();
+      }
+
+      public String parseValue(Object input) {
+        return this.serialize(input);
+      }
+
+      public String parseLiteral(Object input) {
+        if (!(input instanceof StringValue)) {
+          throw new CoercingParseLiteralException("Expected AST type '_FieldSet' or 'StringValue'");
+        } else {
+          return ((StringValue)input).getValue();
+        }
+      }
+    });
+    STANDARD_SCALAR_TYPES.put("_FieldSet", FIELD_SET_SCALAR);
   }
 
   private XtextToGraphQLJavaVisitor(Builder builder) {

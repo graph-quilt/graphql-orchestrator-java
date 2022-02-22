@@ -13,9 +13,11 @@ import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.utils.XtextTypeUtils;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.ecore.EObject;
@@ -28,13 +30,6 @@ import org.eclipse.xtext.resource.XtextResourceSet;
 public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
-
-  //TODO Move federation constants to it's own class
-  public static final String FEDERATION_KEY_DIRECTIVE = "key";
-  public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
-  public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
-  public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
-  public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
 
   private XtextUtils() {
   }
@@ -256,5 +251,4 @@ public class XtextUtils {
     return typeDefinition.getDirectives().stream()
             .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
-
 }

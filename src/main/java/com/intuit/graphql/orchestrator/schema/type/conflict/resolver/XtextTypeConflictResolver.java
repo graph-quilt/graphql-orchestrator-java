@@ -8,8 +8,10 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.typeContainsD
 
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ScalarTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
+import com.intuit.graphql.graphQL.impl.ScalarTypeDefinitionImpl;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
@@ -60,7 +62,7 @@ public class XtextTypeConflictResolver {
                   toDescriptiveString(existingType)));
       }
 
-      if(!(conflictingType instanceof UnionTypeDefinition)) {
+      if(!(conflictingType instanceof UnionTypeDefinition || isScalarType(conflictingType))) {
         checkFieldsCompatibility(existingType, conflictingType, existingTypeIsEntity, conflictingTypeisEntity,federatedComparison);
       }
     }

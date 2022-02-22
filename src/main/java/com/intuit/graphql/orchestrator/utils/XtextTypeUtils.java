@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
 import static com.intuit.graphql.utils.XtextTypeUtils.isNonNull;
 import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
@@ -234,7 +235,7 @@ public class XtextTypeUtils {
   }
 
   public static boolean isEntity(final TypeDefinition type) {
-    return typeContainsDirective(type, "key");
+    return typeContainsDirective(type, FEDERATION_KEY_DIRECTIVE);
   }
 
   private static boolean isIncompatibleUniqueField(FieldDefinition fieldDefinition, boolean entityComparison) {
