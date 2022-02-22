@@ -13,7 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Optional;
 
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.checkFieldSetValidity;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.checkFieldSetValidity;
 
 /**
  * This class helps break up the {@link com.intuit.graphql.orchestrator.schema.transform.KeyTransformer} by
@@ -30,7 +31,7 @@ public class KeyDirectiveValidator {
     Optional<Argument> argument = argumentList.stream().findFirst();
     if(argument.isPresent()) {
       validateKeyArgumentName(argument.get(), containerName);
-      checkFieldSetValidity(sourceGraph, typeDefinition, argument.get().getValueWithVariable().getStringValue());
+      checkFieldSetValidity(sourceGraph, typeDefinition, argument.get().getValueWithVariable().getStringValue(), FEDERATION_KEY_DIRECTIVE);
     }
   }
 
