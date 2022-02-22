@@ -7,7 +7,7 @@ import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
 import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
-import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
+import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
 import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.MultipleArgumentsForKeyDirective;
 import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.NoFieldsArgumentForKeyDirective;
 import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidLocationForKeyDirective;
@@ -91,7 +91,7 @@ public class KeyDirectiveValidatorTest {
         Assert.fail();
     }
 
-    @Test(expected = EmptyFieldsArgumentKeyDirective.class)
+    @Test(expected = EmptyFieldsArgumentFederationDirective.class)
     public void assertValidatorThrowsExceptionForEmptyFieldsArg() {
         TypeSystemDefinition mockedTypeSystemDefinition =  mock(TypeSystemDefinition.class);
         ValueWithVariable fieldsArgMock = mock(ValueWithVariable.class);

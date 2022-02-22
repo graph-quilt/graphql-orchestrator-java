@@ -1,6 +1,5 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
@@ -12,33 +11,18 @@ import com.intuit.graphql.graphQL.TypeSystem;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
-import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
-import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.EmptyFieldsArgumentKeyDirective;
 import com.intuit.graphql.orchestrator.schema.Operation;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import graphql.language.Document;
-import graphql.language.Field;
-import graphql.language.OperationDefinition;
-import graphql.language.SelectionSet;
-import graphql.parser.Parser;
 import lombok.NonNull;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.resource.XtextResourceSet;
-
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 /**
  * The Xtext utils to get information from the XText AST.
@@ -46,13 +30,6 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefin
 public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
-
-  //TODO Move federation constants to it's own class
-  public static final String FEDERATION_KEY_DIRECTIVE = "key";
-  public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
-  public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
-  public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
-  public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
 
   private XtextUtils() {
   }
@@ -274,58 +251,4 @@ public class XtextUtils {
     return typeDefinition.getDirectives().stream()
             .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
-
-  public static void checkFieldReferenceRecursively(XtextGraph sourceGraph, String typeName, List<FieldDefinition> declaredDefinitions, Field fieldToCheck) {
-    String fieldName = fieldToCheck.getName();
-    Optional<FieldDefinition> optionalFieldDefinition = declaredDefinitions.stream()
-            .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
-            .findFirst();
-
-    if(optionalFieldDefinition.isPresent()) {
-      if(CollectionUtils.isNotEmpty(fieldToCheck.getChildren())) {
-        FieldDefinition fieldDefinition = optionalFieldDefinition.get();
-        TypeDefinition childType = sourceGraph.getType(fieldDefinition.getNamedType());
-
-        //should only be 1 element, but put in loop just in case something changes later
-        for(SelectionSet childSelectionSet: fieldToCheck.getChildren().stream().map(SelectionSet.class::cast).collect(Collectors.toList())) {
-          for(Field childField : getFieldsFromSelectionSet(childSelectionSet)) {
-            checkFieldReferenceRecursively(sourceGraph, childType.getName(), getFieldDefinitions(childType), childField);
-          }
-        }
-      }
-    } else {
-      throw new InvalidFieldSetReferenceException(fieldName, typeName);
-    }
-  }
-
-  public static List<Field> getFieldsFromSelectionSet(SelectionSet selectionSet) {
-    return selectionSet.getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
-  }
-
-  public static void checkFieldSetValidity(XtextGraph sourceGraph, TypeDefinition typeDefinition, String fieldSet) {
-    if(StringUtils.isBlank(fieldSet)) {
-      throw new EmptyFieldsArgumentKeyDirective(typeDefinition.getName());
-    }
-
-    if(!fieldSet.startsWith("{")) {
-      fieldSet = "{ " + fieldSet;
-      fieldSet = fieldSet + " }";
-    }
-
-    //Throws InvalidSyntaxException if fieldSet is incorrect
-    Document fieldSetDocument = Parser.parse(fieldSet);
-
-    List<OperationDefinition> definitions = fieldSetDocument.getDefinitions().stream()
-            .map(OperationDefinition.class::cast).collect(Collectors.toList());
-
-    List<FieldDefinition> typeFieldDefinitions = getFieldDefinitions(typeDefinition);
-
-    for( final OperationDefinition definition : definitions) {
-      List<Field> fields = definition.getSelectionSet().getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
-      for(Field field : fields) {
-        checkFieldReferenceRecursively(sourceGraph,typeDefinition.getName(), typeFieldDefinitions, field);
-      }
-    }
-  }
-
 }
