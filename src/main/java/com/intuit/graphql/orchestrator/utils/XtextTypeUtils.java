@@ -165,7 +165,7 @@ public class XtextTypeUtils {
           //removes from map since we know that it is shared and compatible
           // doing so to leave behind only unique fields that need to be checked
           possibleConflictingFieldMap.remove(possibleConflictingSharedField.getName());
-        } else if(possibleConflictingSharedField.getNamedType().isNonNull()) {
+        } else {
           throw new TypeConflictException(
                   String.format("Type %s is conflicting with existing type %s. Both types must be able to resolve %s",
                           toDescriptiveString(existingTypeDefinition),
@@ -174,17 +174,15 @@ public class XtextTypeUtils {
                   )
           );
         }
-      } else {
-        if(!federatedComparison || isIncompatibleUniqueField(existingDefinition, entityComparison)) {
-          throw new TypeConflictException(
-                  String.format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
-                          toDescriptiveString(conflictingTypeDefinition),
-                          toDescriptiveString(existingTypeDefinition),
-                          toDescriptiveString(conflictingTypeDefinition),
-                          existingDefinition.getName()
-                  )
-          );
-        }
+      } else if(!federatedComparison || isIncompatibleUniqueField(existingDefinition, entityComparison)) {
+        throw new TypeConflictException(
+                String.format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
+                        toDescriptiveString(conflictingTypeDefinition),
+                        toDescriptiveString(existingTypeDefinition),
+                        toDescriptiveString(conflictingTypeDefinition),
+                        existingDefinition.getName()
+                )
+        );
       }
     }
 

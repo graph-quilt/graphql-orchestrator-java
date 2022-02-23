@@ -5,16 +5,14 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.ValueWithVariable;
+import com.intuit.graphql.orchestrator.federation.exceptions.DirectiveMissingRequiredArgumentException;
+import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
 import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
-import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.MultipleArgumentsForKeyDirective;
-import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.NoFieldsArgumentForKeyDirective;
-import com.intuit.graphql.orchestrator.federation.keydirective.exceptions.InvalidLocationForKeyDirective;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,24 +44,7 @@ public class KeyDirectiveValidatorTest {
         initMocks(this);
     }
 
-
-    @Test(expected = InvalidLocationForKeyDirective.class)
-    public void assertValidatorThrowsExceptionForInvalidLocation() {
-        FieldDefinition mockedFieldDefinition =  mock(FieldDefinition.class);
-        EClass mockedEClass = mock(EClass.class);
-
-
-        Mockito.when(mockedEClass.getInstanceClassName()).thenReturn("Field Definition");
-        Mockito.when(mockedFieldDefinition.eClass()).thenReturn(mockedEClass);
-        Mockito.when(objectTypeDefinitionMock.getName()).thenReturn("Foo Field");
-        Mockito.when(objectTypeDefinitionMock.eContainer()).thenReturn(mockedFieldDefinition);
-
-        List<Argument> argumentList = Arrays.asList(argumentMock);
-        keyDirectiveValidator.validate(xtextGraphMock,objectTypeDefinitionMock, argumentList);
-        Assert.fail();
-    }
-
-    @Test(expected = MultipleArgumentsForKeyDirective.class)
+    @Test(expected = IncorrectDirectiveArgumentSizeException.class)
     public void assertValidatorThrowsExceptionForMultipleArgs() {
         TypeSystemDefinition mockedTypeSystemDefinition =  mock(TypeSystemDefinition.class);
 
@@ -76,7 +57,7 @@ public class KeyDirectiveValidatorTest {
         Assert.fail();
     }
 
-    @Test(expected = NoFieldsArgumentForKeyDirective.class)
+    @Test(expected = DirectiveMissingRequiredArgumentException.class)
     public void assertValidatorThrowsExceptionForInvalidArgName() {
         TypeSystemDefinition mockedTypeSystemDefinition =  mock(TypeSystemDefinition.class);
 

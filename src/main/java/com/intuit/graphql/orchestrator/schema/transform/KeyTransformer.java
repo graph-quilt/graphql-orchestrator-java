@@ -26,23 +26,27 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
 
   @Override
   public XtextGraph transform(final XtextGraph source) {
-
     if(source.getServiceProvider().isFederationProvider()) {
       Map<String, TypeDefinition> entities = source.getTypes().values().stream()
               .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
               .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-      for(final TypeDefinition entityDefinitions : entities.values()) {
-        for (final Directive directive : entityDefinitions.getDirectives()) {
-          if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
-            List<Argument> arguments = directive.getArguments();
-            keyDirectiveValidator.validate(source, entityDefinitions, arguments);
-          }
-        }
-      }
+      validateKeyDirectives(source, entities);
+
       return source.transform(builder -> builder.entitiesByTypeName(entities));
     } else {
       return source;
+    }
+  }
+
+  private void validateKeyDirectives(XtextGraph source, Map<String, TypeDefinition> entities) {
+    for(final TypeDefinition entityDefinitions : entities.values()) {
+      for (final Directive directive : entityDefinitions.getDirectives()) {
+        if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
+          List<Argument> arguments = directive.getArguments();
+          keyDirectiveValidator.validate(source, entityDefinitions, arguments);
+        }
+      }
     }
   }
 }
