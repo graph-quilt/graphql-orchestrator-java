@@ -32,6 +32,8 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     if (CollectionUtils.isNotEmpty(sourceXtextGraph.getFieldResolverContexts())) {
       List<FieldResolverContext> fieldResolverContexts = sourceXtextGraph.getFieldResolverContexts()
               .stream()
+              .peek(fieldResolverContext -> validateTargetTypeExists(fieldResolverContext,sourceXtextGraph))
+              .peek(fieldResolverContext -> validateFieldResolverType(fieldResolverContext,sourceXtextGraph))
               .peek(fieldResolverContext -> replacePlaceholderTypeWithActual(fieldResolverContext, sourceXtextGraph))
               .map(fieldResolverContext -> updateWithTargetFieldData(fieldResolverContext, sourceXtextGraph))
               .collect(Collectors.toList());
@@ -48,8 +50,35 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
 
       return newXtextGraph;
     }
-
     return sourceXtextGraph;
+  }
+
+  private void validateTargetTypeExists(FieldResolverContext fieldResolverContext, XtextGraph sourceXtextGraph) {
+    FieldDefinition fieldDefinition = fieldResolverContext.getFieldDefinition();
+    NamedType fieldType = fieldDefinition.getNamedType();
+    if (!XtextTypeUtils.isPrimitiveType(fieldType)) {
+      TypeDefinition actualTypeDefinition = sourceXtextGraph.getType(fieldType);
+      if (Objects.isNull(actualTypeDefinition)) {
+        String serviceName = fieldResolverContext.getServiceNamespace();
+        String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
+        String fieldName = fieldDefinition.getName();
+        String placeHolderTypeDescription = XtextTypeUtils.toDescriptiveString(fieldType);
+
+        throw new ExternalTypeNotfoundException(serviceName, parentTypeName, fieldName, placeHolderTypeDescription);
+      }
+    }
+  }
+
+  private void validateFieldResolverType(FieldResolverContext fieldResolverContext, XtextGraph sourceXtextGraph) {
+    final ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
+    final FieldDefinition targetFieldDefinition = getFieldDefinitionByFQN(resolverDirectiveDefinition.getField(), sourceXtextGraph);
+    NamedType fieldResolverType = fieldResolverContext.getFieldDefinition().getNamedType();
+    NamedType targetFieldType = targetFieldDefinition.getNamedType();
+
+    if (!XtextTypeUtils.isCompatible(fieldResolverType, targetFieldType)) {
+      String errorMessage = "The type of field with @resolver is not compatible with target field type.";
+      throw new FieldResolverException(errorMessage, fieldResolverContext);
+    }
   }
 
   private FieldResolverContext updateWithTargetFieldData(final FieldResolverContext fieldResolverContext, final XtextGraph sourceXtextGraph) {
@@ -87,8 +116,8 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
                                                                List<InputValueDefinition> targetFieldInputValueDefinitions,
                                                                FieldResolverContext fieldResolverContext) {
 
-    if (resolverArgumentDefinitions.size() != targetFieldInputValueDefinitions.size()) {
-      String errorMessage = "Field resolver arguments size does not match target field definition.";
+    if (resolverArgumentDefinitions.size() > targetFieldInputValueDefinitions.size()) {
+      String errorMessage = "Field resolver arguments size is greater than of target field definition.";
       throw new FieldResolverException(errorMessage, fieldResolverContext);
     }
 
@@ -106,17 +135,16 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
 
       ResolverArgumentDefinition resolverArgumentDefinition = resolverArgumentDefinitionMap.get(argumentName);
       if (Objects.isNull(resolverArgumentDefinition)) {
-        String errorMessage = String.format("required argument %s not present in resolver argument definition", argumentName);
-        throw new FieldResolverException(errorMessage, fieldResolverContext);
+        continue;
       }
+
       ResolverArgumentDefinitionValidator resolverArgumentDefinitionValidator = new ResolverArgumentDefinitionValidator(
               resolverArgumentDefinition, inputValueDefinition, fieldResolverContext
       );
 
       resolverArgumentDefinitionValidator.validate();
 
-      NamedType resolverArgumentType = unwrapAll(inputValueDefinition.getNamedType());
-      ResolverArgumentDefinition newResolverArgumentDefinition = resolverArgumentDefinition.transform(builder -> builder.namedType(resolverArgumentType));
+      ResolverArgumentDefinition newResolverArgumentDefinition = resolverArgumentDefinition.transform(builder -> builder.namedType(inputValueDefinition.getNamedType()));
       updatedList.add(newResolverArgumentDefinition);
     }
 
@@ -132,14 +160,6 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
 
     if (!XtextTypeUtils.isPrimitiveType(fieldType)) {
       TypeDefinition actualTypeDefinition = sourceXtextGraph.getType(fieldType);
-      if (Objects.isNull(actualTypeDefinition)) {
-        String serviceName = fieldResolverContext.getServiceNamespace();
-        String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
-        String fieldName = fieldDefinition.getName();
-        String placeHolderTypeDescription = XtextUtils.toDescriptiveString(fieldType);
-
-        throw new ExternalTypeNotfoundException(serviceName, parentTypeName, fieldName, placeHolderTypeDescription);
-      }
 
       if (XtextTypeUtils.isObjectType(fieldType)) {
         fieldDefinition.setNamedType(createNamedType(actualTypeDefinition));

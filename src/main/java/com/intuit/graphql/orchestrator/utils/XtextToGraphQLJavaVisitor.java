@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.utils;
 
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEPRECATED_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.buildDeprecationReason;
+import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.graphQL.Argument;
@@ -204,6 +205,14 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   @Override
   public GraphQLSchemaElement caseScalarTypeDefinition(final ScalarTypeDefinition object) {
     final String me = object.getName();
+    // Newer versions of graphql-java have removed inbuilt scalar support, so providers
+    // will need to define scalar in the sdl file. Since we are on old graphql-java,
+    // we need to handle the conflict of scalars defined in sdl with the ones defined
+    // in older graphql-java.
+    GraphQLScalarType inBuiltScalar = STANDARD_SCALAR_TYPES.get(me);
+    if(inBuiltScalar != null){
+      return inBuiltScalar;
+    }
 
     GraphQLType graphQLType = graphQLObjectTypes.get(me);
     if (Objects.nonNull(graphQLType)) {
@@ -351,6 +360,11 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private GraphQLArgument createGraphqlArgument(final InputValueDefinition object) {
     GraphQLArgument.Builder builder = GraphQLArgument.newArgument().name(object.getName())
         .description(object.getDesc());
+
+    if (!XtextTypeUtils.isValidInputType(object.getNamedType())) {
+      String typeName = typeName(object.getNamedType());
+      throw new SchemaParseException(String.format("Not a valid input type %s", typeName));
+    }
 
     GraphQLInputType type = (GraphQLInputType) doSwitch(object.getNamedType());
     builder.type(type);

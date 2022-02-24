@@ -195,13 +195,35 @@ public class StitcherTest {
   }
 
   @Test
-  public void makesCorrectGraphOnGoldenObjectConflict() {
+  public void makesCorrectGraphOnInBuiltScalar() {
+    String schema1 = "type Query { foo : Long }  ";
+    String schema2 = "type Query { bar : Long } scalar Long";
+
+    List<ServiceProvider> services = Arrays.asList(
+        TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
+        TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
+    );
+
+    RuntimeGraph runtimeGraph = stitcher.stitch(services);
+    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
+    assertThat(query).isNotNull();
+
+    assertThat(query.getFieldDefinition("foo")).isNotNull();
+    assertThat(query.getFieldDefinition("bar")).isNotNull();
+
+    assertThat(query.getFieldDefinition("foo").getType())
+        .isEqualTo(query.getFieldDefinition("bar").getType());
+
+  }
+
+  @Test
+  public void makesCorrectGraphOnGoldenType() {
     String schema1 = "type Query { foo: PageInfo } type PageInfo { id: String }";
     String schema2 = "type Query { bar: PageInfo } type PageInfo { id: String }";
 
     List<ServiceProvider> services = Arrays.asList(
-        TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
-        TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
+            TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
+            TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
     );
 
     RuntimeGraph runtimeGraph = stitcher.stitch(services);
@@ -212,18 +234,17 @@ public class StitcherTest {
     assertThat(query.getFieldDefinition("bar")).isNotNull();
 
     assertThat(query.getFieldDefinition("foo").getType())
-        .isEqualTo(query.getFieldDefinition("bar").getType());
-
+            .isEqualTo(query.getFieldDefinition("bar").getType());
   }
 
   @Test
-  public void makesCorrectGraphOnGoldenInterfaceConflict() {
+  public void makesCorrectGraphOnGoldenInterface() {
     String schema1 = "type Query { foo: Node } interface Node { id: String } type foo implements Node {id: String}";
     String schema2 = "type Query { bar: Node } interface Node { id: String } type bar implements Node {id: String}";
 
     List<ServiceProvider> services = Arrays.asList(
-        TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
-        TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
+            TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
+            TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
     );
 
     RuntimeGraph runtimeGraph = stitcher.stitch(services);
@@ -234,21 +255,7 @@ public class StitcherTest {
     assertThat(query.getFieldDefinition("bar")).isNotNull();
 
     assertThat(query.getFieldDefinition("foo").getType())
-        .isEqualTo(query.getFieldDefinition("bar").getType());
-  }
-
-  @Test
-  public void throwsExceptionOnGoldenInterfaceConflict() {
-    String schema1 = "type Query { foo: Nod } interface Nod { id: String } type foo implements Nod {id: String}";
-    String schema2 = "type Query { bar: Nod } interface Nod { id: String } type bar implements Nod {id: String}";
-
-    List<ServiceProvider> services = Arrays.asList(
-        TestServiceProvider.newBuilder().namespace("A").sdlFiles(ImmutableMap.of("schema1", schema1)).build(),
-        TestServiceProvider.newBuilder().namespace("B").sdlFiles(ImmutableMap.of("schema2", schema2)).build()
-    );
-
-    assertThatThrownBy(() -> stitcher.stitch(services)).isInstanceOf(TypeConflictException.class);
-  }
+            .isEqualTo(query.getFieldDefinition("bar").getType());  }
 
   @Test
   public void NestedTypeDescriptionWithNamespaceAndEmptyDescription_TwoSchemaMergeTest() {

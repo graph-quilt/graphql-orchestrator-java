@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
+import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.stitching.SchemaStitcher;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
@@ -16,18 +17,20 @@ import java.util.concurrent.CompletableFuture;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 public class XtextGraphFolderTest {
 
   @Test
   public void testScalarTypeConflictsGettingIgnoredXtextStrategy() {
     ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
-        "schema { query: Query } type Query { a: Date } scalar Date");
+            "schema { query: Query } type Query { a: Date } scalar Date");
 
     ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
-        "schema { query: Query } type Query { b: Date } scalar Date");
+            "schema { query: Query } type Query { b: Date } scalar Date");
 
     RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
-        .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build().stitchGraph();
+            .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build().stitchGraph();
 
     GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
     Assertions.assertThat(query).isNotNull();
@@ -35,47 +38,35 @@ public class XtextGraphFolderTest {
     Assertions.assertThat(query.getFieldDefinition("b")).isNotNull();
 
     Assertions.assertThat(((GraphQLNamedType) query.getFieldDefinition("b").getType()).getName())
-        .isEqualTo("Date");
+            .isEqualTo("Date");
   }
 
   @Test
-  public void testOjectTypeConflictsGettingIgnoredForGoldenTypesXtextStrategy() {
+  public void testGoldenTypeSignatureConflictThrowsException() {
     ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
-        "schema { query: Query } type Query { a: PageInfo } type PageInfo { id: String }");
+            "schema { query: Query } type Query { a: PageInfo } type PageInfo { id: String }");
 
     ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
-        "schema { query: Query } type Query { b: PageInfo } type PageInfo { id: String }");
+            "schema { query: Query } type Query { b: PageInfo } type PageInfo { id: String! }");
 
-    RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
-        .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build().stitchGraph();
+    SchemaStitcher schemaStitcher = SchemaStitcher.newBuilder()
+            .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build();
 
-    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
-    Assertions.assertThat(query).isNotNull();
-
-    Assertions.assertThat(query.getFieldDefinition("b")).isNotNull();
-
-    Assertions.assertThat(((GraphQLNamedType) query.getFieldDefinition("b").getType()).getName())
-        .isEqualTo("PageInfo");
+    assertThatThrownBy(() -> schemaStitcher.stitchGraph()).isInstanceOf(TypeConflictException.class);
   }
 
   @Test
-  public void testInterfaceTypeConflictsGettingIgnoredForGoldenTypesXtextStrategy() {
+  public void testGoldenInterfaceConflictThrowsException() {
     ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
-        "schema { query: Query } type Query { a: Node } interface Node { id: String }");
+            "schema { query: Query } type Query { a: Node } interface Node { id: String! }");
 
     ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
-        "schema { query: Query } type Query { b: Node } interface Node { id: String }");
+            "schema { query: Query } type Query { b: Node } interface Node { id: String }");
 
-    RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
-        .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build().stitchGraph();
+    SchemaStitcher schemaStitcher = SchemaStitcher.newBuilder()
+            .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build();
 
-    GraphQLObjectType query = runtimeGraph.getOperationMap().get(Operation.QUERY);
-    Assertions.assertThat(query).isNotNull();
-
-    Assertions.assertThat(query.getFieldDefinition("b")).isNotNull();
-
-    Assertions.assertThat(((GraphQLNamedType) query.getFieldDefinition("b").getType()).getName())
-        .isEqualTo("Node");
+    assertThatThrownBy(() -> schemaStitcher.stitchGraph()).isInstanceOf(TypeConflictException.class);
   }
 
   static class GenericTestService implements ServiceProvider {

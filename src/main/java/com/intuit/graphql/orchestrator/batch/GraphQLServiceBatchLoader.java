@@ -6,6 +6,8 @@ import static graphql.language.OperationDefinition.Operation.QUERY;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 
+import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -49,6 +51,7 @@ import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
+  private final BatchFieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultBatchFieldAuthorization();
   private final QueryExecutor queryExecutor;
   private final QueryResponseModifier queryResponseModifier;
   private final BatchResultTransformer batchResultTransformer;
@@ -70,11 +73,25 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     this.hooks = builder.hooks;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> keys) {
-    GraphQLContext context = getContext(keys);
+    GraphQLContext graphQLContext = getContext(keys);
+    BatchFieldAuthorization batchFieldAuthorization = getDefaultOrCustomFieldAuthorization(graphQLContext);
+    CompletableFuture<Object> futureAuthData = batchFieldAuthorization.getFutureAuthData();
+    return futureAuthData.thenCompose(authData -> load(keys, graphQLContext, authData,
+        batchFieldAuthorization));
+  }
 
+  private BatchFieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
+    BatchFieldAuthorization ctxBatchFieldAuthorization = graphQLContext.get(BatchFieldAuthorization.class);
+    return Objects.isNull(ctxBatchFieldAuthorization)
+        ? DEFAULT_FIELD_AUTHORIZATION : ctxBatchFieldAuthorization;
+  }
+
+  private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
+      GraphQLContext context, Object authData, BatchFieldAuthorization batchFieldAuthorization) {
+
+    batchFieldAuthorization.batchAuthorizeOrThrowGraphQLError(authData, keys);
     hooks.onBatchLoadStart(context, keys);
 
     Optional<OperationDefinition> operation = getFirstOperation(keys);

@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.toDescriptiveString;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;

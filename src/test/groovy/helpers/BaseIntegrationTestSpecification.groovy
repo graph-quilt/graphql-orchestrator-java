@@ -10,6 +10,8 @@ import graphql.execution.ExecutionIdProvider
 import groovy.json.JsonSlurper
 import spock.lang.Specification
 
+import java.util.concurrent.CompletableFuture
+
 class BaseIntegrationTestSpecification extends Specification {
 
     def createMockGraphQLServiceProvider(String namespace, String sdl, String response) {

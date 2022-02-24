@@ -19,7 +19,7 @@ public class ServiceE implements ServiceProvider {
   @Override
   public Map<String, String> sdlFiles() {
     String schema = "type Query { } "
-        + "type Mutation { container(in : String) : Container } "
+        + "type Mutation { container(out : String) : Container } "
         + "type Container { serviceE : ServiceE } "
         + "type ServiceE { svcEField1 : String }";
 

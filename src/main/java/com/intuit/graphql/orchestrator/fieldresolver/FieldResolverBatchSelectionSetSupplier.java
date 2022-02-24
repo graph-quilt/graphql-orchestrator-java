@@ -9,6 +9,7 @@ import graphql.language.*;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeUtil;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.*;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
@@ -87,7 +88,11 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                         fieldResolverContext.getResolverDirectiveDefinition(), fieldResolverContext.getServiceNamespace(), parentSource);
 
                 Object valueFromSource = parentSource.get(fieldReferenceName);
-                GraphQLType fieldReferenceType = parentType.getFieldDefinition(fieldReferenceName).getType();
+                GraphQLType fieldReferenceType = GraphQLTypeUtil
+                    .unwrapAll(parentType.getFieldDefinition(fieldReferenceName).getType());
+                if (fieldReferenceType == Scalars.GraphQLID) {
+                    fieldReferenceType = Scalars.GraphQLString;
+                }
                 return astFromValue(valueFromSource, fieldReferenceType);
 
             } else {
@@ -119,7 +124,6 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
             fieldBuilder.arguments(queryFieldArguments);
         }
 
-        //String aliasSuffix = Integer.toString(dfeBatchPosition); // TODO
         String aliasName = FieldResolverDirectiveUtil.createAlias(leafFieldName,dfeBatchPosition);
         fieldBuilder.alias(aliasName);
         Field leafField = fieldBuilder.build();
@@ -141,8 +145,8 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
     }
 
     private String compileTemplate(String stringTemplate, Map<String, Object> dataSource) {
-        JsonTemplate jsonTemplate = new JsonTemplate(stringTemplate);
-        return jsonTemplate.compile(dataSource);
+        ValueTemplate valueTemplate = new ValueTemplate(stringTemplate);
+        return valueTemplate.compile(dataSource);
     }
 
 }

@@ -9,7 +9,7 @@ import com.intuit.graphql.orchestrator.xtext.FieldContext;
  *
  * <p>
  * <b>Example</b>
- * <p>
+ * </p>
  * <pre>
  *   {@code @resolver(field: "a.b.c")}
  * </pre>
