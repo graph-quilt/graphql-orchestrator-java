@@ -29,13 +29,6 @@ public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
 
-  //TODO Move federation constants to it's own class
-  public static final String FEDERATION_KEY_DIRECTIVE = "key";
-  public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
-  public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
-  public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
-  public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
-
   private XtextUtils() {
   }
 

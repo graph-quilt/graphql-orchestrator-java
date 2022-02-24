@@ -39,12 +39,11 @@ public class EntityTypeMerger {
               entityMergingContext.getTypename(),
               entityMergingContext.getServiceNamespace()));
     }
-    // TODO check if this is beging done alreaduy
+    // TODO check if this is being done already
     //   @key is subset - yes
-    //   @external fields are vlid
+    //   @external fields are valid
     //   @require fields are valid
     //   new fields are not present in base type
-    throw new RuntimeException("TODO Implementation");
   }
 
   private void merge(
@@ -62,9 +61,9 @@ public class EntityTypeMerger {
   @Builder
   @Getter
   public static class EntityMergingContext {
-    private String typename;
-    private String serviceNamespace;
-    private TypeDefinition baseType;
-    private TypeDefinition typeExtension;
+    private final String typename;
+    private final String serviceNamespace;
+    private final TypeDefinition baseType;
+    private final TypeDefinition typeExtension;
   }
 }

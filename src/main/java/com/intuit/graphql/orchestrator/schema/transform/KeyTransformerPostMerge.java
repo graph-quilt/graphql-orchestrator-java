@@ -24,7 +24,7 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
 
   private Stream<EntityMergingContext> createEntityMergingContexts(
       String serviceNamespace, XtextGraph xtextGraph) {
-    return xtextGraph.getEntityExtensionsByNamespace().get(serviceNamespace).stream()
+    return xtextGraph.getEntityExtensionsByNamespace().get(serviceNamespace).values().stream()
         .map(
             entityTypeExtension -> {
               String entityTypename = entityTypeExtension.getName();
