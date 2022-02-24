@@ -13,9 +13,11 @@ import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.utils.XtextTypeUtils;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.ecore.EObject;
@@ -249,5 +251,4 @@ public class XtextUtils {
     return typeDefinition.getDirectives().stream()
             .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
-
 }

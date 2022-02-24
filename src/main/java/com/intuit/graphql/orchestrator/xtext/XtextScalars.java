@@ -13,7 +13,7 @@ import java.util.Set;
  */
 public class XtextScalars {
 
-  public static Set<ScalarTypeDefinition> STANDARD_SCALARS = new HashSet<>(11);
+  public static Set<ScalarTypeDefinition> STANDARD_SCALARS = new HashSet<>(12);
 
   private static final ScalarTypeDefinition INT_TYPE_DEFINITION = createScalarTypeDefinition();
   private static final ScalarTypeDefinition STRING_TYPE_DEFINITION = createScalarTypeDefinition();
@@ -26,6 +26,7 @@ public class XtextScalars {
   private static final ScalarTypeDefinition SHORT_TYPE_DEFINITION = createScalarTypeDefinition();
   private static final ScalarTypeDefinition CHAR_TYPE_DEFINITION = createScalarTypeDefinition();
   private static final ScalarTypeDefinition BYTE_TYPE_DEFINITION = createScalarTypeDefinition();
+  private static final ScalarTypeDefinition FIELDSET_TYPE_DEFINITION = createScalarTypeDefinition();
 
   static {
     INT_TYPE_DEFINITION.setName("Int");
@@ -39,6 +40,7 @@ public class XtextScalars {
     SHORT_TYPE_DEFINITION.setName("Short");
     CHAR_TYPE_DEFINITION.setName("Char");
     BYTE_TYPE_DEFINITION.setName("Byte");
+    FIELDSET_TYPE_DEFINITION.setName("_FieldSet");
   }
 
   static {
@@ -53,6 +55,7 @@ public class XtextScalars {
     STANDARD_SCALARS.add(newShortType());
     STANDARD_SCALARS.add(newCharType());
     STANDARD_SCALARS.add(newByteType());
+    STANDARD_SCALARS.add(newFieldSetType());
   }
 
   public static ScalarTypeDefinition newStringType() {
@@ -97,5 +100,9 @@ public class XtextScalars {
 
   public static ScalarTypeDefinition newIntType() {
     return copy(INT_TYPE_DEFINITION);
+  }
+
+  public static ScalarTypeDefinition newFieldSetType() {
+    return copy(FIELDSET_TYPE_DEFINITION);
   }
 }
