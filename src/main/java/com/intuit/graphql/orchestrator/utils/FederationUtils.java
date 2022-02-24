@@ -38,8 +38,7 @@ public class FederationUtils {
         }
 
         if(!fieldSet.startsWith("{")) {
-            fieldSet = "{ " + fieldSet;
-            fieldSet = fieldSet + " }";
+            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
         }
 
         //Throws InvalidSyntaxException if fieldSet is incorrect

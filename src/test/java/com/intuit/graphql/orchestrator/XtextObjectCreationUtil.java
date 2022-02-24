@@ -34,9 +34,6 @@ public class XtextObjectCreationUtil {
   public static Directive buildDirective(
       DirectiveDefinition directiveDefinition, List<Argument> arguments) {
 
-    DirectiveDefinition resolverDirectiveDefinition = createDirectiveDefinition();
-    resolverDirectiveDefinition.setName(RESOLVER_DIRECTIVE_NAME);
-
     Directive directive = GraphQLFactoryDelegate.createDirective();
     directive.setDefinition(directiveDefinition);
 
