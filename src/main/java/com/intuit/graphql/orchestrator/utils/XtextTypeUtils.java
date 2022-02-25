@@ -94,15 +94,21 @@ public class XtextTypeUtils {
   }
 
   public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition) {
-    return getFieldDefinitions(typeDefinition, false);
+    return getFieldDefinitions(typeDefinition, false, false);
   }
 
-  public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition, boolean defaultList) {
+  public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition, boolean defaultList, boolean test) {
     if (typeDefinition instanceof InterfaceTypeDefinition) {
-      return ((InterfaceTypeDefinition)typeDefinition).getFieldDefinition();
+      List<FieldDefinition> s = ((InterfaceTypeDefinition)typeDefinition).getFieldDefinition();
+      if(test){
+        throw new StitchingException("obtain field defintions" + s.size());
+      } else return s;
     }
     if (typeDefinition instanceof ObjectTypeDefinition) {
-      return ((ObjectTypeDefinition)typeDefinition).getFieldDefinition();
+      List<FieldDefinition> s = ((ObjectTypeDefinition)typeDefinition).getFieldDefinition();
+      if(test){
+        throw new StitchingException("obtain field defintions" + s.size());
+      } else return s;
     }
 
     if(defaultList) {
@@ -246,19 +252,10 @@ public class XtextTypeUtils {
   }
 
   public static List<Directive> getDirectivesFromDefinition(EObject definition, String directiveName) {
-    return getDirectivesFromDefinition(definition,directiveName, false);
-  }
-  public static List<Directive> getDirectivesFromDefinition(EObject definition, String directiveName, boolean test) {
     if(definition instanceof TypeDefinition) {
-      List<Directive> d = ((TypeDefinition) definition).getDirectives().stream()
+      return ((TypeDefinition) definition).getDirectives().stream()
               .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
               .collect(Collectors.toList());
-      if(test) {
-        throw new StitchingException("obtained directives and returned " + d.size());
-      } else {
-        return d;
-      }
-
     } else if(definition instanceof FieldDefinition) {
       return ((FieldDefinition) definition).getDirectives().stream()
               .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
@@ -277,8 +274,7 @@ public class XtextTypeUtils {
   }
 
   public static boolean areCompatibleSharedFields(FieldDefinition fieldDefinition1, FieldDefinition fieldDefinition2) {
-    return
-            areCompatibleTypes(fieldDefinition1.getNamedType(), fieldDefinition2.getNamedType());
+    return areCompatibleTypes(fieldDefinition1.getNamedType(), fieldDefinition2.getNamedType());
   }
 
   public static boolean areCompatibleTypes(NamedType namedType1, NamedType namedType2) {
