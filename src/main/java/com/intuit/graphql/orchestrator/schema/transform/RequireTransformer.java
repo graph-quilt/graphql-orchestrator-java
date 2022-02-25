@@ -37,7 +37,7 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
                     {
                         getFieldDefinitions(typeDefinition, true)
                             .stream()
-                            .map(fieldDefinition -> getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE))
+                            .map(fieldDefinition -> getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE, true))
                             .flatMap(Collection::stream)
                             .peek(directive ->
                                     {

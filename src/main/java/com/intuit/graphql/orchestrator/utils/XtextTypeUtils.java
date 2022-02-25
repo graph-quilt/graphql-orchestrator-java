@@ -14,6 +14,7 @@ import com.intuit.graphql.graphQL.impl.ListTypeImpl;
 import com.intuit.graphql.graphQL.impl.ObjectTypeImpl;
 import com.intuit.graphql.graphQL.impl.PrimitiveTypeImpl;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
+import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 
 import java.util.ArrayList;
@@ -245,10 +246,19 @@ public class XtextTypeUtils {
   }
 
   public static List<Directive> getDirectivesFromDefinition(EObject definition, String directiveName) {
+    return getDirectivesFromDefinition(definition,directiveName, false);
+  }
+  public static List<Directive> getDirectivesFromDefinition(EObject definition, String directiveName, boolean test) {
     if(definition instanceof TypeDefinition) {
-      return ((TypeDefinition) definition).getDirectives().stream()
+      List<Directive> d = ((TypeDefinition) definition).getDirectives().stream()
               .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
               .collect(Collectors.toList());
+      if(test) {
+        throw new StitchingException("obtained directives and returned " + d.size());
+      } else {
+        return d;
+      }
+
     } else if(definition instanceof FieldDefinition) {
       return ((FieldDefinition) definition).getDirectives().stream()
               .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
