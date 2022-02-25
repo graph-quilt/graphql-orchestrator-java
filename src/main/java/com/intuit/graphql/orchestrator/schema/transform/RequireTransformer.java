@@ -35,16 +35,7 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
             long count = source.getTypes().values().stream()
                     .peek(typeDefinition ->
                     {
-                        getFieldDefinitions(typeDefinition, true, true)
-                            .stream()
-                            .map(fieldDefinition -> getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE))
-                            .flatMap(Collection::stream)
-                            .peek(directive ->
-                                    {
-                                        log.error("Reached the validator. Running with {}", directive.getDefinition().getName());
-                                        requireValidator.validate(source, typeDefinition, directive);
-                            })
-                            .count();
+                        throw new StitchingException("test that it runs code inside peek");
                     }
                     )
                     .count();
