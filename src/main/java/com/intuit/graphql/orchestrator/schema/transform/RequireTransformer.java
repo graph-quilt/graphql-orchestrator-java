@@ -11,6 +11,7 @@ import com.intuit.graphql.orchestrator.federation.requiresdirective.RequireValid
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,6 +22,7 @@ import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_R
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getDirectivesFromDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
+@Slf4j
 public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
 
     @VisibleForTesting
@@ -37,14 +39,18 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
                             .stream()
                             .map(fieldDefinition -> getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE))
                             .flatMap(Collection::stream)
-                            .peek(directive -> requireValidator.validate(source, typeDefinition, directive))
+                            .peek(directive ->
+                                    {
+                                        log.error("Reached the validator. Running with {}", directive.getDefinition().getName());
+                                        requireValidator.validate(source, typeDefinition, directive);
+                            })
                             .count();
                         throw new StitchingException("testing reaches point 1");
                     }
                     )
                     .count();
 
-            throw new StitchingException(String.format("ran sucessfully %d", count));
+            throw new StitchingException(String.format("ran sucessfully %d there are %d types", count, source.getTypes().size()));
         }
 
         return source;
