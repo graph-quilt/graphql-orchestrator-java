@@ -5,12 +5,14 @@ import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
 import static graphql.util.TreeTransformerUtil.deleteNode;
 import static java.util.Objects.requireNonNull;
 
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
 import graphql.language.NodeVisitorStub;
 import graphql.language.SelectionSet;
+import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLType;
@@ -21,8 +23,9 @@ import graphql.util.TraverserContext;
 public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
   private GraphQLFieldsContainer rootType;
+  private ServiceMetadata serviceMetadata;
 
-  NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType) {
+  NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType, ServiceMetadata serviceMetadata) {
     this.rootType = rootType;
   }
 
@@ -37,7 +40,8 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
       String fieldName = node.getName();
       GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, parentType);
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + fieldName);
-      if (hasResolverDirective(fieldDefinition)) {
+      FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentType.getName(), fieldDefinition.getName());
+      if (hasResolverDirective(fieldDefinition) || serviceMetadata.isFieldExternal(fieldCoordinates)) {
         return deleteNode(context);
       }
 

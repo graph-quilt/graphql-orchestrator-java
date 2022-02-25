@@ -1,10 +1,16 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
+
+import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.orchestrator.federation.EntityExtensionContext;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger.EntityMergingContext;
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
 import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.BaseTypeNotFoundException;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
+import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -19,6 +25,17 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
         .flatMap(namespace -> createEntityMergingContexts(namespace, xtextGraph))
         .map(entityTypeMerger::mergeIntoBaseType)
         .forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
+
+    for (EntityExtensionContext entityExtensionContext : xtextGraph.getEntityExtensionContexts()) {
+      FieldDefinition fieldDefinition = entityExtensionContext.getFieldDefinition();
+      FieldContext fieldContext = new FieldContext(entityExtensionContext.getParentTypename(), fieldDefinition.getName());
+      DataFetcherContext dataFetcherContext = DataFetcherContext
+          .newBuilder()
+          .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
+          .entityExtensionContext(entityExtensionContext)
+          .build();
+      addToCodeRegistry(fieldContext, dataFetcherContext, xtextGraph);
+    }
     return xtextGraph;
   }
 

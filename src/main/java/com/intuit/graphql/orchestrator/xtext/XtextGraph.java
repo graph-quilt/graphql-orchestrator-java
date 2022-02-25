@@ -2,17 +2,20 @@ package com.intuit.graphql.orchestrator.xtext;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.federation.EntityExtensionContext;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import graphql.schema.FieldCoordinates;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -57,11 +60,11 @@ public class XtextGraph implements ServiceMetadata {
 
   private Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace;
 
+  private List<EntityExtensionContext> entityExtensionContexts;
+
   // This is needed for execution.
   // TODO consider merging entitiesByTypeName, entityExtensionsByNamespace and federationMetadataByNamespace
   private Map<String, FederationMetadata> federationMetadataByNamespace;
-
-
 
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
@@ -77,7 +80,7 @@ public class XtextGraph implements ServiceMetadata {
     fieldResolverContexts = builder.fieldResolverContexts;
     entitiesByTypeName = builder.entities;
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
-
+    entityExtensionContexts = builder.entityExtensionContexts;
   }
 
   /**
@@ -107,6 +110,9 @@ public class XtextGraph implements ServiceMetadata {
     builder.hasFieldResolverDefinition = copy.hasFieldResolverDefinition;
     builder.resolverArgumentFields = copy.resolverArgumentFields;
     builder.fieldResolverContexts = copy.fieldResolverContexts;
+    builder.entities = copy.entitiesByTypeName;
+    builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
+    builder.entityExtensionContexts = copy.entityExtensionContexts;
     return builder;
   }
 
@@ -142,6 +148,13 @@ public class XtextGraph implements ServiceMetadata {
   @Override
   public boolean hasFieldResolverDirective() {
     return hasFieldResolverDefinition;
+  }
+
+  @Override
+  public boolean isFieldExternal(FieldCoordinates fieldCoordinates) {
+    FederationMetadata federationMetadata = this.federationMetadataByNamespace.get(serviceProvider.getNameSpace());
+    federationMetadata.isFieldExternal(fieldCoordinates);
+    return false;
   }
 
   /**
@@ -236,6 +249,22 @@ public class XtextGraph implements ServiceMetadata {
     return this.entityExtensionsByNamespace;
   }
 
+  public void addToEntities(String name, TypeDefinition entityDefinition) {
+    this.entitiesByTypeName.put(name, entityDefinition);
+  }
+
+  public void addToEntitiesExtension(String name, TypeDefinition entityDefinition) {
+    this.entityExtensionsByNamespace.put(serviceProvider.getNameSpace(), ImmutableMap.of(name, entityDefinition));
+  }
+
+  public void addFederationMetadata(FederationMetadata federationMetadata) {
+    this.federationMetadataByNamespace.put(serviceProvider.getNameSpace(), federationMetadata);
+  }
+
+  public void addToEntityExtensionContexts(List<EntityExtensionContext> entityExtensionContexts) {
+    this.entityExtensionContexts.addAll(entityExtensionContexts);
+  }
+
   /**
    * The type Builder.
    */
@@ -250,6 +279,7 @@ public class XtextGraph implements ServiceMetadata {
     private Map<String, TypeDefinition> types = new HashMap<>();
     private Map<String, TypeDefinition> entities = new HashMap<>();
     private Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    private List<EntityExtensionContext> entityExtensionContexts = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
@@ -395,6 +425,12 @@ public class XtextGraph implements ServiceMetadata {
     public Builder entityExtensionsByNamespace(Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace) {
       requireNonNull(entityExtensionsByNamespace);
       this.entityExtensionsByNamespace.putAll(entityExtensionsByNamespace);
+      return this;
+    }
+
+    public Builder entityExtensionContexts(List<EntityExtensionContext> entityExtensionContexts) {
+      requireNonNull(entityExtensionContexts);
+      this.entityExtensionContexts.addAll(entityExtensionContexts);
       return this;
     }
 

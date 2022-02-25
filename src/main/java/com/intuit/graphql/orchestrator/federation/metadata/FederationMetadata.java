@@ -4,6 +4,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefin
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.schema.FieldCoordinates;
 import java.util.HashMap;
@@ -69,7 +70,16 @@ public class FederationMetadata {
     private Set<String> externalFields;
     private Set<String> requiredFields;
     private ServiceMetadata serviceMetadata;
+    private ServiceMetadata baseServiceMetadata;
+    private String dataLoaderKey;
     // TODO @provides
 
+    public ServiceProvider getServiceProvider() {
+      return this.serviceMetadata.getServiceProvider();
+    }
+
+    public ServiceProvider getBaseServiceProvider() {
+      return this.baseServiceMetadata.getServiceProvider();
+    }
   }
 }

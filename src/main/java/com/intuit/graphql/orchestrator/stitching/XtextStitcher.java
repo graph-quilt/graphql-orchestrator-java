@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.stitching;
 
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
@@ -16,6 +17,8 @@ import com.intuit.graphql.orchestrator.datafetcher.FieldResolverDirectiveDataFet
 import com.intuit.graphql.orchestrator.datafetcher.ResolverArgumentDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.RestDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher;
+import com.intuit.graphql.orchestrator.federation.EntityBatchLoader;
+import com.intuit.graphql.orchestrator.federation.EntityDataFetcher;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDataLoaderUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentQueryBuilder;
@@ -120,6 +123,15 @@ public class XtextStitcher implements Stitcher {
 
     });
 
+    stitchedTransformedGraph.getFederationMetadataByNamespace().values().stream()
+        .flatMap(federationMetadata -> federationMetadata.getExtensionsByTypename().values().stream())
+        .forEach(entityExtensionMetadata -> {
+          EntityBatchLoader entityBatchLoader = EntityBatchLoader.builder()
+              .entityExtensionMetadata(entityExtensionMetadata)
+              .build();
+          batchLoaders.put(entityExtensionMetadata.getDataLoaderKey(), entityBatchLoader);
+        });
+
     final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
 
     final RuntimeGraph.Builder runtimeGraphBuilder = createRuntimeGraph(stitchedTransformedGraph);
@@ -200,6 +212,9 @@ public class XtextStitcher implements Stitcher {
         );
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
+        );
+      } else if (type == ENTITY_FETCHER) {
+        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionContext())
         );
       }
     });

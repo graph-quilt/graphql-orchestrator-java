@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.schema;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import graphql.schema.FieldCoordinates;
 
 public interface ServiceMetadata {
 
@@ -23,6 +24,8 @@ public interface ServiceMetadata {
   boolean hasFieldResolverDirective();
 
   ServiceProvider getServiceProvider();
+
+  boolean isFieldExternal(FieldCoordinates fieldCoordinates);
 
 
 }
