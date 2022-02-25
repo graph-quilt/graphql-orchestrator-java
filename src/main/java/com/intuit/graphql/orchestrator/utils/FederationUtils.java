@@ -4,6 +4,8 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefin
 
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
@@ -100,6 +102,13 @@ public class FederationUtils {
         String directiveName = directive.getDefinition().getName();
         return FED_TYPE_DIRECTIVES_NAMES_SET.contains(directiveName)
             || FED_FIELD_DIRECTIVE_NAMES_SET.contains(directiveName);
+    }
+
+    public static boolean isBaseType(TypeDefinition entityDefinition) {
+        return !(entityDefinition instanceof ObjectTypeExtensionDefinition || entityDefinition instanceof InterfaceTypeExtensionDefinition) &&
+                entityDefinition.getDirectives().stream()
+                .map(directive -> directive.getDefinition().getName())
+                .noneMatch(name -> StringUtils.equals(FEDERATION_EXTENDS_DIRECTIVE, name));
     }
 
 }

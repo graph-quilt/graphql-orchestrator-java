@@ -4,12 +4,15 @@ import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.TestServiceProvider;
 import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
 import com.intuit.graphql.orchestrator.schema.transform.RequireTransformer;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
-import org.junit.Before;
+import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,31 +23,28 @@ import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildDirec
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_REQUIRES_DIRECTIVE;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
+@RunWith(MockitoJUnitRunner.class)
 public class RequireTransformerTest {
 
     @Mock
     XtextGraph xtextGraphMock;
 
-    RequireTransformer requireTransformer = new RequireTransformer();
 
-    @Before
-    public void setup() {
-        initMocks(this);
-    }
+    RequireTransformer requireTransformer = new RequireTransformer();
 
     @Test
     public void transformerDoesNotTryToValidateNonFederatedProviders(){
-        ServiceProvider serviceProviderMock = mock(ServiceProvider.class);
+        ServiceProvider serviceProvider = TestServiceProvider
+                .newBuilder()
+                .serviceType(ServiceProvider.ServiceType.REST)
+                .namespace("Rest Provider")
+                .build();
 
-        when(xtextGraphMock.getServiceProvider()).thenReturn(serviceProviderMock);
-        when(serviceProviderMock.isFederationProvider()).thenReturn(false);
-
+        when(xtextGraphMock.getServiceProvider()).thenReturn(serviceProvider);
 
         requireTransformer.transform(xtextGraphMock);
         verify(xtextGraphMock, never()).getTypes();
@@ -52,9 +52,11 @@ public class RequireTransformerTest {
 
     @Test(expected = IncorrectDirectiveArgumentSizeException.class)
     public void transformerForwardsExceptionWhenValidatorThrowsIt(){
-        ServiceProvider serviceProviderMock = mock(ServiceProvider.class);
-        when(xtextGraphMock.getServiceProvider()).thenReturn(serviceProviderMock);
-        when(serviceProviderMock.isFederationProvider()).thenReturn(true);
+        ServiceProvider serviceProvider = TestServiceProvider
+                .newBuilder()
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .namespace("Fed Provider")
+                .build();
 
         HashMap<String, TypeDefinition> definitionHashMap = new HashMap<>();
         Directive directiveMock = buildDirective(buildDirectiveDefinition(FEDERATION_REQUIRES_DIRECTIVE), new ArrayList<>());
@@ -62,8 +64,12 @@ public class RequireTransformerTest {
         TypeDefinition typeDefinitionMock  = buildObjectTypeDefinition("EntityType", Arrays.asList(fieldDefinitionMock));
         definitionHashMap.put("EntityType", typeDefinitionMock);
 
-        when(xtextGraphMock.getTypes()).thenReturn(definitionHashMap);
+        XtextGraph xtextGraph = XtextGraph.newBuilder()
+                .serviceProvider(serviceProvider)
+                .types(definitionHashMap)
+                .xtextResourceSet(XtextResourceSetBuilder.newBuilder().build())
+                .build();
 
-        requireTransformer.transform(xtextGraphMock);
+        requireTransformer.transform(xtextGraph);
     }
 }
