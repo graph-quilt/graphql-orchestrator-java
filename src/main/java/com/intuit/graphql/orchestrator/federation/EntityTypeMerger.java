@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getDirectivesFromDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
@@ -53,12 +55,12 @@ public class EntityTypeMerger {
   }
 
   private void checkExtensionKeysAreSubset(TypeDefinition baseEntity, TypeDefinition extEntity, String extTypeName, String extServiceNamespace) {
-    List<String> baseEntityKeys = getKeyDirectives(baseEntity).stream()
+    List<String> baseEntityKeys = getDirectivesFromDefinition(baseEntity, FEDERATION_KEY_DIRECTIVE).stream()
             .map(this::getDirectiveFieldSet)
             .map(GraphQLUtil::getUniqueIdFromFieldSet)
             .collect(Collectors.toList());
 
-    List<String> subsetKeys = getKeyDirectives(extEntity).stream()
+    List<String> subsetKeys = getDirectivesFromDefinition(extEntity, FEDERATION_KEY_DIRECTIVE).stream()
             .map(this::getDirectiveFieldSet)
             .map(GraphQLUtil::getUniqueIdFromFieldSet)
             .collect(Collectors.toList());
@@ -67,13 +69,6 @@ public class EntityTypeMerger {
       String incompatibleKeyMergeErrorMsg = "Failed to merge entity extension to base type. Defined keys do not exist in base entity. typename%s, serviceNamespace=%s";
       throw new TypeConflictException(format(incompatibleKeyMergeErrorMsg, extTypeName, extServiceNamespace));
     }
-  }
-
-  //todo once requires case is merged in use the getDirectives method; not doing now to avoid conflict
-  private List<Directive> getKeyDirectives(TypeDefinition entity) {
-    return entity.getDirectives().stream()
-            .filter(directive -> directive.getDefinition().getName().equals(FederationUtils.FEDERATION_KEY_DIRECTIVE))
-            .collect(Collectors.toList());
   }
 
   private String getDirectiveFieldSet(Directive directive) {

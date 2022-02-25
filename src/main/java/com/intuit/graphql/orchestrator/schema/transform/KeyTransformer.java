@@ -1,12 +1,11 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getDirectivesFromDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
 
-import com.intuit.graphql.graphQL.Argument;
-import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.EntityExtensionContext;
@@ -49,13 +48,11 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
       FederationMetadata federationMetadata = new FederationMetadata();
       for(final TypeDefinition entityDefinition : entities.values()) {
         List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
-        for (final Directive directive : entityDefinition.getDirectives()) {
-          if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
-            List<Argument> arguments = directive.getArguments();
-            keyDirectiveValidator.validate(source, entityDefinition, arguments);
-          }
-        }
-        if (!isEntityExtension(entityDefinition)) {
+        getDirectivesFromDefinition(entityDefinition, FEDERATION_KEY_DIRECTIVE).stream()
+                .peek(directive -> keyDirectiveValidator.validate(source, entityDefinition, directive.getArguments()))
+                .count();
+
+        if (isBaseType(entityDefinition)) {
           entitiesByTypename.put(entityDefinition.getName(), entityDefinition);
           federationMetadata.addEntity(EntityMetadata.builder()
               .typeName(entityDefinition.getName())
@@ -68,8 +65,8 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
           EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
               .typeName(entityDefinition.getName())
               .keyDirectives(keyDirectives)
-              //.externalFields() TODO implement
-              //.requiredFields() TODO implement
+              //.externalFields() TODO check if needed otherwise remove
+              //.requiredFields() will be collected via RequireTransformer
               .serviceMetadata(source)
               .dataLoaderKey(dataLoaderKey)
               .build();
@@ -106,17 +103,6 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
                 .build()
         )
         .collect(Collectors.toList());
-  }
-
-  private boolean isEntityExtension(TypeDefinition entityDefinition) {
-    return entityDefinition.getDirectives().stream()
-        .map(directive -> directive.getDefinition().getName())
-        .anyMatch(name -> StringUtils.equals(FEDERATION_EXTENDS_DIRECTIVE, name));
-  }
-
-  private boolean hasKeyDirective(TypeDefinition typeDefinition) {
-    return typeDefinition.getDirectives().stream()
-        .anyMatch(directive -> directive.getDefinition().getName().equals("key"));
   }
 
   private boolean containsExternalDirective(FieldDefinition fieldDefinition) {
