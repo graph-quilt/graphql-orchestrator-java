@@ -106,7 +106,7 @@ public class XtextTypeUtils {
     }
 
     if(defaultList) {
-      return new ArrayList<>();
+      throw new StitchingException("Failed to get field definition in ci test");
     } else {
       String errorMessage = format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
               typeDefinition.getName(), typeDefinition.getClass().getName());

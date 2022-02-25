@@ -49,8 +49,6 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
                     }
                     )
                     .count();
-
-            throw new StitchingException(String.format("ran sucessfully %d there are %d types", count, source.getTypes().size()));
         }
 
         return source;
