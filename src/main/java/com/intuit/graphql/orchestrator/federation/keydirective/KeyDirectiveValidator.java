@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Optional;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_FIELDS_ARGUMENT;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.checkFieldSetValidity;
 
@@ -38,7 +39,7 @@ public class KeyDirectiveValidator {
   }
 
   private void validateKeyArgumentName(Argument argument, String containerName) throws DirectiveMissingRequiredArgumentException {
-    if(!StringUtils.equals("fields", argument.getName())) {
+    if(!StringUtils.equals(FEDERATION_FIELDS_ARGUMENT, argument.getName())) {
       throw new DirectiveMissingRequiredArgumentException(FEDERATION_KEY_DIRECTIVE, containerName);
     }
   }

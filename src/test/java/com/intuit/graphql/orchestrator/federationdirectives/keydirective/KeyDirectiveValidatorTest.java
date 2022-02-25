@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_FIELDS_ARGUMENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -82,7 +83,7 @@ public class KeyDirectiveValidatorTest {
 
         Mockito.when(fieldsArgMock.getStringValue()).thenReturn(" ");
 
-        Mockito.when(argumentMock.getName()).thenReturn("fields");
+        Mockito.when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
@@ -119,7 +120,7 @@ public class KeyDirectiveValidatorTest {
 
         Mockito.when(fieldsArgMock.getStringValue()).thenReturn("Id");
 
-        Mockito.when(argumentMock.getName()).thenReturn("fields");
+        Mockito.when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
@@ -157,7 +158,7 @@ public class KeyDirectiveValidatorTest {
 
         Mockito.when(fieldsArgMock.getStringValue()).thenReturn("id");
 
-        Mockito.when(argumentMock.getName()).thenReturn("fields");
+        Mockito.when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Collections.singletonList(argumentMock);
@@ -193,7 +194,7 @@ public class KeyDirectiveValidatorTest {
         Mockito.when(fieldsArgMock.getStringValue()).thenReturn("id");
         Mockito.when(fieldsArgMock.getStringValue()).thenReturn("batid");
 
-        Mockito.when(argumentMock.getName()).thenReturn("fields");
+        Mockito.when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Arrays.asList(argumentMock);
@@ -232,7 +233,7 @@ public class KeyDirectiveValidatorTest {
 
         Mockito.when(fieldsArgMock.getStringValue()).thenReturn("id batId");
 
-        Mockito.when(argumentMock.getName()).thenReturn("fields");
+        Mockito.when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         Mockito.when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         List<Argument> argumentList = Collections.singletonList(argumentMock);

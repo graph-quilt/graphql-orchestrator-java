@@ -255,7 +255,7 @@ public class XtextTypeUtils {
               .collect(Collectors.toList());
     }
 
-    throw new IllegalArgumentException(format("Failed to get directives for %s", definition.getClass().getName()));
+    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
   }
 
   public static boolean isEntity(final TypeDefinition type) {

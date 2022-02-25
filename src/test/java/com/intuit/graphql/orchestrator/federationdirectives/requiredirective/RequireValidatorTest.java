@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_FIELDS_ARGUMENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -89,7 +90,7 @@ public class RequireValidatorTest {
 
         when(fieldsArgMock.getStringValue()).thenReturn(" ");
 
-        when(argumentMock.getName()).thenReturn("fields");
+        when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         EList<Argument> argumentList = ECollections.asEList(argumentMock);
@@ -124,7 +125,7 @@ public class RequireValidatorTest {
 
         when(fieldsArgMock.getStringValue()).thenReturn("Id");
 
-        when(argumentMock.getName()).thenReturn("fields");
+        when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         EList<Argument> argumentList = ECollections.asEList(argumentMock);
@@ -158,7 +159,7 @@ public class RequireValidatorTest {
 
         when(fieldsArgMock.getStringValue()).thenReturn("id");
 
-        when(argumentMock.getName()).thenReturn("fields");
+        when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         EList<Argument> argumentList = ECollections.asEList(argumentMock);
@@ -191,7 +192,7 @@ public class RequireValidatorTest {
         when(fieldsArgMock.getStringValue()).thenReturn("id");
         when(fieldsArgMock.getStringValue()).thenReturn("batid");
 
-        when(argumentMock.getName()).thenReturn("fields");
+        when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         EList<Argument> argumentList = ECollections.asEList(argumentMock);
@@ -225,7 +226,7 @@ public class RequireValidatorTest {
 
         when(fieldsArgMock.getStringValue()).thenReturn("id batId");
 
-        when(argumentMock.getName()).thenReturn("fields");
+        when(argumentMock.getName()).thenReturn(FEDERATION_FIELDS_ARGUMENT);
         when(argumentMock.getValueWithVariable()).thenReturn(fieldsArgMock);
 
         EList<Argument> argumentList = ECollections.asEList(argumentMock);

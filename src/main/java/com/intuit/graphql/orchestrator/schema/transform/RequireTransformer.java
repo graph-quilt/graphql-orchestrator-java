@@ -36,9 +36,9 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
                             .map(fieldDefinition -> getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE))
                             .flatMap(Collection::stream)
                             .peek(directive -> requireValidator.validate(source, typeDefinition, directive))
-                            .count()
+                            .collect(Collectors.toList())
                     )
-                    .count();
+                    .collect(Collectors.toList());
         }
 
         return source;

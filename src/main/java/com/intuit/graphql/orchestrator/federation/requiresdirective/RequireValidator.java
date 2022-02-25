@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Optional;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_FIELDS_ARGUMENT;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_REQUIRES_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.checkFieldSetValidity;
 
@@ -32,13 +33,13 @@ public class RequireValidator {
     }
 
     private void checkDirectivesArgumentSize(List<Argument> argumentList, String containerName) {
-        if(CollectionUtils.isEmpty(argumentList) || argumentList.size() != 1) {
+        if(CollectionUtils.size(argumentList) != 1) {
             throw new IncorrectDirectiveArgumentSizeException(FEDERATION_REQUIRES_DIRECTIVE, containerName, 1);
         }
     }
 
     private void checkRequireArgumentName(Argument requireArgument, String containerName) {
-        if(!StringUtils.equals("fields", requireArgument.getName())) {
+        if(!StringUtils.equals(FEDERATION_FIELDS_ARGUMENT, requireArgument.getName())) {
             throw new DirectiveMissingRequiredArgumentException(FEDERATION_REQUIRES_DIRECTIVE, containerName);
         }
     }
