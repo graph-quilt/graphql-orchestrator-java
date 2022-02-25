@@ -292,4 +292,13 @@ public class XtextTypeUtils {
 
     return compatible;
   }
+
+  public static boolean isObjectTypeDefinition(TypeDefinition typeDefinition) {
+    return Objects.nonNull(typeDefinition) && typeDefinition instanceof ObjectTypeDefinition;
+  }
+
+  public static boolean isInterfaceTypeDefinition(TypeDefinition typeDefinition) {
+    return Objects.nonNull(typeDefinition) && typeDefinition instanceof InterfaceTypeDefinition;
+
+  }
 }

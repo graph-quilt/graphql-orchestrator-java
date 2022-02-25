@@ -1,24 +1,27 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+
+import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
+import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
 import graphql.language.SelectionSet;
 import graphql.parser.Parser;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class FederationUtils {
     public static final String FEDERATION_KEY_DIRECTIVE = "key";
@@ -27,6 +30,15 @@ public class FederationUtils {
     public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
     public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
 
+  public static final Set<String> FED_TYPE_DIRECTIVES_NAMES_SET =
+      new HashSet<>(Arrays.asList(FEDERATION_KEY_DIRECTIVE, FEDERATION_EXTENDS_DIRECTIVE));
+
+  public static final Set<String> FED_FIELD_DIRECTIVE_NAMES_SET =
+      new HashSet<>(
+          Arrays.asList(
+              FEDERATION_EXTERNAL_DIRECTIVE,
+              FEDERATION_REQUIRES_DIRECTIVE,
+              FEDERATION_PROVIDES_DIRECTIVE));
 
     private FederationUtils(){}
 
@@ -38,8 +50,7 @@ public class FederationUtils {
         }
 
         if(!fieldSet.startsWith("{")) {
-            fieldSet = "{ " + fieldSet;
-            fieldSet = fieldSet + " }";
+            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
         }
 
         //Throws InvalidSyntaxException if fieldSet is incorrect
@@ -83,6 +94,12 @@ public class FederationUtils {
 
     private static List<Field> getFieldsFromSelectionSet(SelectionSet selectionSet) {
         return selectionSet.getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
+    }
+
+    public static boolean isFederationDirective(Directive directive) {
+        String directiveName = directive.getDefinition().getName();
+        return FED_TYPE_DIRECTIVES_NAMES_SET.contains(directiveName)
+            || FED_FIELD_DIRECTIVE_NAMES_SET.contains(directiveName);
     }
 
 }
