@@ -73,6 +73,12 @@ public class XtextObjectCreationUtil {
     return objectTypeDefinition;
   }
 
+  public static ObjectTypeDefinition buildObjectTypeDefinition(String name) {
+    ObjectTypeDefinition objectTypeDefinition = createObjectTypeDefinition();
+    objectTypeDefinition.setName(name);
+    return objectTypeDefinition;
+  }
+
   public static InterfaceTypeDefinition buildInterfaceTypeDefinition(String name, List<FieldDefinition> fieldDefinitions) {
     InterfaceTypeDefinition interfaceTypeDefinition = createInterfaceTypeDefinition();
     interfaceTypeDefinition.setName(name);
