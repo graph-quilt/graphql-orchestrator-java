@@ -30,15 +30,21 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
     public XtextGraph transform(final XtextGraph source) {
 
         if(source.getServiceProvider().isFederationProvider()) {
-            source.getTypes().values().stream()
-                    .peek(typeDefinition -> getFieldDefinitions(typeDefinition, true)
+            long count = source.getTypes().values().stream()
+                    .peek(typeDefinition ->
+                    {
+                        getFieldDefinitions(typeDefinition, true)
                             .stream()
                             .map(fieldDefinition -> getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE))
                             .flatMap(Collection::stream)
                             .peek(directive -> requireValidator.validate(source, typeDefinition, directive))
-                            .count()
+                            .count();
+                        throw new StitchingException("testing reaches point 1");
+                    }
                     )
                     .count();
+
+            throw new StitchingException(String.format("ran sucessfully %d", count));
         }
 
         return source;
