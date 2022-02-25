@@ -5,11 +5,15 @@ import static graphql.schema.GraphQLTypeUtil.unwrapOne;
 
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
+import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.ListType;
 import graphql.language.NonNullType;
+import graphql.language.OperationDefinition;
+import graphql.language.SelectionSet;
 import graphql.language.Type;
 import graphql.language.TypeName;
+import graphql.parser.Parser;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLNamedType;
@@ -17,6 +21,10 @@ import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -82,4 +90,33 @@ public class GraphQLUtil {
     throw new CreateTypeException(
         String.format(ERR_CREATE_TYPE_UNEXPECTED_TYPE, GraphQLTypeUtil.simplePrint(graphQLType)));
   }
+
+  public static String getUniqueIdFromFieldSet(String fieldSet) {
+    if(!fieldSet.startsWith("{")) {
+      fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
+    }
+
+    Document graphqlDocument = Parser.parse(fieldSet);
+
+    List<OperationDefinition> definitions = graphqlDocument.getDefinitions().stream()
+            .map(OperationDefinition.class::cast).collect(Collectors.toList());
+
+    return convertSelectionSetToUniqueId(definitions.get(0).getSelectionSet());
+  }
+
+  private static String convertSelectionSetToUniqueId(SelectionSet selectionSet) {
+    Comparator<Field> fieldComparable = Comparator.comparing(Field::getName);
+
+    List<Field> fields = selectionSet.getSelections().stream()
+            .map(Field.class::cast).sorted(fieldComparable).collect(Collectors.toList());
+
+    String directChildrenUniqueId = fields.stream().map(Field::getName).reduce("", (partialId, fieldName) -> partialId + fieldName);
+    String descendantsUniqueId = fields.stream().filter(field -> CollectionUtils.isNotEmpty(field.getChildren())).map(field -> {
+      SelectionSet childSelections =  field.getChildren().stream().map(SelectionSet.class::cast).collect(Collectors.toList()).get(0);
+      return convertSelectionSetToUniqueId(childSelections);
+    }).reduce("", (partialId, childSelectionNames) -> partialId + childSelectionNames);
+
+    return directChildrenUniqueId + descendantsUniqueId;
+  }
+
 }
