@@ -1,11 +1,10 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getDirectivesFromDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
 
-import com.intuit.graphql.graphQL.Argument;
-import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
@@ -44,13 +42,12 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
       for(final TypeDefinition entityDefinition : entities.values()) {
         FederationMetadata federationMetadata = new FederationMetadata();
         List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
-        for (final Directive directive : entityDefinition.getDirectives()) {
-          if(directive.getDefinition().getName().equals(FEDERATION_KEY_DIRECTIVE)) {
-            List<Argument> arguments = directive.getArguments();
-            keyDirectiveValidator.validate(source, entityDefinition, arguments);
-          }
-        }
-        if (isEntity(entityDefinition)) {
+
+        getDirectivesFromDefinition(entityDefinition, FEDERATION_KEY_DIRECTIVE).stream()
+                .peek(directive -> keyDirectiveValidator.validate(source, entityDefinition, directive.getArguments()))
+                .count();
+
+        if (isBaseType(entityDefinition)) {
           entitiesByTypename.put(entityDefinition.getName(), entityDefinition);
           federationMetadata.addEntity(EntityMetadata.builder()
               .typeName(entityDefinition.getName())
@@ -78,11 +75,4 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
       return source;
     }
   }
-
-  private boolean isEntity(TypeDefinition entityDefinition) {
-    return entityDefinition.getDirectives().stream()
-        .map(directive -> directive.getDefinition().getName())
-        .anyMatch(name -> StringUtils.equals(FEDERATION_EXTENDS_DIRECTIVE, name));
-  }
-
 }

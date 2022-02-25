@@ -30,6 +30,7 @@ import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformer
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.KeyTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.KeyTransformerPostMerge;
+import com.intuit.graphql.orchestrator.schema.transform.RequireTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer;
@@ -283,7 +284,8 @@ public class XtextStitcher implements Stitcher {
           new DirectivesTransformer(),
           new UnionAndInterfaceTransformer(),
           new FieldResolverTransformerPreMerge(),
-          new KeyTransformer()
+          new KeyTransformer(),
+          new RequireTransformer()
       );
     }
 

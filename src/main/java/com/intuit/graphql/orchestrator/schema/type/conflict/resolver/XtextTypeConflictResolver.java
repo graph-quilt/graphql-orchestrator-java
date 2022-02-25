@@ -6,6 +6,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isScalarType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.typeContainsDirective;
 
+import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.ScalarTypeDefinition;
@@ -62,7 +63,7 @@ public class XtextTypeConflictResolver {
                   toDescriptiveString(existingType)));
       }
 
-      if(!(conflictingType instanceof UnionTypeDefinition || isScalarType(conflictingType))) {
+      if(!(conflictingType instanceof UnionTypeDefinition || isScalarType(conflictingType) || conflictingType instanceof EnumTypeDefinition)) {
         checkFieldsCompatibility(existingType, conflictingType, existingTypeIsEntity, conflictingTypeisEntity,federatedComparison);
       }
     }

@@ -7,6 +7,7 @@ import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
 import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapOne;
+import static java.lang.String.format;
 
 import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.graphQL.impl.ListTypeImpl;
@@ -15,6 +16,7 @@ import com.intuit.graphql.graphQL.impl.PrimitiveTypeImpl;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -91,15 +93,24 @@ public class XtextTypeUtils {
   }
 
   public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition) {
+    return getFieldDefinitions(typeDefinition, false);
+  }
+
+  public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition, boolean defaultList) {
     if (typeDefinition instanceof InterfaceTypeDefinition) {
       return ((InterfaceTypeDefinition)typeDefinition).getFieldDefinition();
     }
     if (typeDefinition instanceof ObjectTypeDefinition) {
       return ((ObjectTypeDefinition)typeDefinition).getFieldDefinition();
     }
-    String errorMessage = String.format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
-            typeDefinition.getName(), typeDefinition.getClass().getName());
-    throw new IllegalArgumentException(errorMessage);
+
+    if(defaultList) {
+      return new ArrayList<>();
+    } else {
+      String errorMessage = format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
+              typeDefinition.getName(), typeDefinition.getClass().getName());
+      throw new IllegalArgumentException(errorMessage);
+    }
   }
 
   public static boolean compareTypes(NamedType lType, NamedType rType) {
@@ -128,14 +139,14 @@ public class XtextTypeUtils {
   }
 
   public static String toDescriptiveString(TypeDefinition typeDefinition) {
-    return String.format(XTEXT_TYPE_FORMAT, typeDefinition.getName(), typeDefinition.eClass().getName(),
+    return format(XTEXT_TYPE_FORMAT, typeDefinition.getName(), typeDefinition.eClass().getName(),
             typeDefinition.getDesc());
   }
 
   public static String toDescriptiveString(NamedType namedType) {
     TypeDefinition objectType = com.intuit.graphql.utils.XtextTypeUtils.getObjectType(namedType);
     return Objects.nonNull(objectType) ? toDescriptiveString(objectType)
-            : String.format(XTEXT_TYPE_FORMAT, com.intuit.graphql.utils.XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
+            : format(XTEXT_TYPE_FORMAT, com.intuit.graphql.utils.XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
   }
 
   public static String toDescriptiveString(ArgumentsDefinition argumentsDefinition) {
@@ -167,23 +178,22 @@ public class XtextTypeUtils {
           possibleConflictingFieldMap.remove(possibleConflictingSharedField.getName());
         } else {
           throw new TypeConflictException(
-                  String.format("Type %s is conflicting with existing type %s",
+                  format("Type %s is conflicting with existing type %s. Both types must be able to resolve %s",
                           toDescriptiveString(existingTypeDefinition),
-                          toDescriptiveString(conflictingTypeDefinition)
+                          toDescriptiveString(conflictingTypeDefinition),
+                          possibleConflictingSharedField.getName()
                   )
           );
         }
-      } else {
-        if(!federatedComparison || isIncompatibleUniqueField(existingDefinition, entityComparison)) {
-          throw new TypeConflictException(
-                  String.format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
-                          toDescriptiveString(conflictingTypeDefinition),
-                          toDescriptiveString(existingTypeDefinition),
-                          toDescriptiveString(conflictingTypeDefinition),
-                          existingDefinition.getName()
-                  )
-          );
-        }
+      } else if(!federatedComparison || isIncompatibleUniqueField(existingDefinition, entityComparison)) {
+        throw new TypeConflictException(
+                format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
+                        toDescriptiveString(conflictingTypeDefinition),
+                        toDescriptiveString(existingTypeDefinition),
+                        toDescriptiveString(conflictingTypeDefinition),
+                        existingDefinition.getName()
+                )
+        );
       }
     }
 
@@ -195,7 +205,7 @@ public class XtextTypeUtils {
       for(FieldDefinition fieldDefinition :possibleConflictingFieldMap.values()) {
         if(isIncompatibleUniqueField(fieldDefinition, entityComparison)) {
           throw new TypeConflictException(
-                  String.format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
+                  format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
                           toDescriptiveString(conflictingTypeDefinition),
                           toDescriptiveString(existingTypeDefinition),
                           toDescriptiveString(conflictingTypeDefinition),
@@ -234,6 +244,20 @@ public class XtextTypeUtils {
     return type.getDirectives().stream().anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
 
+  public static List<Directive> getDirectivesFromDefinition(EObject definition, String directiveName) {
+    if(definition instanceof TypeDefinition) {
+      return ((TypeDefinition) definition).getDirectives().stream()
+              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+              .collect(Collectors.toList());
+    } else if(definition instanceof FieldDefinition) {
+      return ((FieldDefinition) definition).getDirectives().stream()
+              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+              .collect(Collectors.toList());
+    }
+
+    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
+  }
+
   public static boolean isEntity(final TypeDefinition type) {
     return typeContainsDirective(type, FEDERATION_KEY_DIRECTIVE);
   }
@@ -243,7 +267,7 @@ public class XtextTypeUtils {
   }
 
   public static boolean areCompatibleSharedFields(FieldDefinition fieldDefinition1, FieldDefinition fieldDefinition2) {
-    return fieldDefinition1.getNamedType().isNonNull() == fieldDefinition2.getNamedType().isNonNull() &&
+    return
             areCompatibleTypes(fieldDefinition1.getNamedType(), fieldDefinition2.getNamedType());
   }
 
