@@ -32,13 +32,12 @@ public class RequireTransformer implements Transformer<XtextGraph, XtextGraph> {
     public XtextGraph transform(final XtextGraph source) {
 
         if(source.getServiceProvider().isFederationProvider()) {
-            long count = source.getTypes().values().stream()
+            source.getTypes().values().stream()
                     .peek(typeDefinition ->
                     {
                         throw new StitchingException("test that it runs code inside peek");
                     }
-                    )
-                    .count();
+                    ).collect(Collectors.toList());
         }
 
         return source;
