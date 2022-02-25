@@ -50,7 +50,7 @@ public class RequireTransformerTest {
         verify(xtextGraphMock, never()).getTypes();
     }
 
-    @Test(expected = IncorrectDirectiveArgumentSizeException.class)
+    @Test
     public void transformerForwardsExceptionWhenValidatorThrowsIt(){
         ServiceProvider serviceProvider = TestServiceProvider
                 .newBuilder()
