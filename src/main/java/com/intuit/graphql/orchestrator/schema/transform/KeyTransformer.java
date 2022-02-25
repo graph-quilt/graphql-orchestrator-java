@@ -49,8 +49,10 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
       for(final TypeDefinition entityDefinition : entities.values()) {
         List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
         getDirectivesFromDefinition(entityDefinition, FEDERATION_KEY_DIRECTIVE).stream()
-                .peek(directive -> keyDirectiveValidator.validate(source, entityDefinition, directive.getArguments()))
-                .count();
+            .peek(directive -> keyDirectiveValidator.validate(source, entityDefinition, directive.getArguments()))
+            .forEach(directive -> {
+              keyDirectives.add(KeyDirectiveMetadata.from(directive));
+            });
 
         if (isBaseType(entityDefinition)) {
           entitiesByTypename.put(entityDefinition.getName(), entityDefinition);
