@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-public class RequireDirectiveTest {
+public class RequireValidatorTest {
     RequireValidator requireValidator = new RequireValidator();
 
     @Mock
