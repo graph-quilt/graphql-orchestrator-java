@@ -1,7 +1,6 @@
 package com.intuit.graphql.orchestrator.federation;
 
-import static com.intuit.graphql.orchestrator.federation.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
-import static com.intuit.graphql.orchestrator.federation.FederationConstants.FED_TYPE_DIRECTIVES_NAMES_SET;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isFederationDirective;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 import com.intuit.graphql.graphQL.Directive;
@@ -9,7 +8,6 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 
 public class Federation2PureGraphQLUtil {
 
@@ -31,16 +29,8 @@ public class Federation2PureGraphQLUtil {
         directives.stream()
             .filter(directive -> !isFederationDirective(directive))
             .collect(Collectors.toList());
-    if (CollectionUtils.isNotEmpty(nonFederationDirectives)) {
-      directives.clear();
-      directives.addAll(nonFederationDirectives);
-    }
+    directives.clear();
+    directives.addAll(nonFederationDirectives);
   }
 
-  // TODO move somewhere if not yet present
-  public static boolean isFederationDirective(Directive directive) {
-    String directiveName = directive.getDefinition().getName();
-    return FED_TYPE_DIRECTIVES_NAMES_SET.contains(directiveName)
-        || FED_FIELD_DIRECTIVE_NAMES_SET.contains(directiveName);
-  }
 }

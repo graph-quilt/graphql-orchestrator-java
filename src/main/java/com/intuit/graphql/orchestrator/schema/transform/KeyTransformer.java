@@ -1,7 +1,7 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.federation.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.federation.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_EXTENDS_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
 
 import com.intuit.graphql.graphQL.Argument;
