@@ -81,6 +81,7 @@ public class XtextGraph implements ServiceMetadata {
     entitiesByTypeName = builder.entities;
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
     entityExtensionContexts = builder.entityExtensionContexts;
+    federationMetadataByNamespace = builder.federationMetadataByNamespace;
   }
 
   /**
@@ -113,6 +114,7 @@ public class XtextGraph implements ServiceMetadata {
     builder.entities = copy.entitiesByTypeName;
     builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
     builder.entityExtensionContexts = copy.entityExtensionContexts;
+    builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
     return builder;
   }
 
@@ -281,6 +283,7 @@ public class XtextGraph implements ServiceMetadata {
     private Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
     private List<EntityExtensionContext> entityExtensionContexts = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
+    private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -425,6 +428,12 @@ public class XtextGraph implements ServiceMetadata {
     public Builder entityExtensionsByNamespace(Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace) {
       requireNonNull(entityExtensionsByNamespace);
       this.entityExtensionsByNamespace.putAll(entityExtensionsByNamespace);
+      return this;
+    }
+
+    public Builder federationMetadataByNamespace(Map<String, FederationMetadata> federationMetadataByNamespace) {
+      requireNonNull(federationMetadataByNamespace);
+      this.federationMetadataByNamespace.putAll(federationMetadataByNamespace);
       return this;
     }
 

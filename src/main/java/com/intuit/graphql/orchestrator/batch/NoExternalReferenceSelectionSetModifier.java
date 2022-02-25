@@ -27,6 +27,7 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
   NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType, ServiceMetadata serviceMetadata) {
     this.rootType = rootType;
+    this.serviceMetadata = serviceMetadata;
   }
 
   @Override
