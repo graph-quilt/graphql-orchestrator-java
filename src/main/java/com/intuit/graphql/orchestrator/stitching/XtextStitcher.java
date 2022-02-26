@@ -124,14 +124,14 @@ public class XtextStitcher implements Stitcher {
 
     });
 
-    stitchedTransformedGraph.getFederationMetadataByNamespace().values().stream()
-        .flatMap(federationMetadata -> federationMetadata.getExtensionsByTypename().values().stream())
-        .forEach(entityExtensionMetadata -> {
-          EntityBatchLoader entityBatchLoader = EntityBatchLoader.builder()
-              .entityExtensionMetadata(entityExtensionMetadata)
-              .build();
-          batchLoaders.put(entityExtensionMetadata.getDataLoaderKey(), entityBatchLoader);
-        });
+    stitchedTransformedGraph.getFederationMetadataByNamespace().forEach((namespace, federationMetadata) ->
+      federationMetadata.getExtensionsByTypename().forEach((typename, entityExtensionMetadata) -> {
+        EntityBatchLoader entityBatchLoader = EntityBatchLoader.builder()
+            .entityExtensionMetadata(entityExtensionMetadata)
+            .build();
+        batchLoaders.put(entityExtensionMetadata.getDataLoaderKey(), entityBatchLoader);
+      })
+    );
 
     final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
 
