@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.containsExternalDirective;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getDirectivesFromDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
@@ -105,11 +106,6 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
                 .build()
         )
         .collect(Collectors.toList());
-  }
-
-  private boolean containsExternalDirective(FieldDefinition fieldDefinition) {
-    return fieldDefinition.getDirectives().stream()
-        .anyMatch(directive -> directive.getDefinition().getName().equals("external"));
   }
 
   public static String createDataLoaderKey(String serviceNamespace, String parentTypename) {
