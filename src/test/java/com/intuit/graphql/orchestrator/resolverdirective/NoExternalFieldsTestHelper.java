@@ -25,7 +25,7 @@ import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 
 @Getter
-public class FieldResolverDirectiveTestHelper {
+public class NoExternalFieldsTestHelper {
 
   public static final String aSchema = "type Query { a1 : [AObjectType] a2 : String } "
       + "type AObjectType { af1 : String af2 : String } "
@@ -35,6 +35,7 @@ public class FieldResolverDirectiveTestHelper {
       + "    b3 : BUnionType @resolver(field: \"b3\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b4 : String @resolver(field: \"b4\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b5 : BEnumType @resolver(field: \"b5\" arguments: [{name : \"id\", value: \"$af1\"}]) "
+      + "    b6 : String "
       + "} "
       + "type BObjectType "
       + "interface BInterfaceType "
@@ -64,7 +65,7 @@ public class FieldResolverDirectiveTestHelper {
   private ServiceProvider testServiceA;
   private ServiceProvider testServiceB;
 
-  public FieldResolverDirectiveTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
+  public NoExternalFieldsTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
     Objects.requireNonNull(testServiceA);
     Objects.requireNonNull(testServiceB);
     this.testServiceA = testServiceA;

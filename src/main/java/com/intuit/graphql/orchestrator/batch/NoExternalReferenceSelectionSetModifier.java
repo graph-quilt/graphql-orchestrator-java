@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.batch;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
 import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
+import static graphql.schema.FieldCoordinates.coordinates;
 import static graphql.util.TreeTransformerUtil.deleteNode;
 import static java.util.Objects.requireNonNull;
 
@@ -22,8 +23,8 @@ import graphql.util.TraverserContext;
 
 public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
-  private GraphQLFieldsContainer rootType;
-  private ServiceMetadata serviceMetadata;
+  private final GraphQLFieldsContainer rootType;
+  private final ServiceMetadata serviceMetadata;
 
   NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType, ServiceMetadata serviceMetadata) {
     this.rootType = rootType;
@@ -41,8 +42,8 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
       String fieldName = node.getName();
       GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, parentType);
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + fieldName);
-      FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentType.getName(), fieldDefinition.getName());
-      if (hasResolverDirective(fieldDefinition) || serviceMetadata.isOwnedByEntityExtension(fieldCoordinates)) {
+
+      if (isExternalField(parentType.getName(), fieldDefinition)) {
         return deleteNode(context);
       }
 
@@ -52,6 +53,15 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
       }
       return TraversalControl.CONTINUE;
     }
+  }
+
+  private boolean isExternalField(String parentTypename, GraphQLFieldDefinition fieldDefinition) {
+    FieldCoordinates fieldCoordinates = coordinates(parentTypename, fieldDefinition.getName());
+    // TODO consider the entire condition to be abstracted in
+    //  serviceMetadata.isFieldExternal(fieldCoordinates).
+    //  This requires a complete set of field coordinates that the service owns
+    return hasResolverDirective(fieldDefinition)
+        || serviceMetadata.isOwnedByEntityExtension(fieldCoordinates);
   }
 
   private GraphQLFieldDefinition getFieldDefinition(String name, GraphQLFieldsContainer parentType) {
