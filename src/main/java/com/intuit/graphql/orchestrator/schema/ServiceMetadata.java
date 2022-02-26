@@ -25,7 +25,7 @@ public interface ServiceMetadata {
 
   ServiceProvider getServiceProvider();
 
-  boolean isFieldExternal(FieldCoordinates fieldCoordinates);
+  boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates);
 
 
 }

@@ -42,7 +42,7 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
       GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, parentType);
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + fieldName);
       FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentType.getName(), fieldDefinition.getName());
-      if (hasResolverDirective(fieldDefinition) || serviceMetadata.isFieldExternal(fieldCoordinates)) {
+      if (hasResolverDirective(fieldDefinition) || serviceMetadata.isOwnedByEntityExtension(fieldCoordinates)) {
         return deleteNode(context);
       }
 

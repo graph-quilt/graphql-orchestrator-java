@@ -153,10 +153,13 @@ public class XtextGraph implements ServiceMetadata {
   }
 
   @Override
-  public boolean isFieldExternal(FieldCoordinates fieldCoordinates) {
+  public boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates) {
+    if (!this.serviceProvider.isFederationProvider()) {
+      return false;
+    }
+
     FederationMetadata federationMetadata = this.federationMetadataByNamespace.get(serviceProvider.getNameSpace());
-    federationMetadata.isFieldExternal(fieldCoordinates);
-    return false;
+    return federationMetadata.isFieldExternal(fieldCoordinates);
   }
 
   /**
