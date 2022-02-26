@@ -114,11 +114,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
-            .map(
-                field ->
-                    (serviceMetadata.hasFieldResolverDirective() || serviceMetadata.getServiceProvider().isFederationProvider())
-                        ? removeFieldsWithExternalTypes(
-                            field, getRootFieldDefinition(key.getExecutionStepInfo()).getType())
+            .map(field -> (serviceMetadata.hasFieldResolverDirective() || serviceMetadata.isFederationService())
+                        ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType())
                         : field)
             .forEach(selectionSetBuilder::selection);
       }
@@ -142,7 +139,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
       Map<String, FragmentDefinition> svcFragmentDefinitions = filterFragmentDefinitionByService(
           key.getFragmentsByName());
-      if (serviceMetadata.hasFieldResolverDirective()) {
+      if (serviceMetadata.hasFieldResolverDirective() || serviceMetadata.isFederationService()) {
         Map<String, FragmentDefinition> finalServiceFragmentDefinitions = new HashMap<>();
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();

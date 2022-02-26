@@ -162,6 +162,11 @@ public class XtextGraph implements ServiceMetadata {
     return federationMetadata.isFieldExternal(fieldCoordinates);
   }
 
+  @Override
+  public boolean isFederationService() {
+    return this.serviceProvider.isFederationProvider();
+  }
+
   /**
    * Check if the given typeName exists in provider's schema.
    *

@@ -27,5 +27,7 @@ public interface ServiceMetadata {
 
   boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates);
 
+  boolean isFederationService();
+
 
 }
