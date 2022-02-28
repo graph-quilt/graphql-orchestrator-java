@@ -66,8 +66,6 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
               .fields(EntityMetadata.getFieldsFrom(entityDefinition))
               .build());
         } else {
-          //String dataLoaderKey = createDataLoaderKey(source.getServiceProvider().getNameSpace(), entityDefinition.getName());
-
           EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
               .typeName(entityDefinition.getName())
               .keyDirectives(keyDirectives)
@@ -99,11 +97,11 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
               .stream()
               .flatMap(directive -> {
                 Optional<Argument> optionalArgument = directive.getArguments().stream().findFirst();
-                Argument argument = optionalArgument.get();
                 if (!optionalArgument.isPresent()) {
                   // validation is already being done, this should not happen
                   throw new IllegalStateException("require directive argument not found.");
                 }
+                Argument argument = optionalArgument.get();
                 ValueWithVariable valueWithVariable = argument.getValueWithVariable();
                 String fieldSetValue = valueWithVariable.getStringValue();
                 return new HashSet<>(Strings.split(fieldSetValue, StringUtils.SPACE)).stream();
