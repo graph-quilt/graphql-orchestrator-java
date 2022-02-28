@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.google.common.collect.ImmutableMap;
+import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.PassthroughQueryModifier;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
@@ -58,6 +59,9 @@ import org.mockito.Mockito;
 public class GraphQLServiceBatchLoaderTest {
 
   @Mock
+  public ServiceProvider mockServiceProvider;
+
+  @Mock
   public XtextGraph mockServiceMetadata;
 
   @Mock
@@ -76,6 +80,9 @@ public class GraphQLServiceBatchLoaderTest {
 
     doReturn(CompletableFuture.completedFuture("TestFutureAuthData"))
         .when(mockBatchFieldAuthorization).getFutureAuthData();
+
+    doReturn(false).when(mockServiceProvider).isFederationProvider();
+    doReturn(mockServiceProvider).when(mockServiceMetadata).getServiceProvider();
   }
 
   @Test

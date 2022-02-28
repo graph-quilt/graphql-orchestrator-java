@@ -4,6 +4,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefin
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.schema.FieldCoordinates;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class holds the metadata for the usage of federation specs in a given {@link
@@ -44,6 +46,14 @@ public class FederationMetadata {
     this.extensionsByTypename.put(entityExtensionMetadata.getTypeName(), entityExtensionMetadata);
   }
 
+  public boolean isEntity(String typename) {
+    return this.entitiesByTypename.containsKey(typename);
+  }
+
+  public EntityMetadata getEntityMetadataByName(String typename) {
+    return this.entitiesByTypename.get(typename);
+  }
+
   @Builder
   @Getter
   public static class EntityMetadata {
@@ -67,9 +77,24 @@ public class FederationMetadata {
     private String typeName;
     private List<KeyDirectiveMetadata> keyDirectives;
     private Set<String> externalFields;
-    private Set<String> requiredFields;
+    private Map<String, Set<String>> requiredFieldsByFieldName;
     private ServiceMetadata serviceMetadata;
+    private ServiceMetadata baseServiceMetadata;
+    private String dataLoaderKey;
+    @Setter
+    private EntityMetadata entityMetadata;
     // TODO @provides
 
+    public ServiceProvider getServiceProvider() {
+      return this.serviceMetadata.getServiceProvider();
+    }
+
+    public ServiceProvider getBaseServiceProvider() {
+      return this.baseServiceMetadata.getServiceProvider();
+    }
+
+    public Set<String> getRequiredFields(String fieldName) {
+      return this.requiredFieldsByFieldName.get(fieldName);
+    }
   }
 }

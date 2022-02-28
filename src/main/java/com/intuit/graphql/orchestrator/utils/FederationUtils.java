@@ -112,4 +112,9 @@ public class FederationUtils {
                 .noneMatch(name -> StringUtils.equals(FEDERATION_EXTENDS_DIRECTIVE, name));
     }
 
+  public static boolean containsExternalDirective(FieldDefinition fieldDefinition) {
+    return fieldDefinition.getDirectives().stream()
+        .anyMatch(directive -> directive.getDefinition().getName().equals("external"));
+  }
+
 }
