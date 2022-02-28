@@ -167,6 +167,15 @@ public class XtextGraph implements ServiceMetadata {
     return this.serviceProvider.isFederationProvider();
   }
 
+  @Override
+  public boolean isEntity(String typename) {
+    return isFederationService() && getFederationServiceMetadata().isEntity(typename);
+  }
+
+  public FederationMetadata getFederationServiceMetadata() {
+    return getFederationMetadataByNamespace().get(serviceProvider.getNameSpace());
+  }
+
   /**
    * Check if the given typeName exists in provider's schema.
    *

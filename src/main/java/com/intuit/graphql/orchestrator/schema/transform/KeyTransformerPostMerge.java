@@ -8,10 +8,12 @@ import com.intuit.graphql.orchestrator.federation.EntityTypeMerger.EntityMerging
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
 import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.BaseTypeNotFoundException;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
@@ -26,6 +28,14 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
         .forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
 
     for (EntityExtensionMetadata entityExtensionMetadata : xtextGraph.getEntityExtensionMetadatas()) {
+      Optional<EntityMetadata> optionalEntityMetadata = xtextGraph.getFederationMetadataByNamespace()
+          .values()
+          .stream()
+          .flatMap(federationMetadata -> federationMetadata.getEntitiesByTypename().values().stream())
+          .filter(entityMetadata -> entityMetadata.getTypeName().equals(entityExtensionMetadata.getTypeName()))
+          .findFirst();
+
+      entityExtensionMetadata.setEntityMetadata(optionalEntityMetadata.get());
       entityExtensionMetadata.getRequiredFieldsByFieldName().forEach((fieldName, strings) -> {
         FieldContext fieldContext = new FieldContext(entityExtensionMetadata.getTypeName(), fieldName);
         DataFetcherContext dataFetcherContext = DataFetcherContext

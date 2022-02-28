@@ -3,9 +3,12 @@ package com.intuit.graphql.orchestrator.batch;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
 import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
 import static graphql.schema.FieldCoordinates.coordinates;
+import static graphql.util.TreeTransformerUtil.changeNode;
 import static graphql.util.TreeTransformerUtil.deleteNode;
 import static java.util.Objects.requireNonNull;
 
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
@@ -20,6 +23,10 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 
 public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
@@ -87,8 +94,31 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
-    GraphQLType parentType = getParentType(context);
+    GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
     context.setVar(GraphQLType.class, parentType);
+
+    Set<String> selectionsByName = node.getSelections().stream()
+        .filter(selection -> selection instanceof Field) // TODO inline / fragments
+        .map(selection -> (Field) selection)
+        .map(field -> field.getName())
+        .collect(Collectors.toSet());
+
+    if (this.serviceMetadata.isEntity(parentType.getName())) {
+      FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
+      EntityMetadata entityMetadata = federationMetadata.getEntityMetadataByName(parentType.getName());
+      List<String> missingKeys = entityMetadata.getKeyDirectives().stream()
+          .flatMap(keyDirectiveMetadata -> keyDirectiveMetadata.getKeyFieldNames().stream())
+          .filter(keyFieldname -> !selectionsByName.contains(keyFieldname))
+          .collect(Collectors.toList());
+      if (CollectionUtils.isNotEmpty(missingKeys)) {
+        SelectionSet newNode = node.transform(builder -> {
+          for (String missingKey : missingKeys) {
+            builder.selection(new Field(missingKey));
+          }
+        });
+        return changeNode(context, newNode);
+      }
+    }
     return TraversalControl.CONTINUE;
   }
 

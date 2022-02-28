@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class holds the metadata for the usage of federation specs in a given {@link
@@ -45,6 +46,14 @@ public class FederationMetadata {
     this.extensionsByTypename.put(entityExtensionMetadata.getTypeName(), entityExtensionMetadata);
   }
 
+  public boolean isEntity(String typename) {
+    return this.entitiesByTypename.containsKey(typename);
+  }
+
+  public EntityMetadata getEntityMetadataByName(String typename) {
+    return this.entitiesByTypename.get(typename);
+  }
+
   @Builder
   @Getter
   public static class EntityMetadata {
@@ -72,6 +81,7 @@ public class FederationMetadata {
     private ServiceMetadata serviceMetadata;
     private ServiceMetadata baseServiceMetadata;
     private String dataLoaderKey;
+    @Setter
     private EntityMetadata entityMetadata;
     // TODO @provides
 
