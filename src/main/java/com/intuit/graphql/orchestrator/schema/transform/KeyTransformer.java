@@ -23,15 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
  *  directive, this class will validate the fields to the key directive by ensuring they exist
  */
 public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
-
-  public static final String DELIMITER = ":";
 
   @VisibleForTesting
   KeyDirectiveValidator keyDirectiveValidator = new KeyDirectiveValidator();
@@ -64,16 +61,16 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
               .fields(EntityMetadata.getFieldsFrom(entityDefinition))
               .build());
         } else {
-          String dataLoaderKey = createDataLoaderKey(source.getServiceProvider().getNameSpace(), entityDefinition.getName());
+          //String dataLoaderKey = createDataLoaderKey(source.getServiceProvider().getNameSpace(), entityDefinition.getName());
           EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
               .typeName(entityDefinition.getName())
               .keyDirectives(keyDirectives)
               //.externalFields() TODO check if needed otherwise remove
               //.requiredFields() will be collected via RequireTransformer
               .serviceMetadata(source)
-              .dataLoaderKey(dataLoaderKey)
+              //.dataLoaderKey(dataLoaderKey)
               .build();
-          List<EntityExtensionContext> entityExtensionContexts = createEntityExtensionContexts(entityDefinition, entityExtensionMetadata, dataLoaderKey, source);
+          List<EntityExtensionContext> entityExtensionContexts = createEntityExtensionContexts(entityDefinition, entityExtensionMetadata, source);
           source.addToEntityExtensionContexts(entityExtensionContexts);
           entityExtensionsByTypename.put(entityDefinition.getName(), entityDefinition);
           federationMetadata.addEntityExtension(entityExtensionMetadata);
@@ -91,7 +88,7 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
   }
 
   private List<EntityExtensionContext> createEntityExtensionContexts(TypeDefinition typeDefinition,
-      EntityExtensionMetadata entityExtensionMetadata, String dataLoaderKey, XtextGraph source) {
+      EntityExtensionMetadata entityExtensionMetadata, XtextGraph source) {
     List<FieldDefinition> fieldDefinitions = getFieldDefinitions(typeDefinition);
     return fieldDefinitions.stream()
         .filter(fieldDefinition -> !containsExternalDirective(fieldDefinition))
@@ -102,18 +99,9 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
                 .requiresTypeNameInjection(true)
                 .serviceMetadata(source)
                 .entityExtensionMetadata(entityExtensionMetadata)
-                .dataLoaderKey(dataLoaderKey)
                 .build()
         )
         .collect(Collectors.toList());
-  }
-
-  public static String createDataLoaderKey(String serviceNamespace, String parentTypename) {
-    return createDataLoaderKey("ENTITY_FETCH", serviceNamespace, parentTypename);
-  }
-
-  private static String createDataLoaderKey(String... tokens) {
-    return StringUtils.join(tokens, DELIMITER);
   }
 
 }

@@ -32,7 +32,7 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
       DataFetcherContext dataFetcherContext = DataFetcherContext
           .newBuilder()
           .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
-          .entityExtensionContext(entityExtensionContext)
+          .entityExtensionMetadata(entityExtensionContext.getEntityExtensionMetadata())
           .build();
       addToCodeRegistry(fieldContext, dataFetcherContext, xtextGraph);
     }

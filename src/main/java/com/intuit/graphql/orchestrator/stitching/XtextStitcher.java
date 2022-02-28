@@ -17,7 +17,6 @@ import com.intuit.graphql.orchestrator.datafetcher.FieldResolverDirectiveDataFet
 import com.intuit.graphql.orchestrator.datafetcher.ResolverArgumentDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.RestDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher;
-import com.intuit.graphql.orchestrator.federation.EntityBatchLoader;
 import com.intuit.graphql.orchestrator.federation.EntityDataFetcher;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDataLoaderUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
@@ -124,15 +123,6 @@ public class XtextStitcher implements Stitcher {
 
     });
 
-    stitchedTransformedGraph.getFederationMetadataByNamespace().forEach((namespace, federationMetadata) ->
-      federationMetadata.getExtensionsByTypename().forEach((typename, entityExtensionMetadata) -> {
-        EntityBatchLoader entityBatchLoader = EntityBatchLoader.builder()
-            .entityExtensionMetadata(entityExtensionMetadata)
-            .build();
-        batchLoaders.put(entityExtensionMetadata.getDataLoaderKey(), entityBatchLoader);
-      })
-    );
-
     final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
 
     final RuntimeGraph.Builder runtimeGraphBuilder = createRuntimeGraph(stitchedTransformedGraph);
@@ -215,7 +205,7 @@ public class XtextStitcher implements Stitcher {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
       } else if (type == ENTITY_FETCHER) {
-        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionContext())
+        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata())
         );
       }
     });

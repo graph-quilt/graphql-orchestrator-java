@@ -3,7 +3,7 @@ package com.intuit.graphql.orchestrator.xtext;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
-import com.intuit.graphql.orchestrator.federation.EntityExtensionContext;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import lombok.Getter;
 
@@ -16,7 +16,7 @@ public class DataFetcherContext {
   private final String namespace;
   private final DataFetcherType dataFetcherType;
   private final FieldResolverContext fieldResolverContext;
-  private final EntityExtensionContext entityExtensionContext;
+  private final EntityExtensionMetadata entityExtensionMetadata;
   private final ServiceType serviceType;
 
   private DataFetcherContext(final Builder builder) {
@@ -24,7 +24,7 @@ public class DataFetcherContext {
     dataFetcherType = builder.dataFetcherType;
     this.serviceType = builder.serviceType;
     this.fieldResolverContext = builder.fieldResolverContext;
-    this.entityExtensionContext = builder.entityExtensionContext;
+    this.entityExtensionMetadata = builder.entityExtensionMetadata;
   }
 
   public static Builder newBuilder() {
@@ -47,7 +47,7 @@ public class DataFetcherContext {
     private String namespace;
     private DataFetcherType dataFetcherType = DataFetcherType.PROPERTY;
     private FieldResolverContext fieldResolverContext;
-    private EntityExtensionContext entityExtensionContext;
+    private EntityExtensionMetadata entityExtensionMetadata;
     private ServiceType serviceType;
 
     private Builder() {
@@ -69,8 +69,8 @@ public class DataFetcherContext {
       return this;
     }
 
-    public Builder entityExtensionContext(EntityExtensionContext entityExtensionContext) {
-      this.entityExtensionContext = entityExtensionContext;
+    public Builder entityExtensionMetadata(EntityExtensionMetadata entityExtensionMetadata) {
+      this.entityExtensionMetadata = entityExtensionMetadata;
       return this;
     }
 

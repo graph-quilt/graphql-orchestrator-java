@@ -21,7 +21,6 @@ public class EntityExtensionContext  {
   private boolean requiresTypeNameInjection;
   //private EntityDefinition baseType;
   private EntityExtensionMetadata entityExtensionMetadata;
-  private String dataLoaderKey;
 
   public FieldCoordinates getFieldCoordinate() {
     return FieldCoordinates.coordinates(getParentTypename(), fieldDefinition.getName());
