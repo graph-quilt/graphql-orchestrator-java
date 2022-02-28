@@ -28,6 +28,8 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
 
   @Override
   public CompletableFuture<Object> get(final DataFetchingEnvironment dataFetchingEnvironment) {
+    String fieldName = dataFetchingEnvironment.getField().getName();
+
     List<InlineFragment> inlineFragments = new ArrayList<>();
     List<Map<String, Object>> keyRepresentationVariables = new ArrayList<>();
     Set<String> requiredFields = new HashSet<>();
@@ -37,7 +39,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     Map<String, Object> dfeSource = dataFetchingEnvironment.getSource();
 
     // get required fields
-    entityExtensionMetadata.getRequiredFields().stream()
+    entityExtensionMetadata.getRequiredFields(fieldName).stream()
         .filter(requiredFieldName -> !dfeSource.containsKey(requiredFieldName))
         .forEach(requiredFieldName -> requiredFields.add(requiredFieldName));
 
@@ -66,7 +68,6 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
             Map<String, Object> data = (Map<String, Object>) result.get("data");
             List<Map<String, Object>> _entities = (List<Map<String, Object>>) data.get("_entities");
 
-            String fieldName = dataFetchingEnvironment.getField().getName();
             return _entities.get(0).get(fieldName);
           });
     });

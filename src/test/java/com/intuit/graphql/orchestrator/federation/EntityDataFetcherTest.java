@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.federation;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class EntityDataFetcerTest {
+public class EntityDataFetcherTest {
 
   @Mock
   private DataFetchingEnvironment dataFetchingEnvironmentMock;
@@ -106,7 +107,7 @@ public class EntityDataFetcerTest {
     when(serviceProviderMock.query(any(ExecutionInput.class), any(GraphQLContext.class)))
       .thenReturn(CompletableFuture.completedFuture(serviceResponseMap));
 
-    when(entityExtensionMetadataMock.getRequiredFields()).thenReturn(ImmutableSet.of("reqField"));
+    when(entityExtensionMetadataMock.getRequiredFields(eq("newField"))).thenReturn(ImmutableSet.of("reqField"));
     when(entityExtensionMetadataMock.getTypeName()).thenReturn("TestEntityType");
     when(entityExtensionMetadataMock.getKeyDirectives()).thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
     when(entityExtensionMetadataMock.getBaseServiceProvider()).thenReturn(baseServiceProviderMock);

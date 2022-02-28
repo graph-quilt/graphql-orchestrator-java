@@ -68,10 +68,11 @@ public class FederationMetadata {
     private String typeName;
     private List<KeyDirectiveMetadata> keyDirectives;
     private Set<String> externalFields;
-    private Set<String> requiredFields;
+    private Map<String, Set<String>> requiredFieldsByFieldName;
     private ServiceMetadata serviceMetadata;
     private ServiceMetadata baseServiceMetadata;
     private String dataLoaderKey;
+    private EntityMetadata entityMetadata;
     // TODO @provides
 
     public ServiceProvider getServiceProvider() {
@@ -80,6 +81,10 @@ public class FederationMetadata {
 
     public ServiceProvider getBaseServiceProvider() {
       return this.baseServiceMetadata.getServiceProvider();
+    }
+
+    public Set<String> getRequiredFields(String fieldName) {
+      return this.requiredFieldsByFieldName.get(fieldName);
     }
   }
 }

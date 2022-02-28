@@ -2,13 +2,12 @@ package com.intuit.graphql.orchestrator.schema.transform;
 
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
 
-import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.EntityExtensionContext;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger.EntityMergingContext;
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
 import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.BaseTypeNotFoundException;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
@@ -26,15 +25,16 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
         .map(entityTypeMerger::mergeIntoBaseType)
         .forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
 
-    for (EntityExtensionContext entityExtensionContext : xtextGraph.getEntityExtensionContexts()) {
-      FieldDefinition fieldDefinition = entityExtensionContext.getFieldDefinition();
-      FieldContext fieldContext = new FieldContext(entityExtensionContext.getParentTypename(), fieldDefinition.getName());
-      DataFetcherContext dataFetcherContext = DataFetcherContext
-          .newBuilder()
-          .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
-          .entityExtensionMetadata(entityExtensionContext.getEntityExtensionMetadata())
-          .build();
-      addToCodeRegistry(fieldContext, dataFetcherContext, xtextGraph);
+    for (EntityExtensionMetadata entityExtensionMetadata : xtextGraph.getEntityExtensionMetadatas()) {
+      entityExtensionMetadata.getRequiredFieldsByFieldName().forEach((fieldName, strings) -> {
+        FieldContext fieldContext = new FieldContext(entityExtensionMetadata.getTypeName(), fieldName);
+        DataFetcherContext dataFetcherContext = DataFetcherContext
+            .newBuilder()
+            .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
+            .entityExtensionMetadata(entityExtensionMetadata)
+            .build();
+        addToCodeRegistry(fieldContext, dataFetcherContext, xtextGraph);
+      });
     }
     return xtextGraph;
   }

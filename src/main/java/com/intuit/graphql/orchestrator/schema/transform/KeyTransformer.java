@@ -1,15 +1,16 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_REQUIRES_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.containsExternalDirective;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getDirectivesFromDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
 
-import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.EntityExtensionContext;
+import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
@@ -19,10 +20,15 @@ import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.xtext.util.Strings;
 
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
@@ -48,9 +54,8 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
         List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
         getDirectivesFromDefinition(entityDefinition, FEDERATION_KEY_DIRECTIVE).stream()
             .peek(directive -> keyDirectiveValidator.validate(source, entityDefinition, directive.getArguments()))
-            .forEach(directive -> {
-              keyDirectives.add(KeyDirectiveMetadata.from(directive));
-            });
+            .forEach(directive -> keyDirectives.add(KeyDirectiveMetadata.from(directive))
+            );
 
         if (isBaseType(entityDefinition)) {
           entitiesByTypename.put(entityDefinition.getName(), entityDefinition);
@@ -62,16 +67,14 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
               .build());
         } else {
           //String dataLoaderKey = createDataLoaderKey(source.getServiceProvider().getNameSpace(), entityDefinition.getName());
+
           EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
               .typeName(entityDefinition.getName())
               .keyDirectives(keyDirectives)
-              //.externalFields() TODO check if needed otherwise remove
-              //.requiredFields() will be collected via RequireTransformer
+              .requiredFieldsByFieldName(getRequiredFields(entityDefinition))
               .serviceMetadata(source)
-              //.dataLoaderKey(dataLoaderKey)
               .build();
-          List<EntityExtensionContext> entityExtensionContexts = createEntityExtensionContexts(entityDefinition, entityExtensionMetadata, source);
-          source.addToEntityExtensionContexts(entityExtensionContexts);
+          source.addToEntityExtensionMetadatas(entityExtensionMetadata);
           entityExtensionsByTypename.put(entityDefinition.getName(), entityDefinition);
           federationMetadata.addEntityExtension(entityExtensionMetadata);
         }
@@ -87,21 +90,28 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
     }
   }
 
-  private List<EntityExtensionContext> createEntityExtensionContexts(TypeDefinition typeDefinition,
-      EntityExtensionMetadata entityExtensionMetadata, XtextGraph source) {
-    List<FieldDefinition> fieldDefinitions = getFieldDefinitions(typeDefinition);
-    return fieldDefinitions.stream()
+  private Map<String, Set<String>> getRequiredFields(TypeDefinition entityDefinition) {
+    Map<String, Set<String>> output = new HashMap<>();
+    getFieldDefinitions(entityDefinition).stream()
         .filter(fieldDefinition -> !containsExternalDirective(fieldDefinition))
-        .map(fieldDefinition ->
-            EntityExtensionContext.builder()
-                .fieldDefinition(fieldDefinition)
-                .parentTypeDefinition(typeDefinition)
-                .requiresTypeNameInjection(true)
-                .serviceMetadata(source)
-                .entityExtensionMetadata(entityExtensionMetadata)
-                .build()
-        )
-        .collect(Collectors.toList());
+        .forEach(fieldDefinition -> {
+          Set<String> regFields = getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE)
+              .stream()
+              .flatMap(directive -> {
+                Optional<Argument> optionalArgument = directive.getArguments().stream().findFirst();
+                Argument argument = optionalArgument.get();
+                if (!optionalArgument.isPresent()) {
+                  // validation is already being done, this should not happen
+                  throw new IllegalStateException("require directive argument not found.");
+                }
+                ValueWithVariable valueWithVariable = argument.getValueWithVariable();
+                String fieldSetValue = valueWithVariable.getStringValue();
+                return new HashSet<>(Strings.split(fieldSetValue, StringUtils.SPACE)).stream();
+              })
+              .collect(Collectors.toSet());
+          output.put(fieldDefinition.getName(), regFields);
+        });
+    return output;
   }
 
 }
