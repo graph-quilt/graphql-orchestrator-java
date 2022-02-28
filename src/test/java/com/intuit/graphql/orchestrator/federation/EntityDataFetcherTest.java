@@ -4,6 +4,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
@@ -16,7 +19,6 @@ import graphql.GraphQLContext;
 import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +57,7 @@ public class EntityDataFetcherTest {
   }
 
   @Test
-  public void get_keysAreSelected_success() throws ExecutionException, InterruptedException {
+  public void get_requiredFieldsNotSelected_success() throws ExecutionException, InterruptedException {
     //    query {
     //      a {
     //        id
@@ -74,14 +76,14 @@ public class EntityDataFetcherTest {
     //      newField @requires(fields: "reqField")
     //    }
     Map<String, Object> testDfeSource = new HashMap<>();
-    testDfeSource.put("id", "someId");
+    testDfeSource.put("id", "someId"); // this is a key and always added by NoExternalReferenceSelectionSetModifier
     testDfeSource.put("a1", "a1Value");
 
     Field testDfeField = Field.newField("newField")
         .build();
 
     KeyDirectiveMetadata keyDirectiveMetadataMock = mock(KeyDirectiveMetadata.class);
-    when(keyDirectiveMetadataMock.getKeyFieldNames()).thenReturn(Arrays.asList("id"));
+    when(keyDirectiveMetadataMock.getKeyFieldNames()).thenReturn(Collections.singletonList("id"));
 
     Map<String, Object> baseServiceResponseMap = new HashMap<>();
     List<Map<String, Object>> baseEntitiesResult = new ArrayList<>();
@@ -120,24 +122,77 @@ public class EntityDataFetcherTest {
     Object result = futureResponse.get();
 
     assertThat(result).isEqualTo("newFieldValue");
+
+    verify(serviceProviderMock, times(1)).query(any(), any());
+    verify(baseServiceProviderMock, times(1)).query(any(), any());
   }
 
-  public void load_keysAreNotSelected_success() {
+  @Test
+  public void get_requiredFieldsSelected_success() throws ExecutionException, InterruptedException {
+    //    query {
+    //      a {
+    //        id
+    //        reqField
+    //        newField
+    //      }
+    //    }
 
-  }
+    //    type A @key (fields: "id") {
+    //      id: String
+    //      reqField: String
+    //      a1: String
+    //    }
 
-  public void load_requiredFieldsAreSelected_success() {
+    //    extend type A @key (fields: "id") {
+    //      id @external
+    //      reqField @external
+    //      newField @requires(fields: "reqField")
+    //    }
+    Map<String, Object> testDfeSource = new HashMap<>();
+    testDfeSource.put("id", "someId"); // this is a key and always added by NoExternalReferenceSelectionSetModifier
+    testDfeSource.put("reqField", "reqFieldValue"); // should be part of dfeSource since selected
+    testDfeSource.put("a1", "a1Value");
 
-  }
+    Field testDfeField = Field.newField("newField")
+        .build();
 
-  public void load_requiredFieldsAreNotSelected_success() {
+    KeyDirectiveMetadata keyDirectiveMetadataMock = mock(KeyDirectiveMetadata.class);
+    when(keyDirectiveMetadataMock.getKeyFieldNames()).thenReturn(Collections.singletonList("id"));
 
+    Map<String, Object> serviceResponseMap = new HashMap<>();
+    List<Map<String, Object>> entityExtensionResult = new ArrayList<>();
+    entityExtensionResult.add(ImmutableMap.of(
+        "__typename","TestEntityType",
+        "id","someId",
+        "newField","newFieldValue"
+    ));
+    serviceResponseMap.put("data", ImmutableMap.of("_entities", entityExtensionResult));
+    when(serviceProviderMock.query(any(ExecutionInput.class), any(GraphQLContext.class)))
+        .thenReturn(CompletableFuture.completedFuture(serviceResponseMap));
+
+    when(entityExtensionMetadataMock.getRequiredFields(eq("newField"))).thenReturn(ImmutableSet.of("reqField"));
+    when(entityExtensionMetadataMock.getTypeName()).thenReturn("TestEntityType");
+    when(entityExtensionMetadataMock.getKeyDirectives()).thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
+    when(entityExtensionMetadataMock.getServiceProvider()).thenReturn(serviceProviderMock);
+
+    when(dataFetchingEnvironmentMock.getContext()).thenReturn(graphQLContextMock);
+    when(dataFetchingEnvironmentMock.getSource()).thenReturn(testDfeSource);
+    when(dataFetchingEnvironmentMock.getField()).thenReturn(testDfeField);
+    CompletableFuture<Object> futureResponse =  subjectUnderTest.get(dataFetchingEnvironmentMock);
+    Object result = futureResponse.get();
+
+    assertThat(result).isEqualTo("newFieldValue");
+
+    verify(serviceProviderMock, times(1)).query(any(), any());
+    verify(baseServiceProviderMock, never()).query(any(), any());
   }
 
   public void load_NonAnnotatedFieldsOfEntityTypeAreSelected_success() {
-
+    // future use case
   }
 
-  // TODO fragments  inlinefragments
+  // TODO edge cases
+  //  fragments / inlinefragments
+  //  entity extension additional fields other types: object/interface/non string primitive types etc
 
 }
