@@ -49,7 +49,7 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
           .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
           .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-      FederationMetadata federationMetadata = new FederationMetadata();
+      FederationMetadata federationMetadata = new FederationMetadata(source);
       for(final TypeDefinition entityDefinition : entities.values()) {
         List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
         getDirectivesFromDefinition(entityDefinition, FEDERATION_KEY_DIRECTIVE).stream()
@@ -62,15 +62,15 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
           federationMetadata.addEntity(EntityMetadata.builder()
               .typeName(entityDefinition.getName())
               .keyDirectives(keyDirectives)
-              .serviceMetadata(source)
               .fields(EntityMetadata.getFieldsFrom(entityDefinition))
+              .federationMetadata(federationMetadata)
               .build());
         } else {
           EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
               .typeName(entityDefinition.getName())
               .keyDirectives(keyDirectives)
               .requiredFieldsByFieldName(getRequiredFields(entityDefinition))
-              .serviceMetadata(source)
+              .federationMetadata(federationMetadata)
               .build();
           source.addToEntityExtensionMetadatas(entityExtensionMetadata);
           entityExtensionsByTypename.put(entityDefinition.getName(), entityDefinition);

@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
@@ -36,6 +37,9 @@ public class EntityDataFetcherTest {
 
   @Mock
   private DataFetchingEnvironment dataFetchingEnvironmentMock;
+
+  @Mock
+  private EntityMetadata baseEntityMetadataMock;
 
   @Mock
   private EntityExtensionMetadata entityExtensionMetadataMock;
@@ -109,9 +113,13 @@ public class EntityDataFetcherTest {
     when(serviceProviderMock.query(any(ExecutionInput.class), any(GraphQLContext.class)))
       .thenReturn(CompletableFuture.completedFuture(serviceResponseMap));
 
+
+    when(baseEntityMetadataMock.getKeyDirectives()).thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
+
     when(entityExtensionMetadataMock.getRequiredFields(eq("newField"))).thenReturn(ImmutableSet.of("reqField"));
     when(entityExtensionMetadataMock.getTypeName()).thenReturn("TestEntityType");
-    when(entityExtensionMetadataMock.getKeyDirectives()).thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
+    when(entityExtensionMetadataMock.getBaseEntityMetadata()).thenReturn(baseEntityMetadataMock);
+
     when(entityExtensionMetadataMock.getBaseServiceProvider()).thenReturn(baseServiceProviderMock);
     when(entityExtensionMetadataMock.getServiceProvider()).thenReturn(serviceProviderMock);
 
@@ -170,9 +178,11 @@ public class EntityDataFetcherTest {
     when(serviceProviderMock.query(any(ExecutionInput.class), any(GraphQLContext.class)))
         .thenReturn(CompletableFuture.completedFuture(serviceResponseMap));
 
+    when(baseEntityMetadataMock.getKeyDirectives()).thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
+
     when(entityExtensionMetadataMock.getRequiredFields(eq("newField"))).thenReturn(ImmutableSet.of("reqField"));
     when(entityExtensionMetadataMock.getTypeName()).thenReturn("TestEntityType");
-    when(entityExtensionMetadataMock.getKeyDirectives()).thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
+    when(entityExtensionMetadataMock.getBaseEntityMetadata()).thenReturn(baseEntityMetadataMock);
     when(entityExtensionMetadataMock.getServiceProvider()).thenReturn(serviceProviderMock);
 
     when(dataFetchingEnvironmentMock.getContext()).thenReturn(graphQLContextMock);

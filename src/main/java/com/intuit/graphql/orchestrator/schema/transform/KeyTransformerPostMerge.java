@@ -35,7 +35,7 @@ public class KeyTransformerPostMerge implements Transformer<XtextGraph, XtextGra
           .filter(entityMetadata -> entityMetadata.getTypeName().equals(entityExtensionMetadata.getTypeName()))
           .findFirst();
 
-      entityExtensionMetadata.setEntityMetadata(optionalEntityMetadata.get());
+      entityExtensionMetadata.setBaseEntityMetadata(optionalEntityMetadata.get());
       entityExtensionMetadata.getRequiredFieldsByFieldName().forEach((fieldName, strings) -> {
         FieldContext fieldContext = new FieldContext(entityExtensionMetadata.getTypeName(), fieldName);
         DataFetcherContext dataFetcherContext = DataFetcherContext
