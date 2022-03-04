@@ -23,6 +23,8 @@ import lombok.Setter;
 @Getter
 public class FederationMetadata {
 
+  private final ServiceMetadata serviceMetadata;
+
   /**
    * entities owned by the service
    */
@@ -32,6 +34,10 @@ public class FederationMetadata {
    * entities extended by the service
    */
   private final Map<String, EntityExtensionMetadata> extensionsByTypename = new HashMap<>();
+
+  public FederationMetadata(ServiceMetadata serviceMetadata) {
+    this.serviceMetadata = serviceMetadata;
+  }
 
   public boolean isFieldExternal(FieldCoordinates fieldCoordinates) {
     EntityMetadata entityMetadata = entitiesByTypename.get(fieldCoordinates.getTypeName());
@@ -57,10 +63,10 @@ public class FederationMetadata {
   @Builder
   @Getter
   public static class EntityMetadata {
-    private String typeName;
-    private List<KeyDirectiveMetadata> keyDirectives;
-    private Set<String> fields;
-    private ServiceMetadata serviceMetadata;
+    private final String typeName;
+    private final List<KeyDirectiveMetadata> keyDirectives;
+    private final Set<String> fields;
+    private final FederationMetadata federationMetadata;
 
     public static Set<String> getFieldsFrom(TypeDefinition entityDefinition) {
       Set<String> output = new HashSet<>(); //make sure HashSet is used
@@ -74,23 +80,25 @@ public class FederationMetadata {
   @Builder
   @Getter
   public static class EntityExtensionMetadata {
-    private String typeName;
-    private List<KeyDirectiveMetadata> keyDirectives;
-    private Set<String> externalFields;
-    private Map<String, Set<String>> requiredFieldsByFieldName;
-    private ServiceMetadata serviceMetadata;
-    private ServiceMetadata baseServiceMetadata;
-    private String dataLoaderKey;
-    @Setter
-    private EntityMetadata entityMetadata;
+    private final String typeName;
+    private final List<KeyDirectiveMetadata> keyDirectives;
+    private final Set<String> externalFields;
+    private final Map<String, Set<String>> requiredFieldsByFieldName;
+    private final FederationMetadata federationMetadata;
     // TODO @provides
 
+    @Setter
+    private EntityMetadata baseEntityMetadata;
+
     public ServiceProvider getServiceProvider() {
-      return this.serviceMetadata.getServiceProvider();
+      return this.federationMetadata.getServiceMetadata().getServiceProvider();
     }
 
     public ServiceProvider getBaseServiceProvider() {
-      return this.baseServiceMetadata.getServiceProvider();
+      return this.baseEntityMetadata
+          .getFederationMetadata()
+          .getServiceMetadata()
+          .getServiceProvider();
     }
 
     public Set<String> getRequiredFields(String fieldName) {

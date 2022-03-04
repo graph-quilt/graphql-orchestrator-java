@@ -42,7 +42,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     // create representation variables from key directives
     List<Map<String, Object>> keyRepresentationVariables = new ArrayList<>();
     String entityTypename = entityExtensionMetadata.getTypeName();
-    List<KeyDirectiveMetadata> keyDirectives = entityExtensionMetadata.getKeyDirectives();
+    List<KeyDirectiveMetadata> keyDirectives = entityExtensionMetadata.getBaseEntityMetadata().getKeyDirectives();
     keyRepresentationVariables.add(
         createRepresentationWithKeys(entityTypename, keyDirectives, dfeSource));
 
