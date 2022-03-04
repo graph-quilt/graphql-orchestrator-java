@@ -1,5 +1,8 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_TYPE_DIRECTIVES_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 import com.intuit.graphql.graphQL.Directive;
@@ -16,6 +19,7 @@ import graphql.language.OperationDefinition;
 import graphql.language.SelectionSet;
 import graphql.parser.Parser;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -26,78 +30,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class FederationUtils {
-    public static final String FEDERATION_KEY_DIRECTIVE = "key";
-    public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
-    public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
-    public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";
-    public static final String FEDERATION_PROVIDES_DIRECTIVE = "provides";
-    public static final String FEDERATION_FIELDS_ARGUMENT = "fields";
-
-  public static final Set<String> FED_TYPE_DIRECTIVES_NAMES_SET =
-      new HashSet<>(Arrays.asList(FEDERATION_KEY_DIRECTIVE, FEDERATION_EXTENDS_DIRECTIVE));
-
-  public static final Set<String> FED_FIELD_DIRECTIVE_NAMES_SET =
-      new HashSet<>(
-          Arrays.asList(
-              FEDERATION_EXTERNAL_DIRECTIVE,
-              FEDERATION_REQUIRES_DIRECTIVE,
-              FEDERATION_PROVIDES_DIRECTIVE));
-
     private FederationUtils(){}
-
-    public static void checkFieldSetValidity(XtextGraph sourceGraph, TypeDefinition typeDefinition, String fieldSet, String originatingDirective) {
-        Objects.requireNonNull(sourceGraph);
-        Objects.requireNonNull(typeDefinition);
-        if(StringUtils.isBlank(fieldSet)) {
-            throw new EmptyFieldsArgumentFederationDirective(typeDefinition.getName(), originatingDirective);
-        }
-
-        if(!fieldSet.startsWith("{")) {
-            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
-        }
-
-        //Throws InvalidSyntaxException if fieldSet is incorrect
-        Document fieldSetDocument = Parser.parse(fieldSet);
-
-        List<OperationDefinition> definitions = fieldSetDocument.getDefinitions().stream()
-                .map(OperationDefinition.class::cast).collect(Collectors.toList());
-
-        List<FieldDefinition> typeFieldDefinitions = getFieldDefinitions(typeDefinition);
-
-        for( final OperationDefinition definition : definitions) {
-            List<Field> fields = definition.getSelectionSet().getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
-            for(Field field : fields) {
-                checkFieldReferenceRecursively(sourceGraph,typeDefinition.getName(), typeFieldDefinitions, field);
-            }
-        }
-    }
-
-    private static void checkFieldReferenceRecursively(XtextGraph sourceGraph, String typeName, List<FieldDefinition> declaredDefinitions, Field fieldToCheck) {
-        String fieldName = fieldToCheck.getName();
-        Optional<FieldDefinition> optionalFieldDefinition = declaredDefinitions.stream()
-                .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
-                .findFirst();
-
-        if(optionalFieldDefinition.isPresent()) {
-            if(CollectionUtils.isNotEmpty(fieldToCheck.getChildren())) {
-                FieldDefinition fieldDefinition = optionalFieldDefinition.get();
-                TypeDefinition childType = sourceGraph.getType(fieldDefinition.getNamedType());
-
-                //should only be 1 element, but put in loop just in case something changes later
-                for(SelectionSet childSelectionSet: fieldToCheck.getChildren().stream().map(SelectionSet.class::cast).collect(Collectors.toList())) {
-                    for(Field childField : getFieldsFromSelectionSet(childSelectionSet)) {
-                        checkFieldReferenceRecursively(sourceGraph, childType.getName(), getFieldDefinitions(childType), childField);
-                    }
-                }
-            }
-        } else {
-            throw new InvalidFieldSetReferenceException(fieldName, typeName);
-        }
-    }
-
-    private static List<Field> getFieldsFromSelectionSet(SelectionSet selectionSet) {
-        return selectionSet.getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
-    }
 
     public static boolean isFederationDirective(Directive directive) {
         String directiveName = directive.getDefinition().getName();
@@ -105,16 +38,38 @@ public class FederationUtils {
             || FED_FIELD_DIRECTIVE_NAMES_SET.contains(directiveName);
     }
 
-    public static boolean isBaseType(TypeDefinition entityDefinition) {
-        return !(entityDefinition instanceof ObjectTypeExtensionDefinition || entityDefinition instanceof InterfaceTypeExtensionDefinition) &&
-                entityDefinition.getDirectives().stream()
+    public static boolean isBaseType(TypeDefinition typeDefinition) {
+        return !(typeDefinition instanceof ObjectTypeExtensionDefinition || typeDefinition instanceof InterfaceTypeExtensionDefinition) &&
+                typeDefinition.getDirectives().stream()
                 .map(directive -> directive.getDefinition().getName())
                 .noneMatch(name -> StringUtils.equals(FEDERATION_EXTENDS_DIRECTIVE, name));
     }
 
-  public static boolean containsExternalDirective(FieldDefinition fieldDefinition) {
-    return fieldDefinition.getDirectives().stream()
-        .anyMatch(directive -> directive.getDefinition().getName().equals("external"));
-  }
+    public static String getUniqueIdFromFieldSet(String fieldSet) {
+        if(!fieldSet.startsWith("{")) {
+            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
+        }
 
+        Document graphqlDocument = Parser.parse(fieldSet);
+
+        List<OperationDefinition> definitions = graphqlDocument.getDefinitions().stream()
+                .map(OperationDefinition.class::cast).collect(Collectors.toList());
+
+        return convertSelectionSetToUniqueId(definitions.get(0).getSelectionSet());
+    }
+
+    private static String convertSelectionSetToUniqueId(SelectionSet selectionSet) {
+        Comparator<Field> fieldComparable = Comparator.comparing(Field::getName);
+
+        List<Field> fields = selectionSet.getSelections().stream()
+                .map(Field.class::cast).sorted(fieldComparable).collect(Collectors.toList());
+
+        String directChildrenUniqueId = fields.stream().map(Field::getName).reduce("", (partialId, fieldName) -> partialId + fieldName);
+        String descendantsUniqueId = fields.stream().filter(field -> CollectionUtils.isNotEmpty(field.getChildren())).map(field -> {
+            SelectionSet childSelections =  field.getChildren().stream().map(SelectionSet.class::cast).collect(Collectors.toList()).get(0);
+            return convertSelectionSetToUniqueId(childSelections);
+        }).reduce("", (partialId, childSelectionNames) -> partialId + childSelectionNames);
+
+        return directChildrenUniqueId + descendantsUniqueId;
+    }
 }

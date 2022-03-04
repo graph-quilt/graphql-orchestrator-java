@@ -1,24 +1,28 @@
 package com.intuit.graphql.orchestrator.federation.keydirective;
 
 import com.intuit.graphql.graphQL.Argument;
+import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
+import com.intuit.graphql.orchestrator.federation.FieldSetValidator;
 import com.intuit.graphql.orchestrator.federation.exceptions.DirectiveMissingRequiredArgumentException;
 import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
+import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
+import com.intuit.graphql.orchestrator.utils.FederationUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_FIELDS_ARGUMENT;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.checkFieldSetValidity;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_FIELDS_ARGUMENT;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
+import static java.lang.String.format;
 
-/**
- * This class helps break up the {@link com.intuit.graphql.orchestrator.schema.transform.KeyTransformer} by
- * validating if the TypeDefinition key directive is valid.
- */
 public class KeyDirectiveValidator {
+  FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
   public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, List<Argument> argumentList) {
     String containerName = typeDefinition.getName();
@@ -28,9 +32,36 @@ public class KeyDirectiveValidator {
     Optional<Argument> argument = argumentList.stream().findFirst();
     if(argument.isPresent()) {
       validateKeyArgumentName(argument.get(), containerName);
-      checkFieldSetValidity(sourceGraph, typeDefinition, argument.get().getValueWithVariable().getStringValue(), FEDERATION_KEY_DIRECTIVE);
+      fieldSetValidator.validate(sourceGraph, typeDefinition, argument.get().getValueWithVariable().getStringValue(), FEDERATION_KEY_DIRECTIVE);
     }
   }
+
+  public void validatePostMerge(EntityTypeMerger.EntityMergingContext entityMergingContext) {
+    checkExtensionKeysAreSubset(entityMergingContext);
+  }
+
+
+  private void checkExtensionKeysAreSubset(EntityTypeMerger.EntityMergingContext entityMergingContext) {
+    List<String> baseEntityKeys = getDirectivesWithNameFromDefinition(entityMergingContext.getBaseType(), FEDERATION_KEY_DIRECTIVE).stream()
+            .map(this::getDirectiveFieldSet)
+            .map(FederationUtils::getUniqueIdFromFieldSet)
+            .collect(Collectors.toList());
+
+    List<String> subsetKeys = getDirectivesWithNameFromDefinition(entityMergingContext.getTypeExtension(), FEDERATION_KEY_DIRECTIVE).stream()
+            .map(this::getDirectiveFieldSet)
+            .map(FederationUtils::getUniqueIdFromFieldSet)
+            .collect(Collectors.toList());
+
+    if(!baseEntityKeys.containsAll(subsetKeys)) {
+      String incompatibleKeyMergeErrorMsg = "Failed to merge entity extension to base type. Defined keys do not exist in base entity. typename%s, serviceNamespace=%s";
+      throw new TypeConflictException(format(incompatibleKeyMergeErrorMsg, entityMergingContext.getTypename(), entityMergingContext.getServiceNamespace()));
+    }
+  }
+
+  private String getDirectiveFieldSet(Directive directive) {
+    return directive.getArguments().get(0).getValueWithVariable().getStringValue();
+  }
+
 
   private void validateKeyArgumentSize(List<Argument> argumentList, String containerName) throws IncorrectDirectiveArgumentSizeException {
     if(argumentList.size() > 1) {

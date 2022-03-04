@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import com.intuit.graphql.graphQL.Directive;
+import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
@@ -14,8 +16,11 @@ import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.utils.XtextTypeUtils;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import lombok.NonNull;
@@ -23,6 +28,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.resource.XtextResourceSet;
+
+import static java.lang.String.format;
 
 /**
  * The Xtext utils to get information from the XText AST.
@@ -251,4 +258,40 @@ public class XtextUtils {
     return typeDefinition.getDirectives().stream()
             .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
   }
+
+  public static List<Directive> getDefinitionDirectives(EObject definition) {
+    if(definition instanceof TypeDefinition) {
+      return ((TypeDefinition) definition).getDirectives();
+    } else if(definition instanceof FieldDefinition) {
+      return ((FieldDefinition) definition).getDirectives();
+    }
+
+    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
+  }
+
+  public static boolean definitionContainsDirective(EObject definition, String directiveName) {
+    return getDefinitionDirectives(definition).stream()
+            .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
+  }
+
+  public static List<Directive> getDirectivesWithNameFromDefinition(EObject definition, String directiveName) {
+      return getDefinitionDirectives(definition).stream()
+              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+              .collect(Collectors.toList());
+  }
+
+  public static List<Directive> getDirectivesWithNameFromDefinition(EObject definition, Collection<String> directiveNames) {
+    if(definition instanceof TypeDefinition) {
+      return ((TypeDefinition) definition).getDirectives().stream()
+              .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
+              .collect(Collectors.toList());
+    } else if(definition instanceof FieldDefinition) {
+      return ((FieldDefinition) definition).getDirectives().stream()
+              .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
+              .collect(Collectors.toList());
+    }
+
+    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
+  }
+
 }

@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.federation.requiresdirective;
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.orchestrator.federation.FieldSetValidator;
 import com.intuit.graphql.orchestrator.federation.exceptions.DirectiveMissingRequiredArgumentException;
 import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
@@ -12,11 +13,11 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Optional;
 
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_FIELDS_ARGUMENT;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_REQUIRES_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.checkFieldSetValidity;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_FIELDS_ARGUMENT;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
 
 public class RequireValidator {
+    FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
     public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, Directive requireDirective) {
         String containerName = typeDefinition.getName();
@@ -28,7 +29,7 @@ public class RequireValidator {
             checkRequireArgumentName(argument.get(), containerName);
 
             String fieldSet = argument.get().getValueWithVariable().getStringValue();
-            checkFieldSetValidity(sourceGraph, typeDefinition, fieldSet, FEDERATION_REQUIRES_DIRECTIVE);
+            fieldSetValidator.validate(sourceGraph, typeDefinition, fieldSet, FEDERATION_REQUIRES_DIRECTIVE);
         }
     }
 
