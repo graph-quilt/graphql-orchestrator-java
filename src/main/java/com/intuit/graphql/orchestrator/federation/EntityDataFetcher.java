@@ -12,13 +12,12 @@ import graphql.language.TypeName;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -34,95 +33,93 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     String fieldName = dataFetchingEnvironment.getField().getName();
     Map<String, Object> dfeSource = dataFetchingEnvironment.getSource();
 
-    Set<String> requiredFields =
-        entityExtensionMetadata.getRequiredFields(fieldName).stream()
-            .filter(requiredFieldName -> !dfeSource.containsKey(requiredFieldName))
-            .collect(Collectors.toSet());
+    List<Map<String, Object>> keyRepresentationVariables = new ArrayList<>();
 
     // create representation variables from key directives
-    List<Map<String, Object>> keyRepresentationVariables = new ArrayList<>();
     String entityTypename = entityExtensionMetadata.getTypeName();
-    List<KeyDirectiveMetadata> keyDirectives = entityExtensionMetadata.getBaseEntityMetadata().getKeyDirectives();
+    List<KeyDirectiveMetadata> keyDirectives =
+        entityExtensionMetadata.getBaseEntityMetadata().getKeyDirectives();
     keyRepresentationVariables.add(
-        createRepresentationWithKeys(entityTypename, keyDirectives, dfeSource));
+        createRepresentationWithForKeys(entityTypename, keyDirectives, dfeSource));
+
+    Set<Field> requiresFieldSet = entityExtensionMetadata.getRequiredFields(fieldName);
+    keyRepresentationVariables.add(
+        createRepresentationForRequires(entityTypename, requiresFieldSet, dfeSource));
 
     // representation values may be taken from dfe.source() or from a remote service
-    return createFutureRepresentation(graphQLContext, keyRepresentationVariables, requiredFields)
-        .thenCompose(
-            representationMap -> {
-              List<InlineFragment> inlineFragments = new ArrayList<>();
-              inlineFragments.add(createEntityRequestInlineFragment(dataFetchingEnvironment));
+    List<InlineFragment> inlineFragments = new ArrayList<>();
+    inlineFragments.add(createEntityRequestInlineFragment(dataFetchingEnvironment));
 
-              EntityQuery entityQuery =
-                  EntityQuery.builder()
-                      .graphQLContext(graphQLContext)
-                      .inlineFragments(inlineFragments)
-                      .variables(representationMap)
-                      .build();
+    EntityQuery entityQuery =
+        EntityQuery.builder()
+            .graphQLContext(graphQLContext)
+            .inlineFragments(inlineFragments)
+            .variables(keyRepresentationVariables)
+            .build();
 
-              QueryExecutor queryExecutor = entityExtensionMetadata.getServiceProvider();
-              return queryExecutor
-                  .query(entityQuery.createExecutionInput(), graphQLContext)
-                  .thenApply(
-                      result -> {
-                        Map<String, Object> data = (Map<String, Object>) result.get("data");
-                        List<Map<String, Object>> _entities =
-                            (List<Map<String, Object>>) data.get("_entities");
-                        return _entities.get(0).get(fieldName);
-                      });
+    QueryExecutor queryExecutor = entityExtensionMetadata.getServiceProvider();
+    return queryExecutor
+        .query(entityQuery.createExecutionInput(), graphQLContext)
+        .thenApply(
+            result -> {
+              Map<String, Object> data = (Map<String, Object>) result.get("data");
+              List<Map<String, Object>> _entities =
+                  (List<Map<String, Object>>) data.get("_entities");
+              return _entities.get(0).get(fieldName);
             });
   }
 
-  private CompletableFuture<List<Map<String, Object>>> createFutureRepresentation(
-      GraphQLContext graphQLContext,
-      List<Map<String, Object>> keyRepresentationVariables,
-      Set<String> requiredFields) {
+  //  private CompletableFuture<List<Map<String, Object>>> createFutureRepresentation(
+  //      GraphQLContext graphQLContext,
+  //      List<Map<String, Object>> keyRepresentationVariables,
+  //      Set<Field> requiredFieldSet) {
+  //
+  //    if (CollectionUtils.isEmpty(requiredFieldSet)) {
+  //      return CompletableFuture.completedFuture(keyRepresentationVariables);
+  //    } else {
+  //      EntityQuery entityQuery =
+  //          EntityQuery.builder()
+  //              .graphQLContext(graphQLContext)
+  //
+  // .inlineFragments(Collections.singletonList(createInlineFragment(requiredFieldSet)))
+  //              .variables(keyRepresentationVariables)
+  //              .build();
+  //
+  //      QueryExecutor queryExecutor = entityExtensionMetadata.getBaseServiceProvider();
+  //      return queryExecutor
+  //          .query(entityQuery.createExecutionInput(), graphQLContext)
+  //          .thenApply(
+  //              result -> {
+  //                Map<String, Object> data = (Map<String, Object>) result.get("data");
+  //                List<Map<String, Object>> _entities =
+  //                    (List<Map<String, Object>>) data.get("_entities");
+  //                for (Field requiredField : requiredFieldSet) {
+  //                  keyRepresentationVariables
+  //                      .get(0)
+  //                      .put(requiredField.getName(), _entities.get(0).get(requiredField));
+  //                }
+  //                return keyRepresentationVariables;
+  //              });
+  //    }
+  //  }
 
-    if (CollectionUtils.isEmpty(requiredFields)) {
-      return CompletableFuture.completedFuture(keyRepresentationVariables);
-    } else {
-      EntityQuery entityQuery =
-          EntityQuery.builder()
-              .graphQLContext(graphQLContext)
-              .inlineFragments(Collections.singletonList(createInlineFragment(requiredFields)))
-              .variables(keyRepresentationVariables)
-              .build();
-
-      QueryExecutor queryExecutor = entityExtensionMetadata.getBaseServiceProvider();
-      return queryExecutor
-          .query(entityQuery.createExecutionInput(), graphQLContext)
-          .thenApply(
-              result -> {
-                Map<String, Object> data = (Map<String, Object>) result.get("data");
-                List<Map<String, Object>> _entities =
-                    (List<Map<String, Object>>) data.get("_entities");
-                for (String requiredField : requiredFields) {
-                  keyRepresentationVariables
-                      .get(0)
-                      .put(requiredField, _entities.get(0).get(requiredField));
-                }
-                return keyRepresentationVariables;
-              });
-    }
-  }
-
-  private InlineFragment createInlineFragment(Set<String> requiredFields) {
-    String entityTypeName = entityExtensionMetadata.getTypeName();
-    Field __typenameField =
-        Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
-
-    SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
-    for (String requiredField : requiredFields) {
-      selectionSetBuilder.selection(new Field(requiredField)); // TODO a requireField may be complex
-    }
-    selectionSetBuilder.selection(__typenameField);
-    SelectionSet fieldSelectionSet = selectionSetBuilder.build();
-
-    InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
-    inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(entityTypeName).build());
-    inlineFragmentBuilder.selectionSet(fieldSelectionSet).build();
-    return inlineFragmentBuilder.build();
-  }
+  //  private InlineFragment createInlineFragment(Set<Field> requiredFieldSet) {
+  //    String entityTypeName = entityExtensionMetadata.getTypeName();
+  //    Field __typenameField =
+  //        Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
+  //
+  //    SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
+  //    for (Field requiredField : requiredFieldSet) {
+  //      selectionSetBuilder.selection(requiredField);
+  //    }
+  //    selectionSetBuilder.selection(__typenameField);
+  //    SelectionSet fieldSelectionSet = selectionSetBuilder.build();
+  //
+  //    InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
+  //    inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(entityTypeName).build());
+  //    inlineFragmentBuilder.selectionSet(fieldSelectionSet).build();
+  //    return inlineFragmentBuilder.build();
+  //  }
 
   private InlineFragment createEntityRequestInlineFragment(DataFetchingEnvironment dfe) {
     String entityTypeName = entityExtensionMetadata.getTypeName();
@@ -149,7 +146,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     return inlineFragmentBuilder.build();
   }
 
-  private Map<String, Object> createRepresentationWithKeys(
+  private Map<String, Object> createRepresentationWithForKeys(
       String entityTypeName,
       List<KeyDirectiveMetadata> keyDirectives,
       Map<String, Object> dataSource) {
@@ -159,10 +156,23 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     // this might be a subset of entity keys
     if (CollectionUtils.isNotEmpty(keyDirectives)) {
       keyDirectives.stream()
-          .flatMap(keyDirectiveMetadata -> keyDirectiveMetadata.getKeyFieldNames().stream())
+          .map(KeyDirectiveMetadata::getFieldSet)
+          .flatMap(Collection::stream)
           .forEach(
-              keyFieldName -> entityRepresentation.put(keyFieldName, dataSource.get(keyFieldName)));
+              field -> entityRepresentation.put(field.getName(), dataSource.get(field.getName())));
     }
+
+    return entityRepresentation;
+  }
+
+  private Map<String, Object> createRepresentationForRequires(
+      String entityTypename, Set<Field> requiresFieldSet, Map<String, Object> dfeSource) {
+    Map<String, Object> entityRepresentation = new HashMap<>();
+    entityRepresentation.put(Introspection.TypeNameMetaFieldDef.getName(), entityTypename);
+
+    requiresFieldSet.stream()
+        .map(Field::getName)
+        .forEach(fieldName -> entityRepresentation.put(fieldName, dfeSource.get(fieldName)));
 
     return entityRepresentation;
   }

@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import static com.intuit.graphql.orchestrator.federation.FieldSetUtils.toFieldSet;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_REQUIRES_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.containsExternalDirective;
@@ -18,17 +19,16 @@ import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.En
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.VisibleForTesting;
+import graphql.language.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.xtext.util.Strings;
 
 /**
  * This class is responsible for checking the merged graph for any key directives. For each field in key
@@ -88,14 +88,14 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
     }
   }
 
-  private Map<String, Set<String>> getRequiredFields(TypeDefinition entityDefinition) {
-    Map<String, Set<String>> output = new HashMap<>();
+  private Map<String, Set<Field>> getRequiredFields(TypeDefinition entityDefinition) {
+    Map<String, Set<Field>> output = new HashMap<>();
     getFieldDefinitions(entityDefinition).stream()
         .filter(fieldDefinition -> !containsExternalDirective(fieldDefinition))
         .forEach(fieldDefinition -> {
-          Set<String> regFields = getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE)
+          Set<Field> regFields = getDirectivesFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE)
               .stream()
-              .flatMap(directive -> {
+              .map(directive -> {
                 Optional<Argument> optionalArgument = directive.getArguments().stream().findFirst();
                 if (!optionalArgument.isPresent()) {
                   // validation is already being done, this should not happen
@@ -103,9 +103,10 @@ public class KeyTransformer implements Transformer<XtextGraph, XtextGraph> {
                 }
                 Argument argument = optionalArgument.get();
                 ValueWithVariable valueWithVariable = argument.getValueWithVariable();
-                String fieldSetValue = valueWithVariable.getStringValue();
-                return new HashSet<>(Strings.split(fieldSetValue, StringUtils.SPACE)).stream();
+                String fieldSetRawValue = valueWithVariable.getStringValue();
+                return toFieldSet(fieldSetRawValue);
               })
+              .flatMap(Collection::stream)
               .collect(Collectors.toSet());
           output.put(fieldDefinition.getName(), regFields);
         });

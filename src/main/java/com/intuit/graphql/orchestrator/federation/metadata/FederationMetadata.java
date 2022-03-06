@@ -6,15 +6,16 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import graphql.language.Field;
 import graphql.schema.FieldCoordinates;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * This class holds the metadata for the usage of federation specs in a given {@link
@@ -34,6 +35,8 @@ public class FederationMetadata {
    * entities extended by the service
    */
   private final Map<String, EntityExtensionMetadata> extensionsByTypename = new HashMap<>();
+
+  private final Map<FieldCoordinates, Set<Field>> requiresFieldSetByCoordinate = new HashMap<>();
 
   public FederationMetadata(ServiceMetadata serviceMetadata) {
     this.serviceMetadata = serviceMetadata;
@@ -60,6 +63,14 @@ public class FederationMetadata {
     return this.entitiesByTypename.get(typename);
   }
 
+  public boolean hasRequiresFieldSet(FieldCoordinates fieldCoordinates) {
+    return this.requiresFieldSetByCoordinate.containsKey(fieldCoordinates);
+  }
+
+  public Set<Field> getRequireFields(FieldCoordinates fieldCoordinates) {
+    return this.requiresFieldSetByCoordinate.get(fieldCoordinates);
+  }
+
   @Builder
   @Getter
   public static class EntityMetadata {
@@ -83,12 +94,23 @@ public class FederationMetadata {
     private final String typeName;
     private final List<KeyDirectiveMetadata> keyDirectives;
     private final Set<String> externalFields;
-    private final Map<String, Set<String>> requiredFieldsByFieldName;
+    private final Map<String, Set<Field>> requiredFieldsByFieldName;
     private final FederationMetadata federationMetadata;
     // TODO @provides
 
-    @Setter
     private EntityMetadata baseEntityMetadata;
+
+    public void setBaseEntityMetadata(EntityMetadata baseEntityMetadata) {
+      Objects.requireNonNull(baseEntityMetadata);
+      FederationMetadata baseFederationMetadata = baseEntityMetadata.getFederationMetadata();
+      Objects.requireNonNull(baseFederationMetadata);
+      requiredFieldsByFieldName.forEach((fieldName, requireFieldSet) -> {
+        FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(typeName, fieldName);
+        baseFederationMetadata.requiresFieldSetByCoordinate.put(fieldCoordinates, requireFieldSet);
+      });
+
+      this.baseEntityMetadata = baseEntityMetadata;
+    }
 
     public ServiceProvider getServiceProvider() {
       return this.federationMetadata.getServiceMetadata().getServiceProvider();
@@ -101,8 +123,9 @@ public class FederationMetadata {
           .getServiceProvider();
     }
 
-    public Set<String> getRequiredFields(String fieldName) {
+    public Set<Field> getRequiredFields(String fieldName) {
       return this.requiredFieldsByFieldName.get(fieldName);
     }
+
   }
 }

@@ -9,7 +9,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
@@ -23,19 +25,29 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.collections4.CollectionUtils;
 
 public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
   private final GraphQLFieldsContainer rootType;
   private final ServiceMetadata serviceMetadata;
+  private final SelectionCollector selectionCollector;
 
-  NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType, ServiceMetadata serviceMetadata) {
+  NoExternalReferenceSelectionSetModifier(GraphQLFieldsContainer rootType, ServiceMetadata serviceMetadata, Map<String, FragmentDefinition> fragmentsByName) {
+    Objects.nonNull(rootType);
+    Objects.nonNull(serviceMetadata);
+    Objects.nonNull(fragmentsByName);
     this.rootType = rootType;
     this.serviceMetadata = serviceMetadata;
+    this.selectionCollector = new SelectionCollector(fragmentsByName);
   }
 
   @Override
@@ -50,7 +62,10 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
       GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, parentType);
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + fieldName);
 
-      if (isExternalField(parentType.getName(), fieldDefinition)) {
+      // TODO consider the entire condition to be abstracted in
+      //  serviceMetadata.isFieldExternal(fieldCoordinates).
+      //  This requires a complete set of field coordinates that the service owns
+      if (hasResolverDirective(fieldDefinition) || isExternalField(parentType.getName(), fieldName)) {
         return deleteNode(context);
       }
 
@@ -62,13 +77,9 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
     }
   }
 
-  private boolean isExternalField(String parentTypename, GraphQLFieldDefinition fieldDefinition) {
-    FieldCoordinates fieldCoordinates = coordinates(parentTypename, fieldDefinition.getName());
-    // TODO consider the entire condition to be abstracted in
-    //  serviceMetadata.isFieldExternal(fieldCoordinates).
-    //  This requires a complete set of field coordinates that the service owns
-    return hasResolverDirective(fieldDefinition)
-        || serviceMetadata.isOwnedByEntityExtension(fieldCoordinates);
+  private boolean isExternalField(String parentTypename, String fieldName) {
+    FieldCoordinates fieldCoordinates = coordinates(parentTypename, fieldName);
+    return serviceMetadata.isOwnedByEntityExtension(fieldCoordinates);
   }
 
   private GraphQLFieldDefinition getFieldDefinition(String name, GraphQLFieldsContainer parentType) {
@@ -96,30 +107,65 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
     context.setVar(GraphQLType.class, parentType);
+    String parentTypeName = parentType.getName();
 
-    Set<String> selectionsByName = node.getSelections().stream()
-        .filter(selection -> selection instanceof Field) // TODO inline / fragments
-        .map(selection -> (Field) selection)
-        .map(field -> field.getName())
-        .collect(Collectors.toSet());
+    List<Field> selectedFields = getSelectedFields(node);
 
-    if (this.serviceMetadata.isEntity(parentType.getName())) {
+    if (this.serviceMetadata.isEntity(parentTypeName)) {
       FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
-      EntityMetadata entityMetadata = federationMetadata.getEntityMetadataByName(parentType.getName());
-      List<String> missingKeys = entityMetadata.getKeyDirectives().stream()
-          .flatMap(keyDirectiveMetadata -> keyDirectiveMetadata.getKeyFieldNames().stream())
-          .filter(keyFieldname -> !selectionsByName.contains(keyFieldname))
+      EntityMetadata entityMetadata = federationMetadata.getEntityMetadataByName(parentTypeName);
+      Set<Field> keysFieldSet = getEntityKeys(entityMetadata.getKeyDirectives());
+      Set<Field> requiresFieldSet = getRequiresFieldSet(getEntityExternalFields(selectedFields, parentTypeName), parentTypeName);
+      List<Field> fieldsToAdd = Stream.concat(keysFieldSet.stream(), requiresFieldSet.stream())
+          .filter(field -> !selectedFields.contains(field))
           .collect(Collectors.toList());
-      if (CollectionUtils.isNotEmpty(missingKeys)) {
-        SelectionSet newNode = node.transform(builder -> {
-          for (String missingKey : missingKeys) {
-            builder.selection(new Field(missingKey));
-          }
-        });
+
+      if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
+        SelectionSet newNode = node.transform(builder -> builder.selections(fieldsToAdd));
         return changeNode(context, newNode);
       }
     }
     return TraversalControl.CONTINUE;
+  }
+
+  private Set<Field> getRequiresFieldSet(List<Field> externalFields, String parentTypename) {
+    FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
+    return externalFields.stream()
+        .map(field -> FieldCoordinates.coordinates(parentTypename, field.getName()))
+        .filter(federationMetadata::hasRequiresFieldSet)
+        .map(federationMetadata::getRequireFields)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
+  }
+
+  private List<Field> getSelectedFields(SelectionSet selectionSet) {
+    if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
+      return Collections.emptyList();
+    }
+
+    // TODO test that a selection set has been deduped if same field
+    //  occurs in different selection on same level
+    return selectionSet.getSelections().stream()
+        .map(this.selectionCollector::collectFields)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
+  }
+
+  private List<Field> getEntityExternalFields(List<Field> selections, String parentTypeName) {
+    if (CollectionUtils.isEmpty(selections)) {
+      return Collections.emptyList();
+    }
+
+    return selections.stream()
+        .filter(field -> isExternalField(parentTypeName, field.getName()))
+        .collect(Collectors.toList());
+  }
+
+  private Set<Field> getEntityKeys(List<KeyDirectiveMetadata> keyDirectives) {
+    return keyDirectives.stream()
+        .map(KeyDirectiveMetadata::getFieldSet)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
   }
 
   private GraphQLType getParentType(TraverserContext<Node> context) {
