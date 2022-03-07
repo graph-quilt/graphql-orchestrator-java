@@ -24,6 +24,9 @@ import org.apache.commons.collections4.CollectionUtils;
 @RequiredArgsConstructor
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
 
+  private static final Field __typenameField =
+      Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
+
   private final EntityExtensionMetadata entityExtensionMetadata; // Field added in entity
 
   @Override
@@ -38,7 +41,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     // create representation variables from key directives
     String entityTypename = entityExtensionMetadata.getTypeName();
     List<KeyDirectiveMetadata> keyDirectives =
-        entityExtensionMetadata.getBaseEntityMetadata().getKeyDirectives();
+        entityExtensionMetadata.getKeyDirectives();
     keyRepresentationVariables.add(
         createRepresentationWithForKeys(entityTypename, keyDirectives, dfeSource));
 
@@ -69,66 +72,13 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
             });
   }
 
-  //  private CompletableFuture<List<Map<String, Object>>> createFutureRepresentation(
-  //      GraphQLContext graphQLContext,
-  //      List<Map<String, Object>> keyRepresentationVariables,
-  //      Set<Field> requiredFieldSet) {
-  //
-  //    if (CollectionUtils.isEmpty(requiredFieldSet)) {
-  //      return CompletableFuture.completedFuture(keyRepresentationVariables);
-  //    } else {
-  //      EntityQuery entityQuery =
-  //          EntityQuery.builder()
-  //              .graphQLContext(graphQLContext)
-  //
-  // .inlineFragments(Collections.singletonList(createInlineFragment(requiredFieldSet)))
-  //              .variables(keyRepresentationVariables)
-  //              .build();
-  //
-  //      QueryExecutor queryExecutor = entityExtensionMetadata.getBaseServiceProvider();
-  //      return queryExecutor
-  //          .query(entityQuery.createExecutionInput(), graphQLContext)
-  //          .thenApply(
-  //              result -> {
-  //                Map<String, Object> data = (Map<String, Object>) result.get("data");
-  //                List<Map<String, Object>> _entities =
-  //                    (List<Map<String, Object>>) data.get("_entities");
-  //                for (Field requiredField : requiredFieldSet) {
-  //                  keyRepresentationVariables
-  //                      .get(0)
-  //                      .put(requiredField.getName(), _entities.get(0).get(requiredField));
-  //                }
-  //                return keyRepresentationVariables;
-  //              });
-  //    }
-  //  }
-
-  //  private InlineFragment createInlineFragment(Set<Field> requiredFieldSet) {
-  //    String entityTypeName = entityExtensionMetadata.getTypeName();
-  //    Field __typenameField =
-  //        Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
-  //
-  //    SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
-  //    for (Field requiredField : requiredFieldSet) {
-  //      selectionSetBuilder.selection(requiredField);
-  //    }
-  //    selectionSetBuilder.selection(__typenameField);
-  //    SelectionSet fieldSelectionSet = selectionSetBuilder.build();
-  //
-  //    InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
-  //    inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(entityTypeName).build());
-  //    inlineFragmentBuilder.selectionSet(fieldSelectionSet).build();
-  //    return inlineFragmentBuilder.build();
-  //  }
-
   private InlineFragment createEntityRequestInlineFragment(DataFetchingEnvironment dfe) {
     String entityTypeName = entityExtensionMetadata.getTypeName();
     Field originalField = dfe.getField();
-    Field __typenameField =
-        Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
 
     SelectionSet fieldSelectionSet = dfe.getField().getSelectionSet();
     if (fieldSelectionSet != null) {
+      // is an object
       fieldSelectionSet =
           fieldSelectionSet.transform(builder -> builder.selection(__typenameField));
     }
