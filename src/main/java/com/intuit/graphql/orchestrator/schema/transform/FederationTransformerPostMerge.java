@@ -127,7 +127,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
           fieldDefinition.getDirectives().forEach( directive -> {
               String directiveName = directive.getDefinition().getName();
               if (StringUtils.equals(directiveName, FEDERATION_EXTERNAL_DIRECTIVE)) {
-                  externalValidator.validatePostMerge(entityMergingContext, fieldDefinition, directive);
+                  externalValidator.validatePostMerge(entityMergingContext, fieldDefinition);
               }
           })
       );

@@ -22,7 +22,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWith
 import static java.lang.String.format;
 
 public class KeyDirectiveValidator {
-  FieldSetValidator fieldSetValidator = new FieldSetValidator();
+  private final FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
   public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, List<Argument> argumentList) {
     String containerName = typeDefinition.getName();

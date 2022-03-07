@@ -27,45 +27,45 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
 
     @Override
     public XtextGraph transform(XtextGraph source) {
-        if(source.getServiceProvider().isFederationProvider()) {
-            Map<String, TypeDefinition> entitiesByTypename = new HashMap<>();
-            Map<String, TypeDefinition> entityExtensionsByTypename = new HashMap<>();
+        if(!source.getServiceProvider().isFederationProvider()) {
+            return source;
+        }
 
-            source.getTypes().values().forEach(typeDefinition -> {
-                getDirectivesWithNameFromDefinition(typeDefinition, FEDERATION_KEY_DIRECTIVE).forEach(directive -> {
-                    FederationMetadata federationMetadata = new FederationMetadata(source);
-                    List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
-                    keyDirectiveValidator.validate(source, typeDefinition, directive.getArguments());
+        Map<String, TypeDefinition> entitiesByTypename = new HashMap<>();
+        Map<String, TypeDefinition> entityExtensionsByTypename = new HashMap<>();
 
-                    if (isBaseType(typeDefinition)) {
-                        entitiesByTypename.put(typeDefinition.getName(), typeDefinition);
-                        federationMetadata.addEntity(FederationMetadata.EntityMetadata.builder()
-                            .typeName(typeDefinition.getName())
-                            .keyDirectives(keyDirectives)
-                            .federationMetadata(federationMetadata)
-                            .fields(FederationMetadata.EntityMetadata.getFieldsFrom(typeDefinition))
-                            .build());
-                    } else {
-                        entityExtensionsByTypename.put(typeDefinition.getName(), typeDefinition);
-                        federationMetadata.addEntityExtension(FederationMetadata.EntityExtensionMetadata.builder()
-                            .typeName(typeDefinition.getName())
-                            .keyDirectives(keyDirectives)
-                            .federationMetadata(federationMetadata)
-                            .build());
-                    }
-                });
+        source.getTypes().values().forEach(typeDefinition -> {
+            getDirectivesWithNameFromDefinition(typeDefinition, FEDERATION_KEY_DIRECTIVE).forEach(directive -> {
+                FederationMetadata federationMetadata = new FederationMetadata(source);
+                List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
+                keyDirectiveValidator.validate(source, typeDefinition, directive.getArguments());
 
-                validateFieldDefinitions(source, typeDefinition);
+                if (isBaseType(typeDefinition)) {
+                    entitiesByTypename.put(typeDefinition.getName(), typeDefinition);
+                    federationMetadata.addEntity(FederationMetadata.EntityMetadata.builder()
+                        .typeName(typeDefinition.getName())
+                        .keyDirectives(keyDirectives)
+                        .federationMetadata(federationMetadata)
+                        .fields(FederationMetadata.EntityMetadata.getFieldsFrom(typeDefinition))
+                        .build());
+                } else {
+                    entityExtensionsByTypename.put(typeDefinition.getName(), typeDefinition);
+                    federationMetadata.addEntityExtension(FederationMetadata.EntityExtensionMetadata.builder()
+                        .typeName(typeDefinition.getName())
+                        .keyDirectives(keyDirectives)
+                        .federationMetadata(federationMetadata)
+                        .build());
+                }
             });
+
+            validateFieldDefinitions(source, typeDefinition);
+        });
 
         Map<String, Map<String, TypeDefinition>> entityExtensionByNamespace = new HashMap<>();
         entityExtensionByNamespace.put(source.getServiceProvider().getNameSpace(), entityExtensionsByTypename);
         return source.transform(builder -> builder
                 .entitiesByTypeName(entitiesByTypename)
                 .entityExtensionsByNamespace(entityExtensionByNamespace));
-        } else {
-            return source;
-        }
     }
 
     private void validateFieldDefinitions(XtextGraph source, TypeDefinition typeDefinition) {

@@ -17,7 +17,7 @@ import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATI
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
 
 public class RequireValidator {
-    FieldSetValidator fieldSetValidator = new FieldSetValidator();
+    private final FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
     public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, Directive requireDirective) {
         String containerName = typeDefinition.getName();

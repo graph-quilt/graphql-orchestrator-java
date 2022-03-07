@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class ExternalValidator {
-    public void validatePostMerge(EntityTypeMerger.EntityMergingContext entityMergingContext, FieldDefinition fieldDefinition, Directive directive) {
+    public void validatePostMerge(EntityTypeMerger.EntityMergingContext entityMergingContext, FieldDefinition fieldDefinition) {
         List<String> baseFieldNames = getFieldDefinitions(entityMergingContext.getBaseType()).stream()
                 .map(FieldDefinition::getName).collect(Collectors.toList());
 
