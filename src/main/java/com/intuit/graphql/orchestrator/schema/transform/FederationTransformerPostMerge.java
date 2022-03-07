@@ -4,10 +4,11 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger.EntityMergingContext;
-import com.intuit.graphql.orchestrator.federation.ExternalValidator;
+import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
+import com.intuit.graphql.orchestrator.federation.validators.ExternalValidator;
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
-import com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions.BaseTypeNotFoundException;
-import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.exceptions.BaseTypeNotFoundException;
+import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
@@ -18,6 +19,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
@@ -117,20 +120,26 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
   }
 
   private void checkFederationFieldDirectives(EntityMergingContext entityMergingContext) {
-      List<FieldDefinition> fieldDefinitions = getFieldDefinitions(entityMergingContext.getTypeExtension());
+      List<FieldDefinition> extFieldDefinitions = getFieldDefinitions(entityMergingContext.getTypeExtension());
+      List<String> baseFieldNames = getFieldDefinitions(entityMergingContext.getBaseType())
+              .stream().map(FieldDefinition::getName).collect(Collectors.toList());
 
+      extFieldDefinitions.forEach( fieldDefinition -> {
+          boolean sharedField = baseFieldNames.contains(fieldDefinition.getName());
+          AtomicBoolean hasExternalAtomicBoolean = new AtomicBoolean(false);
 
-
-      fieldDefinitions.forEach( fieldDefinition ->
-          //validate field ownership inside this portion
-
-          fieldDefinition.getDirectives().forEach( directive -> {
+          fieldDefinition.getDirectives().forEach(directive -> {
               String directiveName = directive.getDefinition().getName();
               if (StringUtils.equals(directiveName, FEDERATION_EXTERNAL_DIRECTIVE)) {
                   externalValidator.validatePostMerge(entityMergingContext, fieldDefinition);
+                  hasExternalAtomicBoolean.set(true);
               }
-          })
-      );
+          });
+
+          if(sharedField && !hasExternalAtomicBoolean.get()) {
+              throw new SharedOwnershipException(fieldDefinition.getName());
+          }
+      });
 
   }
 }

@@ -6,6 +6,7 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
+import com.intuit.graphql.orchestrator.federation.validators.FieldSetValidator;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.parser.InvalidSyntaxException;
 import org.eclipse.emf.common.util.ECollections;

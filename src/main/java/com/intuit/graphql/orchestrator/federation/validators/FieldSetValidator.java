@@ -1,4 +1,4 @@
-package com.intuit.graphql.orchestrator.federation;
+package com.intuit.graphql.orchestrator.federation.validators;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;

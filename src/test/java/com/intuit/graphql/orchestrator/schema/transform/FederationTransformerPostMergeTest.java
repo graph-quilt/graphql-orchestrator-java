@@ -4,7 +4,8 @@ import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildDirec
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildDirectiveDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -20,8 +21,11 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.graphQL.impl.ArgumentImpl;
+import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.TestServiceProvider;
+import com.intuit.graphql.orchestrator.federation.exceptions.ExternalFieldNotFoundInBaseException;
+import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
-import com.intuit.graphql.orchestrator.utils.FederationConstants;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 
 import java.util.Arrays;
@@ -29,8 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,8 +43,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class FederationTransformerPostMergeTest {
 
-  private static final FieldDefinition TEST_FIELD_DEFINITION_1 = buildFieldDefinition("testField1");
-  private static final FieldDefinition TEST_FIELD_DEFINITION_2 = buildFieldDefinition("testField2");
+  private final FieldDefinition BASE_FIELD_DEFINITION = buildFieldDefinition("testField1");
+  private final Directive EXTERNAL_DIRECTIVE = buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null);
+  private final FieldDefinition EXTENSION_FIELD_DEFINITION = buildFieldDefinition("testField1", singletonList(EXTERNAL_DIRECTIVE));
 
   @Mock
   private XtextGraph xtextGraphMock;
@@ -55,11 +58,11 @@ public class FederationTransformerPostMergeTest {
 
     Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
     ObjectTypeDefinition baseObjectType =
-        buildObjectTypeDefinition("EntityType", singletonList(TEST_FIELD_DEFINITION_1));
+            buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION));
     entitiesByTypeName.put("EntityType", baseObjectType);
 
     ObjectTypeDefinition objectTypeExtension =
-        buildObjectTypeDefinition("EntityType", singletonList(TEST_FIELD_DEFINITION_2));
+            buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
     entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", objectTypeExtension));
 
     when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(entitiesByTypeName);
@@ -72,5 +75,114 @@ public class FederationTransformerPostMergeTest {
     assertThat(actual).isSameAs(xtextGraphMock);
     verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
     verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+  }
+
+  @Test
+  public void transform_success_extension_key_in_subset() {
+    HashMap<String, Map<String, TypeDefinition>> extensionsByNamespace = new HashMap<>();
+
+    HashMap<String, TypeDefinition> extDefinitionsByName = new HashMap<>();
+    HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
+
+    Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
+    Directive sharedKeyDirective2 = createMockKeyDirectory("testField1");
+    Directive uniqueKeyDirective = createMockKeyDirectory("testField2");
+
+    ObjectTypeDefinition baseObjectType =
+            buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION));
+    baseObjectType.getDirectives().addAll(Arrays.asList(sharedKeyDirective1,uniqueKeyDirective));
+
+    ObjectTypeDefinition objectTypeExtension =
+            buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
+    objectTypeExtension.getDirectives().add(sharedKeyDirective2);
+
+    baseDefinitionsByName.put("EntityType", baseObjectType);
+    extDefinitionsByName.put("EntityType", objectTypeExtension);
+    extensionsByNamespace.put("testNamespace", extDefinitionsByName);
+
+    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
+    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
+
+    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
+    assertThat(actual).isSameAs(xtextGraphMock);
+    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+  }
+
+  @Test(expected = TypeConflictException.class)
+  public void transform_fails_extension_key_not_subset() {
+
+    HashMap<String, Map<String, TypeDefinition>> extensionsByNamespace = new HashMap<>();
+
+    HashMap<String, TypeDefinition> extDefinitionsByName = new HashMap<>();
+    HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
+
+    Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
+    Directive sharedKeyDirective2 = createMockKeyDirectory("testField1");
+    Directive uniqueKeyDirective = createMockKeyDirectory("testField2");
+
+    ObjectTypeDefinition baseObjectType =
+            buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION));
+    baseObjectType.getDirectives().add(sharedKeyDirective1);
+
+    ObjectTypeDefinition objectTypeExtension =
+            buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
+    objectTypeExtension.getDirectives().addAll(Arrays.asList(sharedKeyDirective2, uniqueKeyDirective));
+
+    baseDefinitionsByName.put("EntityType", baseObjectType);
+    extDefinitionsByName.put("EntityType", objectTypeExtension);
+    extensionsByNamespace.put("testNamespace", extDefinitionsByName);
+
+    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
+    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
+
+    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
+    assertThat(actual).isSameAs(xtextGraphMock);
+    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+  }
+
+  @Test(expected = SharedOwnershipException.class)
+  public void transform_fails_shared_field_without_external(){
+    Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+
+    ObjectTypeDefinition objectTypeExtension =
+            buildObjectTypeDefinition("EntityType", singletonList(buildFieldDefinition("testField1")));
+    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", objectTypeExtension));
+
+    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
+
+    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
+    assertThat(actual).isSameAs(xtextGraphMock);
+    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+  }
+
+  @Test(expected = ExternalFieldNotFoundInBaseException.class)
+  public void transform_fails_external_field_not_in_base(){
+    Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+
+    ObjectTypeDefinition objectTypeExtension = buildObjectTypeDefinition("EntityType",
+                    Arrays.asList(EXTENSION_FIELD_DEFINITION, buildFieldDefinition("BadField", singletonList(buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null)))));
+
+    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", objectTypeExtension));
+    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
+
+    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
+    assertThat(actual).isSameAs(xtextGraphMock);
+    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+  }
+
+  private Directive createMockKeyDirectory(String fieldSet) {
+    DirectiveDefinition keyDirectiveDefinition1 = buildDirectiveDefinition(FEDERATION_KEY_DIRECTIVE);
+    ArgumentImpl fieldsArgument = Mockito.mock(ArgumentImpl.class);
+    ValueWithVariable valueWithVariableMock = Mockito.mock(ValueWithVariable.class);
+    List<Argument> fooKey = Arrays.asList(fieldsArgument);
+
+    Mockito.when(valueWithVariableMock.getStringValue()).thenReturn(fieldSet);
+    Mockito.when(fieldsArgument.getValueWithVariable()).thenReturn(valueWithVariableMock);
+
+    return buildDirective(keyDirectiveDefinition1, fooKey);
   }
 }

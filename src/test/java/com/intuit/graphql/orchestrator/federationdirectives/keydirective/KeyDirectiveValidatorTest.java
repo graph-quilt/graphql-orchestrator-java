@@ -8,7 +8,7 @@ import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.federation.exceptions.DirectiveMissingRequiredArgumentException;
 import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
-import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.eclipse.emf.common.util.BasicEList;
