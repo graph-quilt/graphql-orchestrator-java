@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
 import static com.intuit.graphql.utils.XtextTypeUtils.isNonNull;
 import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
@@ -240,26 +241,8 @@ public class XtextTypeUtils {
     return true;
   }
 
-  public static boolean typeContainsDirective(final TypeDefinition type, String directiveName) {
-    return type.getDirectives().stream().anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
-  }
-
-  public static List<Directive> getDirectivesFromDefinition(EObject definition, String directiveName) {
-    if(definition instanceof TypeDefinition) {
-      return ((TypeDefinition) definition).getDirectives().stream()
-              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
-              .collect(Collectors.toList());
-    } else if(definition instanceof FieldDefinition) {
-      return ((FieldDefinition) definition).getDirectives().stream()
-              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
-              .collect(Collectors.toList());
-    }
-
-    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
-  }
-
   public static boolean isEntity(final TypeDefinition type) {
-    return typeContainsDirective(type, FEDERATION_KEY_DIRECTIVE);
+    return definitionContainsDirective(type, FEDERATION_KEY_DIRECTIVE);
   }
 
   private static boolean isIncompatibleUniqueField(FieldDefinition fieldDefinition, boolean entityComparison) {
