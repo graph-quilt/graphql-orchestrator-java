@@ -5,11 +5,15 @@ import graphql.language.FragmentDefinition;
 import graphql.language.FragmentSpread;
 import graphql.language.InlineFragment;
 import graphql.language.Selection;
+import graphql.language.SelectionSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 
 public class SelectionCollector {
 
@@ -19,7 +23,20 @@ public class SelectionCollector {
     this.fragmentsByName = fragmentsByName;
   }
 
-  public List<Field> collectFields(Selection selection) {
+  public Set<Field> collectFields(SelectionSet selectionSet) {
+    if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
+      return Collections.emptySet();
+    }
+
+    // TODO test that a selection set has been deduped if same field
+    //  occurs in different selection on same level
+    return selectionSet.getSelections().stream()
+        .map(this::collectFields)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
+  }
+
+  private List<Field> collectFields(Selection selection) {
     if (selection instanceof Field) {
       return Collections.singletonList((Field) selection);
     } else if (selection instanceof FragmentSpread) {

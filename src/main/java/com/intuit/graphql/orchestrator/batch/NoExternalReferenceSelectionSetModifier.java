@@ -109,7 +109,7 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
     context.setVar(GraphQLType.class, parentType);
     String parentTypeName = parentType.getName();
 
-    List<Field> selectedFields = getSelectedFields(node);
+    Set<Field> selectedFields = this.selectionCollector.collectFields(node);
 
     if (this.serviceMetadata.isEntity(parentTypeName)) {
       FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
@@ -138,20 +138,7 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
         .collect(Collectors.toSet());
   }
 
-  private List<Field> getSelectedFields(SelectionSet selectionSet) {
-    if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
-      return Collections.emptyList();
-    }
-
-    // TODO test that a selection set has been deduped if same field
-    //  occurs in different selection on same level
-    return selectionSet.getSelections().stream()
-        .map(this.selectionCollector::collectFields)
-        .flatMap(Collection::stream)
-        .collect(Collectors.toList());
-  }
-
-  private List<Field> getEntityExternalFields(List<Field> selections, String parentTypeName) {
+  private List<Field> getEntityExternalFields(Set<Field> selections, String parentTypeName) {
     if (CollectionUtils.isEmpty(selections)) {
       return Collections.emptyList();
     }
