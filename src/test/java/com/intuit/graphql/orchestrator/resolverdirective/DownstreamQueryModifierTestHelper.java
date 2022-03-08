@@ -25,7 +25,7 @@ import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 
 @Getter
-public class NoExternalFieldsTestHelper {
+public class DownstreamQueryModifierTestHelper {
 
   public static final String aSchema = "type Query { a1 : [AObjectType] a2 : String } "
       + "type AObjectType { af1 : String af2 : String } "
@@ -67,7 +67,7 @@ public class NoExternalFieldsTestHelper {
   private ServiceProvider testServiceA;
   private ServiceProvider testServiceB;
 
-  public NoExternalFieldsTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
+  public DownstreamQueryModifierTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
     Objects.requireNonNull(testServiceA);
     Objects.requireNonNull(testServiceB);
     this.testServiceA = testServiceA;

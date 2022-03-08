@@ -1,7 +1,7 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.NoExternalFieldsTestHelper.aSchema;
-import static com.intuit.graphql.orchestrator.resolverdirective.NoExternalFieldsTestHelper.bSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
 import static graphql.schema.FieldCoordinates.coordinates;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,8 +15,8 @@ import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
-import com.intuit.graphql.orchestrator.resolverdirective.NoExternalFieldsTestHelper;
-import com.intuit.graphql.orchestrator.resolverdirective.NoExternalFieldsTestHelper.TestService;
+import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper;
+import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.TestService;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.language.AstTransformer;
 import graphql.language.Field;
@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class NoExternalReferenceSelectionSetModifierTest {
+public class DownstreamQueryModifierTest {
 
   @Mock
   private ServiceMetadata serviceMetadataMock;
@@ -47,13 +47,13 @@ public class NoExternalReferenceSelectionSetModifierTest {
   private SelectionSet selectionSet;
   private SelectionSet reverseSelectionSet;
 
-  private NoExternalReferenceSelectionSetModifier subjectUnderTest;
+  private DownstreamQueryModifier subjectUnderTest;
 
   @Before
   public void setup() {
     ServiceProvider serviceA = new TestService("serviceA", aSchema, null);
     ServiceProvider serviceB = new TestService("serviceB", bSchema, null);
-    NoExternalFieldsTestHelper fieldResolverTestHelper = new NoExternalFieldsTestHelper(
+    DownstreamQueryModifierTestHelper fieldResolverTestHelper = new DownstreamQueryModifierTestHelper(
         serviceA, serviceB);
     GraphQLSchema graphQLSchema = fieldResolverTestHelper.getGraphQLSchema();
     GraphQLFieldsContainer aType = (GraphQLFieldsContainer) unwrapAll(
@@ -73,7 +73,7 @@ public class NoExternalReferenceSelectionSetModifierTest {
     when(serviceMetadataMock.isOwnedByEntityExtension(any())).thenReturn(false);
 
     subjectUnderTest =
-        new NoExternalReferenceSelectionSetModifier(
+        new DownstreamQueryModifier(
             aType, serviceMetadataMock, Collections.emptyMap());
   }
 

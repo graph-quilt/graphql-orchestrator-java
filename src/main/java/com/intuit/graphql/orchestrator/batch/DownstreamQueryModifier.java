@@ -33,13 +33,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 
-public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
+public class DownstreamQueryModifier extends NodeVisitorStub {
 
   private final GraphQLFieldsContainer rootType;
   private final ServiceMetadata serviceMetadata;
   private final SelectionCollector selectionCollector;
 
-  NoExternalReferenceSelectionSetModifier(
+  DownstreamQueryModifier(
       GraphQLFieldsContainer rootType,
       ServiceMetadata serviceMetadata,
       Map<String, FragmentDefinition> fragmentsByName) {
