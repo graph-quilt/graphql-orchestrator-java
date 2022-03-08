@@ -1,9 +1,8 @@
-package com.intuit.graphql.orchestrator.federation.requiresdirective;
+package com.intuit.graphql.orchestrator.federation.validators;
 
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.FieldSetValidator;
 import com.intuit.graphql.orchestrator.federation.exceptions.DirectiveMissingRequiredArgumentException;
 import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;

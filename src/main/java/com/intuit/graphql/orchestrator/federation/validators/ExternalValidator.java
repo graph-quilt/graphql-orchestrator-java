@@ -1,7 +1,8 @@
-package com.intuit.graphql.orchestrator.federation;
+package com.intuit.graphql.orchestrator.federation.validators;
 
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.exceptions.ExternalFieldNotFoundInBaseException;
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
 
