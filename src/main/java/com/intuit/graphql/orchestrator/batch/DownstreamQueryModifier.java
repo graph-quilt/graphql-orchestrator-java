@@ -33,6 +33,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 
+/**
+ * This class modifies for query for a downstream provider.
+ *
+ * One function of this class is to remove external fields.  This occurs if a type
+ * is extended by other services and add fields to it.
+ *
+ * Another function is this class adds required fields to the query if fields
+ * are required by other sibling fields which are external or remote.
+ */
 public class DownstreamQueryModifier extends NodeVisitorStub {
 
   private final GraphQLFieldsContainer rootType;

@@ -21,6 +21,11 @@ import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
+/**
+ * This class is used for resolving fields added to an Entity by making
+ * an entity fetch request.  To build the entity fetch query, it uses
+ * {@link EntityQuery}.
+ */
 @RequiredArgsConstructor
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
 
