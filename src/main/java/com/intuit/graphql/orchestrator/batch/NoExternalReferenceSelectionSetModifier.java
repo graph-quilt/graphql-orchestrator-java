@@ -11,6 +11,7 @@ import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.utils.IntrospectionUtil;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
@@ -144,6 +145,7 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
     }
 
     return selections.stream()
+        .filter(field -> !IntrospectionUtil.INTROSPECTION_FIELDS.contains(field.getName()))
         .map(field -> parentType.getFieldDefinition(field.getName()))
         .filter(FieldResolverDirectiveUtil::hasResolverDirective)
         .collect(Collectors.toSet());
