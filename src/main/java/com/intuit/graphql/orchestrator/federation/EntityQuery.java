@@ -1,11 +1,13 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.REPRESENTATIONS_ARGUMENT;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.REPRESENTATIONS_VAR_NAME;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.VARIABLE_DEFINITION;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants._ENTITIES_FIELD_NAME;
 import static graphql.language.AstPrinter.printAstCompact;
-import static graphql.language.TypeName.newTypeName;
 
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
-import graphql.language.Argument;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.InlineFragment;
@@ -13,8 +15,6 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
-import graphql.language.VariableDefinition;
-import graphql.language.VariableReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,25 +26,6 @@ import org.apache.commons.collections4.CollectionUtils;
 /** This class is used to create a downstream query to make an entity fetch. */
 @Builder
 public class EntityQuery {
-
-  private static final String REPRESENTATIONS_VAR_NAME = "REPRESENTATIONS";
-  private static final String REPRESENTATIONS_ARG_NAME = "representations";
-  private static final String REPRESENTATIONS_TYPE_NAME = "[_Any!]!";
-
-  private static final VariableDefinition VARIABLE_DEFINITION =
-      VariableDefinition.newVariableDefinition()
-          .name(REPRESENTATIONS_VAR_NAME)
-          .type(newTypeName(REPRESENTATIONS_TYPE_NAME).build())
-          .build();
-
-  private static final Argument REPRESENTATIONS_ARGUMENT =
-      Argument.newArgument()
-          .name(REPRESENTATIONS_ARG_NAME)
-          .value(VariableReference.newVariableReference().name(REPRESENTATIONS_VAR_NAME).build())
-          .build();
-
-  private static final String _ENTITIES_FIELD_NAME = "_entities";
-
   // required constructor arguments
   private final GraphQLContext graphQLContext;
   private final List<InlineFragment> inlineFragments;

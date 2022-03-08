@@ -187,6 +187,11 @@ public class XtextGraph implements ServiceMetadata {
     return types.containsKey(typeName);
   }
 
+  @Override
+  public boolean shouldRemoveExternalFields() {
+    return hasFieldResolverDirective() || isFederationService();
+  }
+
   public TypeDefinition getType(final NamedType namedType) {
     return types.get(XtextTypeUtils.typeName(namedType));
   }

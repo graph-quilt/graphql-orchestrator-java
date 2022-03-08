@@ -33,4 +33,6 @@ public interface ServiceMetadata {
   boolean isEntity(String typename);
 
   FederationMetadata getFederationServiceMetadata();
+
+  boolean shouldRemoveExternalFields();
 }

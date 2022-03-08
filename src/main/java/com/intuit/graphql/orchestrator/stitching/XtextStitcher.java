@@ -27,12 +27,11 @@ import com.intuit.graphql.orchestrator.schema.fold.XtextGraphFolder;
 import com.intuit.graphql.orchestrator.schema.transform.AllTypesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DirectivesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer;
-import com.intuit.graphql.orchestrator.schema.transform.KeyTransformer;
-import com.intuit.graphql.orchestrator.schema.transform.KeyTransformerPostMerge;
-import com.intuit.graphql.orchestrator.schema.transform.RequireTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer;
@@ -289,8 +288,7 @@ public class XtextStitcher implements Stitcher {
           new DirectivesTransformer(),
           new UnionAndInterfaceTransformer(),
           new FieldResolverTransformerPreMerge(),
-          new KeyTransformer(),
-          new RequireTransformer()
+          new FederationTransformerPreMerge()
       );
     }
 
@@ -301,7 +299,7 @@ public class XtextStitcher implements Stitcher {
       return Arrays.asList(
           new ResolverArgumentTransformer(),
           new FieldResolverTransformerPostMerge(),
-          new KeyTransformerPostMerge(),
+          new FederationTransformerPostMerge(),
           new GraphQLAdapterTransformer()
       );
     }

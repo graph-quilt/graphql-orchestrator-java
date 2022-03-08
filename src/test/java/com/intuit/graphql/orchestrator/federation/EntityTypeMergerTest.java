@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
-import com.intuit.graphql.orchestrator.utils.FederationUtils;
+import com.intuit.graphql.orchestrator.utils.FederationConstants;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -66,64 +66,4 @@ public class EntityTypeMergerTest {
   public void mergeIntoBaseType_notTheSameTypeDefinition_success() {
     // TODO
   }
-
-  @Test
-  public void mergeIntoBaseType_success_extension_key_in_subset() {
-
-    Directive fooKeyDirective1 = createMockKeyDirectory("foo");
-    Directive fooKeyDirective2 = createMockKeyDirectory("foo");
-    Directive barKeyDirective = createMockKeyDirectory("bar");
-
-    ObjectTypeDefinition baseObjectType =
-            buildObjectTypeDefinition("EntityType", singletonList(TEST_FIELD_DEFINITION_1));
-    baseObjectType.getDirectives().add(fooKeyDirective1);
-    baseObjectType.getDirectives().add(barKeyDirective);
-
-    ObjectTypeDefinition objectTypeExtension =
-            buildObjectTypeDefinition("EntityType", singletonList(TEST_FIELD_DEFINITION_2));
-    objectTypeExtension.getDirectives().add(fooKeyDirective2);
-
-    when(entityMergingContextMock.getBaseType()).thenReturn(baseObjectType);
-    when(entityMergingContextMock.getTypeExtension()).thenReturn(objectTypeExtension);
-
-    subjectUnderTest.mergeIntoBaseType(entityMergingContextMock);
-  }
-
-  @Test(expected = TypeConflictException.class)
-  public void mergeIntoBaseType_fails_extension_key_not_subset() {
-    Directive fooKeyDirective1 = createMockKeyDirectory("foo");
-    Directive fooKeyDirective2 = createMockKeyDirectory("foo");
-    Directive barKeyDirective = createMockKeyDirectory("bar");
-
-    ObjectTypeDefinition baseObjectType =
-            buildObjectTypeDefinition("EntityType", singletonList(TEST_FIELD_DEFINITION_1));
-    baseObjectType.getDirectives().add(fooKeyDirective1);
-
-    ObjectTypeDefinition objectTypeExtension =
-            buildObjectTypeDefinition("EntityType", singletonList(TEST_FIELD_DEFINITION_2));
-    objectTypeExtension.getDirectives().add(fooKeyDirective2);
-    objectTypeExtension.getDirectives().add(barKeyDirective);
-
-    when(entityMergingContextMock.getBaseType()).thenReturn(baseObjectType);
-    when(entityMergingContextMock.getTypeExtension()).thenReturn(objectTypeExtension);
-
-    TypeDefinition actual = subjectUnderTest.mergeIntoBaseType(entityMergingContextMock);
-
-    assertThat(actual).isSameAs(baseObjectType);
-    List<FieldDefinition> actualFieldDefinitions = getFieldDefinitions(actual);
-    assertThat(actualFieldDefinitions).hasSize(2);
-  }
-
-  private Directive createMockKeyDirectory(String fieldSet) {
-    DirectiveDefinition keyDirectiveDefinition1 = buildDirectiveDefinition(FederationUtils.FEDERATION_KEY_DIRECTIVE);
-    ArgumentImpl fieldsArgument = Mockito.mock(ArgumentImpl.class);
-    ValueWithVariable valueWithVariableMock = Mockito.mock(ValueWithVariable.class);
-    List<Argument> fooKey = Arrays.asList(fieldsArgument);
-
-    Mockito.when(valueWithVariableMock.getStringValue()).thenReturn(fieldSet);
-    Mockito.when(fieldsArgument.getValueWithVariable()).thenReturn(valueWithVariableMock);
-
-    return buildDirective(keyDirectiveDefinition1, fooKey);
-  }
-
 }
