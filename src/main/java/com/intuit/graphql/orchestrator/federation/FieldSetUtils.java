@@ -1,18 +1,16 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
 import static java.lang.String.join;
 
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
-import graphql.parser.Parser;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 public class FieldSetUtils {
-
-  private static final Parser parser = new Parser();
 
   private FieldSetUtils() {}
 

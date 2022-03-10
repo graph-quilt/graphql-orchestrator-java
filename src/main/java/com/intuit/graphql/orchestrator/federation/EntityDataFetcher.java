@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
+
 import com.intuit.graphql.orchestrator.batch.QueryExecutor;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
@@ -28,9 +30,6 @@ import org.apache.commons.collections4.CollectionUtils;
  */
 @RequiredArgsConstructor
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
-
-  private static final Field __typenameField =
-      Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
 
   private final EntityExtensionMetadata entityExtensionMetadata; // Field added in entity
 
