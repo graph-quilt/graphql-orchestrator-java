@@ -2,7 +2,6 @@ package com.intuit.graphql.orchestrator.xtext;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
@@ -56,15 +55,10 @@ public class XtextGraph implements ServiceMetadata {
    */
   private Map<String, ObjectTypeDefinition> objectTypeDefinitions;
 
-  private Map<String, TypeDefinition> entitiesByTypeName;
-
-  private Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace;
-
-  private List<EntityExtensionMetadata> entityExtensionMetadatas;
-
-  // This is needed for execution.
-  // TODO consider merging entitiesByTypeName, entityExtensionsByNamespace and federationMetadataByNamespace
-  private Map<String, FederationMetadata> federationMetadataByNamespace;
+  private final Map<String, TypeDefinition> entitiesByTypeName;
+  private final Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace;
+  private final List<EntityExtensionMetadata> entityExtensionMetadatas;
+  private final Map<String, FederationMetadata> federationMetadataByNamespace;
 
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
@@ -72,7 +66,10 @@ public class XtextGraph implements ServiceMetadata {
     //TODO: Research on all Providers having an XtextResource instead of a ResourceSet
     operationMap = builder.operationMap;
     codeRegistry = builder.codeRegistry;
-    directives = builder.directives;
+    for (DirectiveDefinition directiveDefinition : directives = builder.directives) {
+
+    }
+
     types = builder.types;
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
@@ -271,14 +268,6 @@ public class XtextGraph implements ServiceMetadata {
 
   public Map<String, Map<String, TypeDefinition>> getEntityExtensionsByNamespace() {
     return this.entityExtensionsByNamespace;
-  }
-
-  public void addToEntities(String name, TypeDefinition entityDefinition) {
-    this.entitiesByTypeName.put(name, entityDefinition);
-  }
-
-  public void addToEntitiesExtension(String name, TypeDefinition entityDefinition) {
-    this.entityExtensionsByNamespace.put(serviceProvider.getNameSpace(), ImmutableMap.of(name, entityDefinition));
   }
 
   public void addFederationMetadata(FederationMetadata federationMetadata) {

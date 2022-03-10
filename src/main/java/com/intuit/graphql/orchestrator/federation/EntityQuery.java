@@ -21,15 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
+import lombok.NonNull;
 import org.apache.commons.collections4.CollectionUtils;
 
 /** This class is used to create a downstream query to make an entity fetch. */
 @Builder
 public class EntityQuery {
   // required constructor arguments
-  private final GraphQLContext graphQLContext;
-  private final List<InlineFragment> inlineFragments;
-  private final List<Map<String, Object>> variables;
+  @NonNull private final GraphQLContext graphQLContext;
+  @NonNull private final List<InlineFragment> inlineFragments;
+  @NonNull private final List<Map<String, Object>> variables;
 
   public ExecutionInput createExecutionInput() {
     if (CollectionUtils.isEmpty(inlineFragments)) {

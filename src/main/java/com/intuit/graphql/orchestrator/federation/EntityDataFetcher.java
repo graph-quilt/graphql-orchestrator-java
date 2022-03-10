@@ -22,9 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
 /**
- * This class is used for resolving fields added to an Entity by making
- * an entity fetch request.  To build the entity fetch query, it uses
- * {@link EntityQuery}.
+ * This class is used for resolving fields added to an Entity by making an entity fetch request. To
+ * build the entity fetch query, it uses {@link EntityQuery}.
  */
 @RequiredArgsConstructor
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
@@ -45,16 +44,26 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
 
     // create representation variables from key directives
     String entityTypename = entityExtensionMetadata.getTypeName();
-    List<KeyDirectiveMetadata> keyDirectives =
-        entityExtensionMetadata.getKeyDirectives();
-    keyRepresentationVariables.add(
-        createRepresentationWithForKeys(entityTypename, keyDirectives, dfeSource));
+    List<KeyDirectiveMetadata> keyDirectives = entityExtensionMetadata.getKeyDirectives();
+    if (CollectionUtils.isNotEmpty(keyDirectives)) {
+      Map<String, Object> keyVarMap =
+          createRepresentationWithForKeys(entityTypename, keyDirectives, dfeSource);
+      keyRepresentationVariables.add(keyVarMap);
+    } else {
+      throw EntityFetchingException.builder()
+          .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
+          .fieldName(fieldName)
+          .parentTypeName(entityTypename)
+          .build();
+    }
 
     Set<Field> requiresFieldSet = entityExtensionMetadata.getRequiredFields(fieldName);
-    keyRepresentationVariables.add(
-        createRepresentationForRequires(entityTypename, requiresFieldSet, dfeSource));
+    if (CollectionUtils.isNotEmpty(requiresFieldSet)) {
+      Map<String, Object> requiredVarMap =
+          createRepresentationForRequires(entityTypename, requiresFieldSet, dfeSource);
+      keyRepresentationVariables.add(requiredVarMap);
+    }  // else ignore, use of @requires is optional
 
-    // representation values may be taken from dfe.source() or from a remote service
     List<InlineFragment> inlineFragments = new ArrayList<>();
     inlineFragments.add(createEntityRequestInlineFragment(dataFetchingEnvironment));
 
@@ -70,6 +79,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
         .query(entityQuery.createExecutionInput(), graphQLContext)
         .thenApply(
             result -> {
+              // TODO transformer
               Map<String, Object> data = (Map<String, Object>) result.get("data");
               List<Map<String, Object>> _entities =
                   (List<Map<String, Object>>) data.get("_entities");

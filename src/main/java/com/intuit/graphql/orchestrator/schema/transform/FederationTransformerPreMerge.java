@@ -1,25 +1,34 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
-import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
-import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
-import com.intuit.graphql.orchestrator.federation.validators.RequireValidator;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import static com.intuit.graphql.orchestrator.federation.FieldSetUtils.toFieldSet;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
+
+import com.intuit.graphql.graphQL.Argument;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.ValueWithVariable;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
+import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.validators.RequireValidator;
+import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import graphql.language.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 public class FederationTransformerPreMerge implements Transformer<XtextGraph, XtextGraph> {
     RequireValidator requireValidator = new RequireValidator();
@@ -31,14 +40,18 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
             return source;
         }
 
+        FederationMetadata federationMetadata = new FederationMetadata(source);
         Map<String, TypeDefinition> entitiesByTypename = new HashMap<>();
         Map<String, TypeDefinition> entityExtensionsByTypename = new HashMap<>();
 
-        source.getTypes().values().forEach(typeDefinition -> {
-            getDirectivesWithNameFromDefinition(typeDefinition, FEDERATION_KEY_DIRECTIVE).forEach(directive -> {
-                FederationMetadata federationMetadata = new FederationMetadata(source);
+        source.getTypes().values().stream()
+            .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+            .forEach(typeDefinition -> {
                 List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
-                keyDirectiveValidator.validate(source, typeDefinition, directive.getArguments());
+                getDirectivesWithNameFromDefinition(typeDefinition, FEDERATION_KEY_DIRECTIVE).forEach(directive -> {
+                    keyDirectiveValidator.validate(source, typeDefinition, directive.getArguments());
+                    keyDirectives.add(KeyDirectiveMetadata.from(directive));
+                });
 
                 if (isBaseType(typeDefinition)) {
                     entitiesByTypename.put(typeDefinition.getName(), typeDefinition);
@@ -49,23 +62,27 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
                         .fields(FederationMetadata.EntityMetadata.getFieldsFrom(typeDefinition))
                         .build());
                 } else {
-                    entityExtensionsByTypename.put(typeDefinition.getName(), typeDefinition);
-                    federationMetadata.addEntityExtension(FederationMetadata.EntityExtensionMetadata.builder()
+                    EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
                         .typeName(typeDefinition.getName())
                         .keyDirectives(keyDirectives)
+                        .requiredFieldsByFieldName(getRequiredFields(typeDefinition))
                         .federationMetadata(federationMetadata)
-                        .build());
+                        .build();
+                    source.addToEntityExtensionMetadatas(entityExtensionMetadata);
+                    entityExtensionsByTypename.put(typeDefinition.getName(), typeDefinition);
+                    federationMetadata.addEntityExtension(entityExtensionMetadata);
                 }
+                validateFieldDefinitions(source, typeDefinition);
             });
 
-            validateFieldDefinitions(source, typeDefinition);
-        });
+        source.addFederationMetadata(federationMetadata);
 
         Map<String, Map<String, TypeDefinition>> entityExtensionByNamespace = new HashMap<>();
         entityExtensionByNamespace.put(source.getServiceProvider().getNameSpace(), entityExtensionsByTypename);
         return source.transform(builder -> builder
                 .entitiesByTypeName(entitiesByTypename)
-                .entityExtensionsByNamespace(entityExtensionByNamespace));
+                .entityExtensionsByNamespace(entityExtensionByNamespace)
+        );
     }
 
     private void validateFieldDefinitions(XtextGraph source, TypeDefinition typeDefinition) {
@@ -78,5 +95,35 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
                 requireValidator.validate(source, typeDefinition, directive);
             }
         });
+    }
+
+    private Map<String, Set<Field>> getRequiredFields(TypeDefinition entityDefinition) {
+        Map<String, Set<Field>> output = new HashMap<>();
+        getFieldDefinitions(entityDefinition).stream()
+            .filter(fieldDefinition -> !containsExternalDirective(fieldDefinition))
+            .forEach(fieldDefinition -> {
+                Set<Field> regFields = getDirectivesWithNameFromDefinition(fieldDefinition, FEDERATION_REQUIRES_DIRECTIVE)
+                    .stream()
+                    .map(directive -> {
+                        Optional<Argument> optionalArgument = directive.getArguments().stream().findFirst();
+                        if (!optionalArgument.isPresent()) {
+                            // validation is already being done, this should not happen
+                            throw new IllegalStateException("require directive argument not found.");
+                        }
+                        Argument argument = optionalArgument.get();
+                        ValueWithVariable valueWithVariable = argument.getValueWithVariable();
+                        String fieldSetValue = valueWithVariable.getStringValue();
+                        return toFieldSet(fieldSetValue);
+                    })
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toSet());
+                output.put(fieldDefinition.getName(), regFields);
+            });
+        return output;
+    }
+
+    public static boolean containsExternalDirective(FieldDefinition fieldDefinition) {
+        return fieldDefinition.getDirectives().stream()
+            .anyMatch(directive -> directive.getDefinition().getName().equals("external"));
     }
 }
