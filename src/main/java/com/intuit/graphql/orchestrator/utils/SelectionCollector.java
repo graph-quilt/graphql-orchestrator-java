@@ -33,7 +33,7 @@ public class SelectionCollector {
     }
 
     // TODO test that a selection set has been deduped if same field
-    //  occurs in different selection on same level
+    //  occurs in different selection (inline or fragment spread) on same level
     return selectionSet.getSelections().stream()
         .map(this::collectFields)
         .flatMap(Collection::stream)
@@ -54,19 +54,19 @@ public class SelectionCollector {
     }
   }
 
-  public List<Field> getFields(FragmentSpread fragmentSpread) {
+  private List<Field> getFields(FragmentSpread fragmentSpread) {
     Objects.requireNonNull(fragmentSpread);
     FragmentDefinition fragmentDefinition = fragmentsByName.get(fragmentSpread.getName());
     Objects.requireNonNull(fragmentDefinition);
     return getFields(fragmentDefinition.getSelectionSet().getSelections());
   }
 
-  public List<Field> getFields(InlineFragment inlineFragment) {
+  private List<Field> getFields(InlineFragment inlineFragment) {
     Objects.requireNonNull(inlineFragment);
     return getFields(inlineFragment.getSelectionSet().getSelections());
   }
 
-  public List<Field> getFields(List<Selection> selections) {
+  private List<Field> getFields(List<Selection> selections) {
     return selections.stream()
         .flatMap(selection -> collectFields(selection).stream())
         .collect(Collectors.toList());
