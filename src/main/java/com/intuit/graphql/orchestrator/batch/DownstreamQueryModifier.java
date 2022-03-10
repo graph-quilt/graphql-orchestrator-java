@@ -137,12 +137,14 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
         .build();
 
     Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get().stream()
+        // TODO avoid loop.  Field does not have equals().  One option is to use Map but logically this should be Set
         .filter(field -> !IterableUtils.contains(selectedFields, field, fieldEquator))
         .collect(Collectors.toSet());
 
     if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
       SelectionSet newNode = node.transform(builder -> {
         for (Field field : fieldsToAdd) {
+          // DON'T use builder.selections(fieldsToAdd).  it will clear then add selection
           builder.selection(field);
         }
       });
