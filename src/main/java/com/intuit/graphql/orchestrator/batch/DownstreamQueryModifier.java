@@ -11,6 +11,7 @@ import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.utils.FieldEquator;
 import com.intuit.graphql.orchestrator.utils.IntrospectionUtil;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.language.Field;
@@ -32,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.IterableUtils;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -116,6 +118,8 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
     return TraversalControl.CONTINUE;
   }
 
+  private static final FieldEquator fieldEquator = new FieldEquator();
+
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
@@ -133,7 +137,7 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
         .build();
 
     Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get().stream()
-        .filter(field -> !selectedFields.contains(field))
+        .filter(field -> !IterableUtils.contains(selectedFields, field, fieldEquator))
         .collect(Collectors.toSet());
 
     if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
