@@ -13,6 +13,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     String fieldName = dataFetchingEnvironment.getField().getName();
     Map<String, Object> dfeSource = dataFetchingEnvironment.getSource();
 
-    List<Map<String, Object>> keyRepresentationVariables = new ArrayList<>();
+    Map<String, Object> keyRepresentationVariables = new HashMap<>();
 
     // create representation variables from key directives
     String entityTypename = entityExtensionMetadata.getTypeName();
@@ -48,7 +49,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     if (CollectionUtils.isNotEmpty(keyDirectives)) {
       Map<String, Object> keyVarMap =
           createRepresentationWithForKeys(entityTypename, keyDirectives, dfeSource);
-      keyRepresentationVariables.add(keyVarMap);
+      keyRepresentationVariables.putAll(keyVarMap);
     } else {
       throw EntityFetchingException.builder()
           .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
@@ -61,7 +62,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     if (CollectionUtils.isNotEmpty(requiresFieldSet)) {
       Map<String, Object> requiredVarMap =
           createRepresentationForRequires(entityTypename, requiresFieldSet, dfeSource);
-      keyRepresentationVariables.add(requiredVarMap);
+      keyRepresentationVariables.putAll(requiredVarMap);
     }  // else ignore, use of @requires is optional
 
     List<InlineFragment> inlineFragments = new ArrayList<>();
@@ -71,7 +72,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
         EntityQuery.builder()
             .graphQLContext(graphQLContext)
             .inlineFragments(inlineFragments)
-            .variables(keyRepresentationVariables)
+            .variables(Collections.singletonList(keyRepresentationVariables))
             .build();
 
     QueryExecutor queryExecutor = entityExtensionMetadata.getServiceProvider();
