@@ -42,7 +42,7 @@ public class FederationMetadata {
 
   public boolean isFieldExternal(FieldCoordinates fieldCoordinates) {
     EntityMetadata entityMetadata = entitiesByTypename.get(fieldCoordinates.getTypeName());
-    return !entityMetadata.getFields().contains(fieldCoordinates.getFieldName());
+    return Objects.nonNull(entityMetadata) && !entityMetadata.getFields().contains(fieldCoordinates.getFieldName());
   }
 
   public void addEntity(EntityMetadata entityMetadata) {
