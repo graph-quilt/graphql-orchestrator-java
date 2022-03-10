@@ -1,4 +1,4 @@
-package com.intuit.graphql.orchestrator.federation.extendsdirective.exceptions;
+package com.intuit.graphql.orchestrator.federation.exceptions;
 
 import static java.lang.String.format;
 

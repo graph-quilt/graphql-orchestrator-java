@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.federation.keydirective.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
-import com.intuit.graphql.orchestrator.federation.requiresdirective.RequireValidator;
+import com.intuit.graphql.orchestrator.federation.validators.RequireValidator;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.lang3.StringUtils;
 
