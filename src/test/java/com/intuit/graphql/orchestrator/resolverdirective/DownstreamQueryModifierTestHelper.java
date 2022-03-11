@@ -25,11 +25,13 @@ import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 
 @Getter
-public class NoExternalFieldsTestHelper {
+public class DownstreamQueryModifierTestHelper {
 
   public static final String aSchema = "type Query { a1 : [AObjectType] a2 : String } "
       + "type AObjectType { af1 : String af2 : String } "
       + "extend type AObjectType { "
+      + "    id : String"
+      + "    reqdField : String"
       + "    b1 : BObjectType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b2 : BInterfaceType @resolver(field: \"b2\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b3 : BUnionType @resolver(field: \"b3\" arguments: [{name : \"id\", value: \"$af1\"}]) "
@@ -65,7 +67,7 @@ public class NoExternalFieldsTestHelper {
   private ServiceProvider testServiceA;
   private ServiceProvider testServiceB;
 
-  public NoExternalFieldsTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
+  public DownstreamQueryModifierTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
     Objects.requireNonNull(testServiceA);
     Objects.requireNonNull(testServiceB);
     this.testServiceA = testServiceA;

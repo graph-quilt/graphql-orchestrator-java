@@ -115,7 +115,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
             .map(field -> (serviceMetadata.shouldRemoveExternalFields())
-                        ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType())
+                        ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(), key.getFragmentsByName())
                         : field)
             .forEach(selectionSetBuilder::selection);
       }
@@ -144,7 +144,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
-          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition, parentType);
+          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition, parentType, key.getFragmentsByName());
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
         mergedFragmentDefinitions.putAll(finalServiceFragmentDefinitions);
@@ -263,14 +263,14 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    *
    * @param origFragmentDefinition original fragment definition
    * @param typeCondition type condition of the original fragment definition.  This will be used as
-   *                      the root type for {@link NoExternalReferenceSelectionSetModifier}
+   *                      the root type for {@link DownstreamQueryModifier}
    * @return a modified fragment definition
    */
   private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
-      GraphQLType typeCondition) {
+      GraphQLType typeCondition, Map<String, FragmentDefinition> fragmentsByName) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(typeCondition), serviceMetadata));
+        new DownstreamQueryModifier((GraphQLFieldsContainer) unwrapAll(typeCondition), serviceMetadata, fragmentsByName));
 
   }
 
@@ -298,13 +298,13 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    *
    * @param origField field to be processed.
    * @param fieldType the type of origField.  This will be used as the root type for {@link
-   * NoExternalReferenceSelectionSetModifier}
+   * DownstreamQueryModifier}
    * @return a modified field
    */
-  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType) {
+  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType, Map<String, FragmentDefinition> fragmentsByName) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (Field) AST_TRANSFORMER.transform(origField,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType), serviceMetadata));
+        new DownstreamQueryModifier((GraphQLFieldsContainer) unwrapAll(fieldType), serviceMetadata, fragmentsByName));
   }
 
   private GraphQLSchema getSchema(List<DataFetchingEnvironment> environments) {

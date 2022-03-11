@@ -1,12 +1,13 @@
 package com.intuit.graphql.orchestrator;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
+
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
 import graphql.language.Definition;
 import graphql.language.Document;
 import graphql.language.FragmentDefinition;
 import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
-import graphql.parser.Parser;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -24,8 +25,6 @@ import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
 public class TestHelper {
 
   public static final ObjectMapper TEST_MAPPER = new ObjectMapper();
-
-  private static final Parser parser = new Parser();
 
   private static final SchemaGenerator schemaGenerator = new SchemaGenerator();
 

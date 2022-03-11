@@ -1,11 +1,11 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
 import static graphql.schema.GraphQLTypeUtil.isLeaf;
 
 import graphql.language.OperationDefinition;
 import graphql.parser.InvalidSyntaxException;
-import graphql.parser.Parser;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLType;
@@ -51,7 +51,7 @@ public class ResolverArgumentQueryBuilder {
     query.append(StringUtils.repeat('}', parens + 1)); // + 1 to count for first open bracket
 
     try {
-      return new Parser().parseDocument(query.toString()).getDefinitionsOfType(OperationDefinition.class).get(0);
+      return parser.parseDocument(query.toString()).getDefinitionsOfType(OperationDefinition.class).get(0);
     } catch (InvalidSyntaxException e) {
       throw new NotAValidFieldReference(resolverField);
     }

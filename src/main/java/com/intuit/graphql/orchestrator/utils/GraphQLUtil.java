@@ -5,12 +5,9 @@ import static graphql.schema.GraphQLTypeUtil.unwrapOne;
 
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
-import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.ListType;
 import graphql.language.NonNullType;
-import graphql.language.OperationDefinition;
-import graphql.language.SelectionSet;
 import graphql.language.Type;
 import graphql.language.TypeName;
 import graphql.parser.Parser;
@@ -21,10 +18,6 @@ import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,6 +27,8 @@ import java.util.stream.Collectors;
  * methods in graphql-java's own GraphQlTypeUtil class.
  */
 public class GraphQLUtil {
+
+  public static final Parser parser = new Parser();
 
   private static final String ERR_CREATE_TYPE_UNEXPECTED_TYPE = "Failed to create Type due to "
       + "unexpected GraphQL Type %s";

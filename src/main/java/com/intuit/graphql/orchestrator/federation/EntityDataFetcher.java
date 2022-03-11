@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
+
 import com.intuit.graphql.orchestrator.batch.QueryExecutor;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
@@ -12,16 +14,20 @@ import graphql.language.TypeName;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
+/**
+ * This class is used for resolving fields added to an Entity by making an entity fetch request. To
+ * build the entity fetch query, it uses {@link EntityQuery}.
+ */
 @RequiredArgsConstructor
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
 
@@ -34,104 +40,60 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     String fieldName = dataFetchingEnvironment.getField().getName();
     Map<String, Object> dfeSource = dataFetchingEnvironment.getSource();
 
-    Set<String> requiredFields =
-        entityExtensionMetadata.getRequiredFields(fieldName).stream()
-            .filter(requiredFieldName -> !dfeSource.containsKey(requiredFieldName))
-            .collect(Collectors.toSet());
+    Map<String, Object> keyRepresentationVariables = new HashMap<>();
 
     // create representation variables from key directives
-    List<Map<String, Object>> keyRepresentationVariables = new ArrayList<>();
     String entityTypename = entityExtensionMetadata.getTypeName();
-    List<KeyDirectiveMetadata> keyDirectives = entityExtensionMetadata.getBaseEntityMetadata().getKeyDirectives();
-    keyRepresentationVariables.add(
-        createRepresentationWithKeys(entityTypename, keyDirectives, dfeSource));
-
-    // representation values may be taken from dfe.source() or from a remote service
-    return createFutureRepresentation(graphQLContext, keyRepresentationVariables, requiredFields)
-        .thenCompose(
-            representationMap -> {
-              List<InlineFragment> inlineFragments = new ArrayList<>();
-              inlineFragments.add(createEntityRequestInlineFragment(dataFetchingEnvironment));
-
-              EntityQuery entityQuery =
-                  EntityQuery.builder()
-                      .graphQLContext(graphQLContext)
-                      .inlineFragments(inlineFragments)
-                      .variables(representationMap)
-                      .build();
-
-              QueryExecutor queryExecutor = entityExtensionMetadata.getServiceProvider();
-              return queryExecutor
-                  .query(entityQuery.createExecutionInput(), graphQLContext)
-                  .thenApply(
-                      result -> {
-                        Map<String, Object> data = (Map<String, Object>) result.get("data");
-                        List<Map<String, Object>> _entities =
-                            (List<Map<String, Object>>) data.get("_entities");
-                        return _entities.get(0).get(fieldName);
-                      });
-            });
-  }
-
-  private CompletableFuture<List<Map<String, Object>>> createFutureRepresentation(
-      GraphQLContext graphQLContext,
-      List<Map<String, Object>> keyRepresentationVariables,
-      Set<String> requiredFields) {
-
-    if (CollectionUtils.isEmpty(requiredFields)) {
-      return CompletableFuture.completedFuture(keyRepresentationVariables);
+    List<KeyDirectiveMetadata> keyDirectives = entityExtensionMetadata.getKeyDirectives();
+    if (CollectionUtils.isNotEmpty(keyDirectives)) {
+      Map<String, Object> keyVarMap =
+          createRepresentationWithForKeys(entityTypename, keyDirectives, dfeSource);
+      keyRepresentationVariables.putAll(keyVarMap);
     } else {
-      EntityQuery entityQuery =
-          EntityQuery.builder()
-              .graphQLContext(graphQLContext)
-              .inlineFragments(Collections.singletonList(createInlineFragment(requiredFields)))
-              .variables(keyRepresentationVariables)
-              .build();
-
-      QueryExecutor queryExecutor = entityExtensionMetadata.getBaseServiceProvider();
-      return queryExecutor
-          .query(entityQuery.createExecutionInput(), graphQLContext)
-          .thenApply(
-              result -> {
-                Map<String, Object> data = (Map<String, Object>) result.get("data");
-                List<Map<String, Object>> _entities =
-                    (List<Map<String, Object>>) data.get("_entities");
-                for (String requiredField : requiredFields) {
-                  keyRepresentationVariables
-                      .get(0)
-                      .put(requiredField, _entities.get(0).get(requiredField));
-                }
-                return keyRepresentationVariables;
-              });
+      throw EntityFetchingException.builder()
+          .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
+          .fieldName(fieldName)
+          .parentTypeName(entityTypename)
+          .build();
     }
-  }
 
-  private InlineFragment createInlineFragment(Set<String> requiredFields) {
-    String entityTypeName = entityExtensionMetadata.getTypeName();
-    Field __typenameField =
-        Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
+    Set<Field> requiresFieldSet = entityExtensionMetadata.getRequiredFields(fieldName);
+    if (CollectionUtils.isNotEmpty(requiresFieldSet)) {
+      Map<String, Object> requiredVarMap =
+          createRepresentationForRequires(entityTypename, requiresFieldSet, dfeSource);
+      keyRepresentationVariables.putAll(requiredVarMap);
+    }  // else ignore, use of @requires is optional
 
-    SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
-    for (String requiredField : requiredFields) {
-      selectionSetBuilder.selection(new Field(requiredField)); // TODO a requireField may be complex
-    }
-    selectionSetBuilder.selection(__typenameField);
-    SelectionSet fieldSelectionSet = selectionSetBuilder.build();
+    List<InlineFragment> inlineFragments = new ArrayList<>();
+    inlineFragments.add(createEntityRequestInlineFragment(dataFetchingEnvironment));
 
-    InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
-    inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(entityTypeName).build());
-    inlineFragmentBuilder.selectionSet(fieldSelectionSet).build();
-    return inlineFragmentBuilder.build();
+    EntityQuery entityQuery =
+        EntityQuery.builder()
+            .graphQLContext(graphQLContext)
+            .inlineFragments(inlineFragments)
+            .variables(Collections.singletonList(keyRepresentationVariables))
+            .build();
+
+    QueryExecutor queryExecutor = entityExtensionMetadata.getServiceProvider();
+    return queryExecutor
+        .query(entityQuery.createExecutionInput(), graphQLContext)
+        .thenApply(
+            result -> {
+              // TODO transformer
+              Map<String, Object> data = (Map<String, Object>) result.get("data");
+              List<Map<String, Object>> _entities =
+                  (List<Map<String, Object>>) data.get("_entities");
+              return _entities.get(0).get(fieldName);
+            });
   }
 
   private InlineFragment createEntityRequestInlineFragment(DataFetchingEnvironment dfe) {
     String entityTypeName = entityExtensionMetadata.getTypeName();
     Field originalField = dfe.getField();
-    Field __typenameField =
-        Field.newField().name(Introspection.TypeNameMetaFieldDef.getName()).build();
 
     SelectionSet fieldSelectionSet = dfe.getField().getSelectionSet();
     if (fieldSelectionSet != null) {
+      // is an object
       fieldSelectionSet =
           fieldSelectionSet.transform(builder -> builder.selection(__typenameField));
     }
@@ -149,7 +111,7 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     return inlineFragmentBuilder.build();
   }
 
-  private Map<String, Object> createRepresentationWithKeys(
+  private Map<String, Object> createRepresentationWithForKeys(
       String entityTypeName,
       List<KeyDirectiveMetadata> keyDirectives,
       Map<String, Object> dataSource) {
@@ -159,10 +121,23 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
     // this might be a subset of entity keys
     if (CollectionUtils.isNotEmpty(keyDirectives)) {
       keyDirectives.stream()
-          .flatMap(keyDirectiveMetadata -> keyDirectiveMetadata.getKeyFieldNames().stream())
+          .map(KeyDirectiveMetadata::getFieldSet)
+          .flatMap(Collection::stream)
           .forEach(
-              keyFieldName -> entityRepresentation.put(keyFieldName, dataSource.get(keyFieldName)));
+              field -> entityRepresentation.put(field.getName(), dataSource.get(field.getName())));
     }
+
+    return entityRepresentation;
+  }
+
+  private Map<String, Object> createRepresentationForRequires(
+      String entityTypename, Set<Field> requiresFieldSet, Map<String, Object> dfeSource) {
+    Map<String, Object> entityRepresentation = new HashMap<>();
+    entityRepresentation.put(Introspection.TypeNameMetaFieldDef.getName(), entityTypename);
+
+    requiresFieldSet.stream()
+        .map(Field::getName)
+        .forEach(fieldName -> entityRepresentation.put(fieldName, dfeSource.get(fieldName)));
 
     return entityRepresentation;
   }
