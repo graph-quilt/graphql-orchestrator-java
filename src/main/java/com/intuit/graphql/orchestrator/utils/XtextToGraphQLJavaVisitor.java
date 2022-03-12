@@ -75,8 +75,11 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   public final Map<String, GraphQLDirective> directiveDefinitions;
 
   static {
-    STANDARD_SCALAR_TYPES = ScalarInfo.STANDARD_SCALARS.stream()
+    STANDARD_SCALAR_TYPES = ScalarInfo.GRAPHQL_SPECIFICATION_SCALARS.stream()
         .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity()));
+
+    STANDARD_SCALAR_TYPES.putAll(ExtendedScalarsSupport.GRAPHQL_EXTENDED_SCALARS.stream()
+        .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity())));
   }
 
   private XtextToGraphQLJavaVisitor(Builder builder) {

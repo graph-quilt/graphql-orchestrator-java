@@ -37,7 +37,7 @@
     <awssdk2.version>2.7.2</awssdk2.version>
     <graphql-sdl-version>3.0.0</graphql-sdl-version>
     <xtextVersion>2.25.0</xtextVersion>
-    <graphQLVersion>14.1</graphQLVersion>
+    <graphQLVersion>15.0</graphQLVersion>
   </properties>
 
   <profiles>
@@ -119,7 +119,11 @@
       <artifactId>graphql-java</artifactId>
       <version>${graphQLVersion}</version>
     </dependency>
-
+    <dependency>
+      <groupId>com.graphql-java</groupId>
+      <artifactId>graphql-java-extended-scalars</artifactId>
+      <version>17.0</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
