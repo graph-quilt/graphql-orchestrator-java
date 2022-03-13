@@ -7,12 +7,15 @@ import graphql.ExecutionInput
 import graphql.GraphQLContext
 import graphql.execution.AsyncExecutionStrategy
 import graphql.execution.ExecutionIdProvider
+import graphql.parser.Parser
 import groovy.json.JsonSlurper
 import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
 class BaseIntegrationTestSpecification extends Specification {
+
+    public static final Parser PARSER = new Parser();
 
     def createMockGraphQLServiceProvider(String namespace, String sdl, String response) {
         createMockServiceProvider(namespace, ServiceProvider.ServiceType.GRAPHQL, sdl, response)
