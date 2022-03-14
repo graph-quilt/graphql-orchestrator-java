@@ -1,6 +1,9 @@
 package com.intuit.graphql.orchestrator;
 
+import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
+import graphql.ExecutionInput;
+import graphql.GraphQLContext;
 import graphql.language.Definition;
 import graphql.language.Document;
 import graphql.language.FragmentDefinition;
@@ -15,6 +18,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -109,6 +113,26 @@ public class TestHelper {
 
   public static XtextResourceSet toXtextResourceSet(String string) {
     return XtextResourceSetBuilder.newBuilder().file("foo", string).build();
+  }
+
+  public static class DefaultTestServiceProvider implements ServiceProvider {
+
+    @Override
+    public String getNameSpace() {
+      return "DefaultTestService";
+    }
+
+    @Override
+    public Map<String, String> sdlFiles() {
+      return ImmutableMap.of("schema.graphqls", "type Query { s: String }");
+    }
+
+    @Override
+    public CompletableFuture<Map<String, Object>> query(ExecutionInput executionInput,
+        GraphQLContext context) {
+      return CompletableFuture
+          .completedFuture(ImmutableMap.of("data", ImmutableMap.of("s", "hello")));
+    }
   }
 
 }
