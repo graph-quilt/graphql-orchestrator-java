@@ -16,6 +16,7 @@ import graphql.execution.AsyncExecutionStrategy;
 import graphql.execution.ExecutionIdProvider;
 import graphql.execution.ExecutionStrategy;
 import graphql.language.Document;
+import graphql.schema.validation.InvalidSchemaException;
 import java.math.BigDecimal;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
@@ -61,7 +62,7 @@ public class GraphQLOrchestratorTest {
     }
   };
 
-  @Test
+  @Test(expected = InvalidSchemaException.class)
   public void testBuilder() {
     final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator();
     assertThatThrownBy(() -> baseBuilder.queryExecutionStrategy(null))
