@@ -279,7 +279,7 @@ public class GraphQLOrchestratorTest {
   public void canQueryToplevelWithResultTypeOfBaseInterface() throws Exception {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, new StarWarsService());
-    assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
+    assertThat(orchestrator.getSchema().isSupportingMutations()).isFalse();
 
     // Test query using ExecutionInput
     ExecutionInput executionInput = ExecutionInput
@@ -305,7 +305,7 @@ public class GraphQLOrchestratorTest {
 
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
-    assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
+    assertThat(orchestrator.getSchema().isSupportingMutations()).isFalse();
 
     // Test query using ExecutionInput
     ExecutionInput executionInput = ExecutionInput
@@ -330,7 +330,7 @@ public class GraphQLOrchestratorTest {
 
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
-    assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
+    assertThat(orchestrator.getSchema().isSupportingMutations()).isFalse();
 
     // Test query using ExecutionInput
     ExecutionInput executionInput = ExecutionInput
