@@ -65,8 +65,9 @@ class DirectivesOnVariableDefinitionSpec extends Specification {
         String actualDownstreamQuery = actualExecutionInputArgument.getQuery()
         def document = BaseIntegrationTestSpecification.PARSER.parseDocument(actualDownstreamQuery)
         OperationDefinition operationDef  = document.getDefinitions().get(0)
-        Directive directive = operationDef.getVariableDefinitions().get(0).getDirective("directiveOnVar")
-        directive != null
+        List<Directive> actualDirectives = operationDef.getVariableDefinitions().get(0)
+                .getDirectives("directiveOnVar")
+        actualDirectives.size() == 1
     }
 
 }
