@@ -30,6 +30,7 @@ public class FieldResolverDirectiveTestHelper {
   public static final String aSchema = "type Query { a1 : [AObjectType] a2 : String } "
       + "type AObjectType { af1 : String af2 : String } "
       + "extend type AObjectType { "
+      + "    reqdField : String"
       + "    b1 : BObjectType @resolver(field: \"b1\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b2 : BInterfaceType @resolver(field: \"b2\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b3 : BUnionType @resolver(field: \"b3\" arguments: [{name : \"id\", value: \"$af1\"}]) "

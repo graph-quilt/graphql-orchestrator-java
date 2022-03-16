@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import lombok.Getter;
@@ -136,14 +137,11 @@ public class XtextGraph implements ServiceMetadata {
   }
 
   @Override
-  public boolean hasResolverDirective(FieldCoordinates fieldCoordinates) {
-    TypeMetadata typeMetadata = this.typeMetadatas.get(fieldCoordinates.getTypeName());
-    return typeMetadata.hasResolverDirective(fieldCoordinates.getFieldName());
-  }
-
-  @Override
   public FieldResolverContext getFieldResolverContext(FieldCoordinates fieldCoordinates) {
     TypeMetadata typeMetadata = this.typeMetadatas.get(fieldCoordinates.getTypeName());
+    if (Objects.isNull(typeMetadata)) {
+      return null;
+    }
     return typeMetadata.getFieldResolverContext(fieldCoordinates.getFieldName());
   }
 

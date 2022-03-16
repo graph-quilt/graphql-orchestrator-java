@@ -79,6 +79,7 @@ public class FieldResolverContext {
       this.serviceNamespace = copy.getServiceNamespace();
       this.targetFieldContext = copy.getTargetFieldContext();
       this.targetFieldDefinition = copy.getTargetFieldDefinition();
+      this.requiredFields = copy.getRequiredFields();
     }
 
     public FieldResolverContext.Builder fieldDefinition(FieldDefinition fieldDefinition) {

@@ -26,7 +26,5 @@ public interface ServiceMetadata {
 
   ServiceProvider getServiceProvider();
 
-  boolean hasResolverDirective(FieldCoordinates fieldCoordinates);
-
   FieldResolverContext getFieldResolverContext(FieldCoordinates fieldCoordinates);
 }
