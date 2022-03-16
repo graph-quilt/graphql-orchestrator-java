@@ -6,8 +6,9 @@ import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATI
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.typeContainsDirective;
 
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -28,7 +29,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 public class FederationTransformerPreMerge implements Transformer<XtextGraph, XtextGraph> {
     RequireValidator requireValidator = new RequireValidator();
@@ -42,11 +46,14 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
 
         FederationMetadata federationMetadata = new FederationMetadata(source);
         Map<String, TypeDefinition> entitiesByTypename = new HashMap<>();
-        Map<String, TypeDefinition> entityExtensionsByTypename = new HashMap<>();
+        Map<String, EObject> entityExtensionsByTypename = new HashMap<>();
 
-        source.getTypes().values().stream()
-            .filter(typeDefinition -> typeContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
-            .forEach(typeDefinition -> {
+        Stream.concat(
+                source.getTypes().values().stream(),
+                source.getEntityExtensionDefinitionsByName().values().stream()
+        ).filter(typeDefinition -> definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+        .forEach(typeDefinition -> {
+                String typeDefinitionName = getTypeDefinitionName(typeDefinition);
                 List<KeyDirectiveMetadata> keyDirectives = new ArrayList<>();
                 getDirectivesWithNameFromDefinition(typeDefinition, FEDERATION_KEY_DIRECTIVE).forEach(directive -> {
                     keyDirectiveValidator.validate(source, typeDefinition, directive.getArguments());
@@ -54,22 +61,22 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
                 });
 
                 if (isBaseType(typeDefinition)) {
-                    entitiesByTypename.put(typeDefinition.getName(), typeDefinition);
+                    entitiesByTypename.put(typeDefinitionName, (TypeDefinition) typeDefinition);
                     federationMetadata.addEntity(FederationMetadata.EntityMetadata.builder()
-                        .typeName(typeDefinition.getName())
+                        .typeName(typeDefinitionName)
                         .keyDirectives(keyDirectives)
                         .federationMetadata(federationMetadata)
                         .fields(FederationMetadata.EntityMetadata.getFieldsFrom(typeDefinition))
                         .build());
                 } else {
                     EntityExtensionMetadata entityExtensionMetadata = EntityExtensionMetadata.builder()
-                        .typeName(typeDefinition.getName())
+                        .typeName(typeDefinitionName)
                         .keyDirectives(keyDirectives)
                         .requiredFieldsByFieldName(getRequiredFields(typeDefinition))
                         .federationMetadata(federationMetadata)
                         .build();
                     source.addToEntityExtensionMetadatas(entityExtensionMetadata);
-                    entityExtensionsByTypename.put(typeDefinition.getName(), typeDefinition);
+                    entityExtensionsByTypename.put(typeDefinitionName, typeDefinition);
                     federationMetadata.addEntityExtension(entityExtensionMetadata);
                 }
                 validateFieldDefinitions(source, typeDefinition);
@@ -77,7 +84,7 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
 
         source.addFederationMetadata(federationMetadata);
 
-        Map<String, Map<String, TypeDefinition>> entityExtensionByNamespace = new HashMap<>();
+        Map<String, Map<String, EObject>> entityExtensionByNamespace = new HashMap<>();
         entityExtensionByNamespace.put(source.getServiceProvider().getNameSpace(), entityExtensionsByTypename);
         return source.transform(builder -> builder
                 .entitiesByTypeName(entitiesByTypename)
@@ -85,7 +92,7 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
         );
     }
 
-    private void validateFieldDefinitions(XtextGraph source, TypeDefinition typeDefinition) {
+    private void validateFieldDefinitions(XtextGraph source, EObject typeDefinition) {
         getFieldDefinitions(typeDefinition, true)
         .stream()
         .map(fieldDefinition -> getDirectivesWithNameFromDefinition(fieldDefinition, FED_FIELD_DIRECTIVE_NAMES_SET ))
@@ -97,7 +104,7 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
         });
     }
 
-    private Map<String, Set<Field>> getRequiredFields(TypeDefinition entityDefinition) {
+    private Map<String, Set<Field>> getRequiredFields(EObject entityDefinition) {
         Map<String, Set<Field>> output = new HashMap<>();
         getFieldDefinitions(entityDefinition).stream()
             .filter(fieldDefinition -> !containsExternalDirective(fieldDefinition))

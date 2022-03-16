@@ -93,25 +93,42 @@ public class XtextTypeUtils {
     return false;
   }
 
-  public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition) {
+  public static List<FieldDefinition> getFieldDefinitions(EObject typeDefinition) {
     return getFieldDefinitions(typeDefinition, false);
   }
 
-  public static List<FieldDefinition> getFieldDefinitions(TypeDefinition typeDefinition, boolean defaultList) {
+  public static List<FieldDefinition> getFieldDefinitions(EObject typeDefinition, boolean defaultList) {
     if (typeDefinition instanceof InterfaceTypeDefinition) {
       return ((InterfaceTypeDefinition)typeDefinition).getFieldDefinition();
     }
     if (typeDefinition instanceof ObjectTypeDefinition) {
       return ((ObjectTypeDefinition)typeDefinition).getFieldDefinition();
     }
+    if (typeDefinition instanceof ObjectTypeExtensionDefinition) {
+      return ((ObjectTypeExtensionDefinition) typeDefinition).getFieldDefinition();
+    }
+    if (typeDefinition instanceof InterfaceTypeExtensionDefinition) {
+      return ((InterfaceTypeExtensionDefinition) typeDefinition).getFieldDefinition();
+    }
 
     if(defaultList) {
       return new ArrayList<>();
     } else {
       String errorMessage = format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
-              typeDefinition.getName(), typeDefinition.getClass().getName());
+              getTypeDefinitionName(typeDefinition), typeDefinition.getClass().getName());
       throw new IllegalArgumentException(errorMessage);
     }
+  }
+
+  public static String getTypeDefinitionName(EObject typeDefinition) {
+    if (typeDefinition instanceof TypeExtensionDefinition) {
+      return ((TypeExtensionDefinition) typeDefinition).getName();
+    }
+    if (typeDefinition instanceof TypeDefinition) {
+      return ((TypeDefinition) typeDefinition).getName();
+    }
+
+    throw new IllegalArgumentException(format("Failed to get type name for typeInstance=%s", typeDefinition.getClass().getName()));
   }
 
   public static boolean compareTypes(NamedType lType, NamedType rType) {
@@ -276,12 +293,12 @@ public class XtextTypeUtils {
     return compatible;
   }
 
-  public static boolean isObjectTypeDefinition(TypeDefinition typeDefinition) {
-    return Objects.nonNull(typeDefinition) && typeDefinition instanceof ObjectTypeDefinition;
+  public static boolean isObjectTypeDefinition(EObject typeDefinition) {
+    return Objects.nonNull(typeDefinition) && (typeDefinition instanceof ObjectTypeDefinition || typeDefinition instanceof ObjectTypeExtensionDefinition);
   }
 
-  public static boolean isInterfaceTypeDefinition(TypeDefinition typeDefinition) {
-    return Objects.nonNull(typeDefinition) && typeDefinition instanceof InterfaceTypeDefinition;
+  public static boolean isInterfaceTypeDefinition(EObject typeDefinition) {
+    return Objects.nonNull(typeDefinition) && (typeDefinition instanceof InterfaceTypeDefinition || typeDefinition instanceof InterfaceTypeExtensionDefinition);
 
   }
 }

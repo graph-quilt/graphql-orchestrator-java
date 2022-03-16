@@ -4,6 +4,7 @@ import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATI
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_TYPE_DIRECTIVES_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 public class FederationUtils {
     private FederationUtils(){}
@@ -38,11 +40,9 @@ public class FederationUtils {
             || FED_FIELD_DIRECTIVE_NAMES_SET.contains(directiveName);
     }
 
-    public static boolean isBaseType(TypeDefinition typeDefinition) {
+    public static boolean isBaseType(EObject typeDefinition) {
         return !(typeDefinition instanceof ObjectTypeExtensionDefinition || typeDefinition instanceof InterfaceTypeExtensionDefinition) &&
-                typeDefinition.getDirectives().stream()
-                .map(directive -> directive.getDefinition().getName())
-                .noneMatch(name -> StringUtils.equals(FEDERATION_EXTENDS_DIRECTIVE, name));
+                !definitionContainsDirective(typeDefinition, FEDERATION_EXTENDS_DIRECTIVE);
     }
 
     public static String getUniqueIdFromFieldSet(String fieldSet) {

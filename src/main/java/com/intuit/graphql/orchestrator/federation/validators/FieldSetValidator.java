@@ -12,6 +12,7 @@ import graphql.language.SelectionSet;
 import graphql.parser.Parser;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,14 +20,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
 
 public class FieldSetValidator {
 
-    public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, String fieldSet, String originatingDirective) {
+    public void validate(XtextGraph sourceGraph, EObject typeDefinition, String fieldSet, String originatingDirective) {
         Objects.requireNonNull(sourceGraph);
         Objects.requireNonNull(typeDefinition);
         if(StringUtils.isBlank(fieldSet)) {
-            throw new EmptyFieldsArgumentFederationDirective(typeDefinition.getName(), originatingDirective);
+            throw new EmptyFieldsArgumentFederationDirective(getTypeDefinitionName(typeDefinition), originatingDirective);
         }
 
         if(!fieldSet.startsWith("{")) {
@@ -44,7 +46,7 @@ public class FieldSetValidator {
         for( final OperationDefinition definition : definitions) {
             List<Field> fields = definition.getSelectionSet().getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
             for(Field field : fields) {
-                checkFieldReferenceRecursively(sourceGraph,typeDefinition.getName(), typeFieldDefinitions, field);
+                checkFieldReferenceRecursively(sourceGraph,getTypeDefinitionName(typeDefinition), typeFieldDefinitions, field);
             }
         }
     }

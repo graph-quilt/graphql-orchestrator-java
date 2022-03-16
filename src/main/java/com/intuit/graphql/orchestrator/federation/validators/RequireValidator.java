@@ -8,18 +8,20 @@ import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveA
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 import java.util.List;
 import java.util.Optional;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_FIELDS_ARGUMENT;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
 
 public class RequireValidator {
     private final FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
-    public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, Directive requireDirective) {
-        String containerName = typeDefinition.getName();
+    public void validate(XtextGraph sourceGraph, EObject typeDefinition, Directive requireDirective) {
+        String containerName = getTypeDefinitionName(typeDefinition);
 
         checkDirectivesArgumentSize(requireDirective.getArguments(), containerName);
 

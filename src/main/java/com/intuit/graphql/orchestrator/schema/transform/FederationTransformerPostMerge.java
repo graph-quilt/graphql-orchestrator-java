@@ -15,6 +15,7 @@ import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,8 +28,10 @@ import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATI
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDefinitionDirectives;
 import static java.lang.String.format;
 
 public class FederationTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
@@ -73,7 +76,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
     return xtextGraph.getEntityExtensionsByNamespace().get(serviceNamespace).values().stream()
         .map(
             entityTypeExtension -> {
-              String entityTypename = entityTypeExtension.getName();
+              String entityTypename = getTypeDefinitionName(entityTypeExtension);
               TypeDefinition entityBaseType = getBaseEntity(xtextGraph, entityTypename, serviceNamespace);
 
               return EntityMergingContext.builder()
@@ -95,7 +98,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
 
   private void validateBaseExtensionCompatibility(EntityMergingContext entityMergingContext) {
       TypeDefinition baseType = entityMergingContext.getBaseType();
-      TypeDefinition typeExtension = entityMergingContext.getTypeExtension();
+      EObject typeExtension = entityMergingContext.getTypeExtension();
 
       // specification: directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
       if (!(isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)
@@ -109,7 +112,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
                           entityMergingContext.getServiceNamespace()));
       }
 
-      typeExtension.getDirectives().forEach(directive -> {
+      getDefinitionDirectives(typeExtension).forEach(directive -> {
           String directiveName = directive.getDefinition().getName();
           if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
               keyDirectiveValidator.validatePostMerge(entityMergingContext);

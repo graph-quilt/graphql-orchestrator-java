@@ -8,14 +8,21 @@ import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
 import com.intuit.graphql.graphQL.UnionTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.util.GraphQLSwitch;
+import com.intuit.graphql.orchestrator.utils.FederationConstants;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.resource.XtextResourceSet;
+
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 
 public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGraph> {
 
@@ -25,7 +32,16 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
     TypeDefinitionVisitor typeDefinitionVisitor = new TypeDefinitionVisitor(xtextGraph.getXtextResourceSet());
     XtextUtils.getAllTypes(xtextGraph.getXtextResourceSet()).forEach(typeDefinitionVisitor::doSwitch);
     //TODO: Maybe remove extension Types form resourceSet??
-    return xtextGraph;
+    if(xtextGraph.isFederationService()) {
+        return xtextGraph.transform(builder -> builder.entityExtensionDefinitionsByName(
+                XtextUtils.getAllTypeExtensions(xtextGraph.getXtextResourceSet())
+                        .filter(ObjectTypeExtensionDefinition.class::isInstance)
+                        .filter(typeExtensionDefinition ->  definitionContainsDirective(typeExtensionDefinition, FederationConstants.FEDERATION_KEY_DIRECTIVE))
+                        .collect(Collectors.toMap(TypeExtensionDefinition::getName, Function.identity()))
+        ));
+    } else {
+        return xtextGraph;
+    }
   }
 
   class TypeDefinitionVisitor extends GraphQLSwitch<EObject> {
@@ -38,8 +54,7 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
 
     @Override
     public EObject caseObjectTypeDefinition(ObjectTypeDefinition object) {
-
-      XtextUtils.getAllTypeExtension(object.getName(), ObjectTypeExtensionDefinition.class, this.xtextResourceSet)
+      XtextUtils.getAllTypeExtensionForName(object.getName(), ObjectTypeExtensionDefinition.class, this.xtextResourceSet)
           .forEach(typeExtension -> {
 
                 object.getFieldDefinition().addAll(typeExtension.getFieldDefinition());
@@ -64,7 +79,7 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
     @Override
     public EObject caseInputObjectTypeDefinition(InputObjectTypeDefinition object) {
 
-      XtextUtils.getAllTypeExtension(object.getName(), InputObjectTypeExtensionDefinition.class, this.xtextResourceSet)
+      XtextUtils.getAllTypeExtensionForName(object.getName(), InputObjectTypeExtensionDefinition.class, this.xtextResourceSet)
           .forEach(typeExtension -> {
                 object.getInputValueDefinition().addAll(typeExtension.getInputValueDefinition());
                 object.getDirectives().addAll(typeExtension.getDirectives());
@@ -76,7 +91,7 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
 
     @Override
     public EObject caseEnumTypeDefinition(EnumTypeDefinition object) {
-      XtextUtils.getAllTypeExtension(object.getName(), EnumTypeExtensionDefinition.class, this.xtextResourceSet)
+      XtextUtils.getAllTypeExtensionForName(object.getName(), EnumTypeExtensionDefinition.class, this.xtextResourceSet)
           .forEach(typeExtension -> {
             object.getEnumValueDefinition().addAll(typeExtension.getEnumValueDefinition());
             object.getDirectives().addAll(typeExtension.getDirectives());
@@ -87,7 +102,7 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
 
     @Override
     public EObject caseInterfaceTypeDefinition(InterfaceTypeDefinition object) {
-      XtextUtils.getAllTypeExtension(object.getName(), InterfaceTypeExtensionDefinition.class, this.xtextResourceSet)
+      XtextUtils.getAllTypeExtensionForName(object.getName(), InterfaceTypeExtensionDefinition.class, this.xtextResourceSet)
           .forEach(typeExtension -> {
             object.getFieldDefinition().addAll(typeExtension.getFieldDefinition());
             object.getDirectives().addAll(typeExtension.getDirectives());
@@ -98,15 +113,12 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
     @Override
     public EObject caseUnionTypeDefinition(UnionTypeDefinition object) {
 
-      XtextUtils.getAllTypeExtension(object.getName(), UnionTypeExtensionDefinition.class, this.xtextResourceSet)
+      XtextUtils.getAllTypeExtensionForName(object.getName(), UnionTypeExtensionDefinition.class, this.xtextResourceSet)
           .forEach(typeExtension -> {
 
-            if (Objects.nonNull(typeExtension.getUnionMemberShip()) && Objects
-                .nonNull(typeExtension.getUnionMemberShip().getUnionMembers())) {
-              if (Objects.nonNull(object.getUnionMemberShip()) && Objects
-                  .nonNull(object.getUnionMemberShip().getUnionMembers())) {
-                object.getUnionMemberShip().getUnionMembers().getNamedUnion()
-                    .addAll(typeExtension.getUnionMemberShip().getUnionMembers().getNamedUnion());
+            if (Objects.nonNull(typeExtension.getUnionMemberShip()) && Objects.nonNull(typeExtension.getUnionMemberShip().getUnionMembers())) {
+              if (Objects.nonNull(object.getUnionMemberShip()) && Objects.nonNull(object.getUnionMemberShip().getUnionMembers())) {
+                object.getUnionMemberShip().getUnionMembers().getNamedUnion().addAll(typeExtension.getUnionMemberShip().getUnionMembers().getNamedUnion());
               } else {
                 object.setUnionMemberShip(typeExtension.getUnionMemberShip());
               }

@@ -10,6 +10,7 @@ import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflic
 import com.intuit.graphql.orchestrator.utils.FederationUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,14 +18,15 @@ import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_FIELDS_ARGUMENT;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
 import static java.lang.String.format;
 
 public class KeyDirectiveValidator {
   private final FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
-  public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, List<Argument> argumentList) {
-    String containerName = typeDefinition.getName();
+  public void validate(XtextGraph sourceGraph, EObject typeDefinition, List<Argument> argumentList) {
+    String containerName = getTypeDefinitionName(typeDefinition);
 
     validateKeyArgumentSize(argumentList, containerName);
 

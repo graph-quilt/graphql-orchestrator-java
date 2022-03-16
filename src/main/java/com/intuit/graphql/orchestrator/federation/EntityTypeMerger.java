@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import lombok.Builder;
 import lombok.Getter;
+import org.eclipse.emf.ecore.EObject;
 
 public class EntityTypeMerger {
 
@@ -39,6 +40,6 @@ public class EntityTypeMerger {
     private final String typename;
     private final String serviceNamespace;
     private final TypeDefinition baseType;
-    private final TypeDefinition typeExtension;
+    private final EObject typeExtension;
   }
 }

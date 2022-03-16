@@ -5,6 +5,7 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.OperationTypeDefinition;
 import com.intuit.graphql.graphQL.SchemaDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -171,7 +172,7 @@ public class XtextUtils {
    * @param <T> generic type that is sub class of {@link TypeExtensionDefinition} to return
    * @return stream of TypeExtensionDefinitions for the given resource set
    */
-  public static <T extends TypeExtensionDefinition> Stream<T> getAllTypeExtension(
+  public static <T extends TypeExtensionDefinition> Stream<T> getAllTypeExtensionForName(
       String name, Class<T> type, @NonNull XtextResourceSet set) {
     return getAllContentsOfType(type, set) //TODO: check this method (domain-types edge case) & getAllTypes.
         .filter(extensionDefinition -> StringUtils.endsWith(extensionDefinition.getName(), name));
@@ -185,6 +186,10 @@ public class XtextUtils {
    */
   public static Stream<TypeDefinition> getAllTypes(@NonNull XtextResourceSet set) {
     return getTypeSystemDefinition(set).map(TypeSystemDefinition::getType).filter(Objects::nonNull);
+  }
+
+  public static Stream<TypeExtensionDefinition> getAllTypeExtensions(@NonNull XtextResourceSet set) {
+    return getTypeSystemDefinition(set).map(TypeSystemDefinition::getTypeExtension).filter(Objects::nonNull);
   }
 
   /**
@@ -254,19 +259,16 @@ public class XtextUtils {
         : String.format(XTEXT_TYPE_FORMAT, XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
   }
 
-  public static boolean typeContainsDirective(TypeDefinition typeDefinition, String directiveName) {
-    return typeDefinition.getDirectives().stream()
-            .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
-  }
-
   public static List<Directive> getDefinitionDirectives(EObject definition) {
     if(definition instanceof TypeDefinition) {
       return ((TypeDefinition) definition).getDirectives();
     } else if(definition instanceof FieldDefinition) {
       return ((FieldDefinition) definition).getDirectives();
+    } else if(definition instanceof TypeExtensionDefinition) {
+      return ((TypeExtensionDefinition) definition).getDirectives();
     }
 
-    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
+    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition or TypeExtensionDefinition", definition.getClass().getName()));
   }
 
   public static boolean definitionContainsDirective(EObject definition, String directiveName) {

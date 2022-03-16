@@ -17,6 +17,7 @@ import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import org.eclipse.emf.ecore.EObject;
 
 /**
  * This class holds the metadata for the usage of federation specs in a given {@link
@@ -77,7 +78,7 @@ public class FederationMetadata {
     @NonNull private final Set<String> fields;
     @NonNull private final FederationMetadata federationMetadata;
 
-    public static Set<String> getFieldsFrom(TypeDefinition entityDefinition) {
+    public static Set<String> getFieldsFrom(EObject entityDefinition) {
       Set<String> output = new HashSet<>(); // make sure HashSet is used
       getFieldDefinitions(entityDefinition).stream()
           .map(FieldDefinition::getName)

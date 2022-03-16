@@ -21,8 +21,6 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.graphQL.impl.ArgumentImpl;
-import com.intuit.graphql.orchestrator.ServiceProvider;
-import com.intuit.graphql.orchestrator.TestServiceProvider;
 import com.intuit.graphql.orchestrator.federation.exceptions.ExternalFieldNotFoundInBaseException;
 import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
@@ -33,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.emf.ecore.EObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +55,7 @@ public class FederationTransformerPostMergeTest {
   public void setup() {
     Map<String, TypeDefinition> entitiesByTypeName = new HashMap<>();
 
-    Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    Map<String, Map<String, EObject>> entityExtensionsByNamespace = new HashMap<>();
     ObjectTypeDefinition baseObjectType =
             buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION));
     entitiesByTypeName.put("EntityType", baseObjectType);
@@ -79,9 +78,9 @@ public class FederationTransformerPostMergeTest {
 
   @Test
   public void transform_success_extension_key_in_subset() {
-    HashMap<String, Map<String, TypeDefinition>> extensionsByNamespace = new HashMap<>();
+    HashMap<String, Map<String, EObject>> extensionsByNamespace = new HashMap<>();
 
-    HashMap<String, TypeDefinition> extDefinitionsByName = new HashMap<>();
+    HashMap<String, EObject> extDefinitionsByName = new HashMap<>();
     HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
 
     Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
@@ -112,9 +111,9 @@ public class FederationTransformerPostMergeTest {
   @Test(expected = TypeConflictException.class)
   public void transform_fails_extension_key_not_subset() {
 
-    HashMap<String, Map<String, TypeDefinition>> extensionsByNamespace = new HashMap<>();
+    HashMap<String, Map<String, EObject>> extensionsByNamespace = new HashMap<>();
 
-    HashMap<String, TypeDefinition> extDefinitionsByName = new HashMap<>();
+    HashMap<String, EObject> extDefinitionsByName = new HashMap<>();
     HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
 
     Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
@@ -144,7 +143,7 @@ public class FederationTransformerPostMergeTest {
 
   @Test(expected = SharedOwnershipException.class)
   public void transform_fails_shared_field_without_external(){
-    Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    Map<String, Map<String, EObject>> entityExtensionsByNamespace = new HashMap<>();
 
     ObjectTypeDefinition objectTypeExtension =
             buildObjectTypeDefinition("EntityType", singletonList(buildFieldDefinition("testField1")));
@@ -160,7 +159,7 @@ public class FederationTransformerPostMergeTest {
 
   @Test(expected = ExternalFieldNotFoundInBaseException.class)
   public void transform_fails_external_field_not_in_base(){
-    Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    Map<String, Map<String, EObject>> entityExtensionsByNamespace = new HashMap<>();
 
     ObjectTypeDefinition objectTypeExtension = buildObjectTypeDefinition("EntityType",
                     Arrays.asList(EXTENSION_FIELD_DEFINITION, buildFieldDefinition("BadField", singletonList(buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null)))));
