@@ -10,8 +10,10 @@ import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import graphql.schema.FieldCoordinates;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -38,6 +40,7 @@ public class XtextGraph implements ServiceMetadata {
   private final Map<FieldContext, ArgumentsDefinition> resolverArgumentFields;
   private final Set<DirectiveDefinition> directives;
   private final Map<String, TypeDefinition> types;
+  private final Map<String, TypeMetadata> typeMetadatas;
   private final List<FieldResolverContext> fieldResolverContexts;
 
   private final boolean hasInterfaceOrUnion;
@@ -60,6 +63,7 @@ public class XtextGraph implements ServiceMetadata {
     codeRegistry = builder.codeRegistry;
     directives = builder.directives;
     types = builder.types;
+    typeMetadatas = builder.typeMetadatas;
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
     resolverArgumentFields = builder.resolverArgumentFields;
@@ -89,6 +93,7 @@ public class XtextGraph implements ServiceMetadata {
     builder.codeRegistry = copy.getCodeRegistry();
     builder.directives = copy.getDirectives();
     builder.types = copy.getTypes();
+    builder.typeMetadatas = copy.getTypeMetadatas();
     builder.hasInterfaceOrUnion = copy.hasInterfaceOrUnion;
     builder.hasFieldResolverDefinition = copy.hasFieldResolverDefinition;
     builder.resolverArgumentFields = copy.resolverArgumentFields;
@@ -128,6 +133,18 @@ public class XtextGraph implements ServiceMetadata {
   @Override
   public boolean hasFieldResolverDirective() {
     return hasFieldResolverDefinition;
+  }
+
+  @Override
+  public boolean hasResolverDirective(FieldCoordinates fieldCoordinates) {
+    TypeMetadata typeMetadata = this.typeMetadatas.get(fieldCoordinates.getTypeName());
+    return typeMetadata.hasResolverDirective(fieldCoordinates.getFieldName());
+  }
+
+  @Override
+  public FieldResolverContext getFieldResolverContext(FieldCoordinates fieldCoordinates) {
+    TypeMetadata typeMetadata = this.typeMetadatas.get(fieldCoordinates.getTypeName());
+    return typeMetadata.getFieldResolverContext(fieldCoordinates.getFieldName());
   }
 
   /**
@@ -226,6 +243,7 @@ public class XtextGraph implements ServiceMetadata {
     private Map<FieldContext, ArgumentsDefinition> resolverArgumentFields = new HashMap<>();
     private Set<DirectiveDefinition> directives = new HashSet<>();
     private Map<String, TypeDefinition> types = new HashMap<>();
+    private Map<String, TypeMetadata> typeMetadatas = new HashMap<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
@@ -327,6 +345,18 @@ public class XtextGraph implements ServiceMetadata {
     public Builder types(Map<String, TypeDefinition> types) {
       requireNonNull(types);
       this.types.putAll(types);
+      return this;
+    }
+
+    /**
+     * Types builder.
+     *
+     * @param typeMetadatas the map of TypeMetadata
+     * @return the builder
+     */
+    public Builder typeMetadatas(Map<String, TypeMetadata> typeMetadatas) {
+      requireNonNull(typeMetadatas);
+      this.typeMetadatas.putAll(typeMetadatas);
       return this;
     }
 

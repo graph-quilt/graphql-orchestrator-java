@@ -1,29 +1,42 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import com.intuit.graphql.graphQL.*;
+import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getParentTypeName;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
+import static java.util.stream.Collectors.toMap;
+
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputValueDefinition;
+import com.intuit.graphql.graphQL.ListType;
+import com.intuit.graphql.graphQL.NamedType;
+import com.intuit.graphql.graphQL.ObjectType;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverException;
 import com.intuit.graphql.orchestrator.fieldresolver.ResolverArgumentDefinitionValidator;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
+import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
-import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.*;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
-import static java.util.stream.Collectors.toMap;
 
 public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
 
@@ -36,6 +49,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
               .peek(fieldResolverContext -> validateFieldResolverType(fieldResolverContext,sourceXtextGraph))
               .peek(fieldResolverContext -> replacePlaceholderTypeWithActual(fieldResolverContext, sourceXtextGraph))
               .map(fieldResolverContext -> updateWithTargetFieldData(fieldResolverContext, sourceXtextGraph))
+              .peek(fieldResolverContext -> addToParentTypeMetadata(fieldResolverContext, sourceXtextGraph))
               .collect(Collectors.toList());
       XtextGraph newXtextGraph = sourceXtextGraph.transform(builder -> builder
               .clearFieldResolverContexts()
@@ -51,6 +65,12 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
       return newXtextGraph;
     }
     return sourceXtextGraph;
+  }
+
+  private void addToParentTypeMetadata(FieldResolverContext fieldResolverContext, XtextGraph xtextGraph) {
+    Map<String, TypeMetadata> typeMetadatas = xtextGraph.getTypeMetadatas();
+    TypeMetadata parentTypeMetadata = typeMetadatas.get(fieldResolverContext.getParentTypename());
+    parentTypeMetadata.addFieldResolverContext(fieldResolverContext);
   }
 
   private void validateTargetTypeExists(FieldResolverContext fieldResolverContext, XtextGraph sourceXtextGraph) {

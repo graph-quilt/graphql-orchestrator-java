@@ -4,9 +4,9 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import lombok.Getter;
-
+import java.util.Set;
 import java.util.function.Consumer;
+import lombok.Getter;
 
 /**
  * This class holds data about a fieldDefinition with resolver directive.
@@ -22,6 +22,7 @@ public class FieldResolverContext {
   private final boolean requiresTypeNameInjection;
   private final ResolverDirectiveDefinition resolverDirectiveDefinition;
   private final String serviceNamespace;
+  private final Set<String> requiredFields;
 
   private final FieldContext targetFieldContext;
   private final FieldDefinition targetFieldDefinition;
@@ -34,6 +35,7 @@ public class FieldResolverContext {
     this.serviceNamespace = builder.serviceNamespace;
     this.targetFieldContext = builder.targetFieldContext;
     this.targetFieldDefinition = builder.targetFieldDefinition;
+    this.requiredFields = builder.requiredFields;
   }
 
   public String getFieldName() {
@@ -64,6 +66,7 @@ public class FieldResolverContext {
 
     private FieldContext targetFieldContext;
     private FieldDefinition targetFieldDefinition;
+    private Set<String> requiredFields;
 
     public Builder() {
     }
@@ -113,9 +116,15 @@ public class FieldResolverContext {
       return this;
     }
 
+    public FieldResolverContext.Builder requiredFields(Set<String> requiredFields) {
+      this.requiredFields = requiredFields;
+      return this;
+    }
+
     public FieldResolverContext build() {
       return new FieldResolverContext(this);
     }
+
   }
 
 }
