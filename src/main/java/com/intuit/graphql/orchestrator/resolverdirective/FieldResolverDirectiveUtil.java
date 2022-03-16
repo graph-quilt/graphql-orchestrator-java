@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 import com.intuit.graphql.graphQL.Directive;
@@ -13,16 +14,10 @@ import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -155,28 +150,6 @@ public class FieldResolverDirectiveUtil {
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toList());
-  }
-
-  public static Set<String> extractRequiredFieldsFrom(ResolverDirectiveDefinition resolverDirectiveDefinition) {
-    return resolverDirectiveDefinition.getArguments().stream()
-        .map(ResolverArgumentDefinition::getValue)
-        .map(FieldResolverDirectiveUtil::getAllFieldReferenceFromString)
-        .flatMap(Collection::stream)
-        .collect(Collectors.toSet());
-  }
-
-  public static Set<String> getAllFieldReferenceFromString(String inputString) {
-    if (StringUtils.isEmpty(inputString)) {
-      return Collections.emptySet();
-    }
-
-    Set<String> output = new HashSet<>();
-    Pattern pattern = Pattern.compile("$\\w+"); // matches a-z A-Z _ 0-9
-    Matcher matcher = pattern.matcher(inputString);
-    while (matcher.find()) {
-      output.add(matcher.group());
-    }
-    return output;
   }
 
   private static List<Directive> getResolverDirective(FieldDefinition fieldDefinition) {
