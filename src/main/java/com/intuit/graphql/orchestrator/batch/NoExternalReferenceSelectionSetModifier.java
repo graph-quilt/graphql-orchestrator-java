@@ -97,23 +97,22 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
 
     Map<String, Field> selectedFields = this.selectionCollector.collectFields(node);
     Set<Field> fieldsToAdd = new HashSet<>();
-    List<FieldResolverContext> fieldResolverContexts =
-        getFieldsWithResolverDirective(parentTypeName, selectedFields);
-    for (FieldResolverContext fieldResolverContext : fieldResolverContexts) {
-      Set<String> fldResolverReqdFields = fieldResolverContext.getRequiredFields();
-      if (CollectionUtils.isNotEmpty(fldResolverReqdFields)) {
-        fieldsToAdd.addAll(fldResolverReqdFields.stream()
-            .filter(s -> !selectedFields.containsKey(s))
-            .map(s -> Field.newField(s).build())
-            .collect(Collectors.toSet()));
-      }
-    }
+    getFieldsWithResolverDirective(parentTypeName, selectedFields)
+        .forEach(fieldResolverContext -> {
+          Set<String> fldResolverReqdFields = fieldResolverContext.getRequiredFields();
+          if (CollectionUtils.isNotEmpty(fldResolverReqdFields)) {
+            fieldsToAdd.addAll(
+                fldResolverReqdFields.stream()
+                .filter(s -> !selectedFields.containsKey(s))
+                .map(s -> Field.newField(s).build())
+                .collect(Collectors.toSet()));
+          }
+        });
 
     if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
       SelectionSet newNode = node.transform(builder -> {
         for (Field field : fieldsToAdd) {
           // DON'T use builder.selections(fieldsToAdd).  it will clear then add selection
-          // TODO check that the type of the field is an scalar
           builder.selection(field);
         }
       });
