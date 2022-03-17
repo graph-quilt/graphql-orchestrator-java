@@ -5,18 +5,29 @@ import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildField
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildInterfaceTypeDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildUnionTypeDefinition;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.*;
+import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.RESOLVER_DIRECTIVE_DEFINITION;
+import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.createTestXtextGraph;
+import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.getTypeFromFieldDefinitions;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.intuit.graphql.graphQL.*;
+import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.NamedType;
+import com.intuit.graphql.graphQL.ObjectType;
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.PrimitiveType;
+import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.UnionTypeDefinition;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverException;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
+import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
@@ -87,7 +98,7 @@ public class FieldResolverTransformerPostMergeTest {
   }
 
   @Test
-  public void transformResolvedFieldIsScalarThenProcessingSucceedsNoTypeReplacementOccur() {
+  public void transformResolvedFieldIsScalarThenProcessingSucceedsAndNoTypeReplacementOccur() {
     // GIVEN
     String schema =  ""
             + "type Query { "
@@ -120,6 +131,9 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
     assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(1);
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -166,6 +180,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -212,6 +229,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -257,6 +277,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -303,6 +326,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -351,6 +377,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -399,6 +428,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -446,6 +478,9 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 
   @Test
@@ -492,8 +527,8 @@ public class FieldResolverTransformerPostMergeTest {
             + RESOLVER_DIRECTIVE_DEFINITION;
 
     exceptionRule.expect(ResolverArgumentNotAFieldOfParentException.class);
-    String expectedMessage = "Resolver argument value $af1 should be a reference to a field in "
-        + "Parent Type AObjectType";
+    String expectedMessage = "af1' is not a field of parent type. serviceName=TEST_SVC, "
+        + "parentTypeName=AObjectType, fieldName=a";
     exceptionRule.expectMessage(expectedMessage);
 
     XtextGraph xtextGraph = createTestXtextGraph(schema);
@@ -632,5 +667,8 @@ public class FieldResolverTransformerPostMergeTest {
 
     FieldContext expectedFieldContent = new FieldContext("AObjectType", "a");
     assertThat(transformedSource.getCodeRegistry().get(expectedFieldContent)).isNotNull();
+
+    TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
+    assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
   }
 }

@@ -72,6 +72,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       builder.operationMap(newOperationMap);
       builder.codeRegistry(this.accCodeRegistry);
       builder.types(current.getTypes());
+      builder.typeMetadatas(current.getTypeMetadatas());
       builder.types(nestedTypes);
       builder.directives(current.getDirectives());
       builder.fieldResolverContexts(current.getFieldResolverContexts());

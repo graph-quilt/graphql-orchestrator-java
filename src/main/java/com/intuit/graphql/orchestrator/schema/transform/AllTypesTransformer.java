@@ -8,9 +8,11 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
 import com.intuit.graphql.orchestrator.schema.SchemaTransformationException;
+import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.utils.DescriptionUtils;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -34,7 +36,18 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
                       source.getServiceProvider().getNameSpace()));
             }));
     updateDescWithNamespace(types, source.getServiceProvider().getNameSpace());
-    return source.transform(builder -> builder.types(types));
+    return source.transform(builder -> {
+      builder.types(types);
+      builder.typeMetadatas(createTypeMetadatas(types));
+    });
+  }
+
+  private Map<String, TypeMetadata> createTypeMetadatas(Map<String, TypeDefinition> types) {
+    Map<String, TypeMetadata> output = new HashMap<>();
+    types.forEach((typename, typeDefinition) ->
+      output.put(typename, new TypeMetadata(typeDefinition))
+    );
+    return output;
   }
 
   private boolean isNotEmpty(TypeDefinition typeDefinition) {
