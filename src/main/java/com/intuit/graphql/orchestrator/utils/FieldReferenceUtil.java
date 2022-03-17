@@ -11,6 +11,13 @@ public class FieldReferenceUtil {
 
   private FieldReferenceUtil() {}
 
+  /**
+   * extracts field references from the given string.  a field reference
+   * started with the dollar($) sign and followed by a valid fieldName.
+   *
+   * @param inputString
+   * @return set of field references
+   */
   public static Set<String> getAllFieldReferenceFromString(String inputString) {
     if (StringUtils.isEmpty(inputString)) {
       return Collections.emptySet();
