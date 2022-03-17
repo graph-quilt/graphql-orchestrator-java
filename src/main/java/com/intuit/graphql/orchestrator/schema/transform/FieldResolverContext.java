@@ -1,11 +1,17 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 
 /**
@@ -16,6 +22,8 @@ import lombok.Getter;
  */
 @Getter
 public class FieldResolverContext {
+
+  private final Map<String, FieldDefinition> parentTypeFields;
 
   private final FieldDefinition fieldDefinition;
   private final TypeDefinition parentTypeDefinition;
@@ -30,6 +38,7 @@ public class FieldResolverContext {
   public FieldResolverContext(Builder builder) {
     this.fieldDefinition = builder.fieldDefinition;
     this.parentTypeDefinition = builder.parentTypeDefinition;
+    this.parentTypeFields = builder.parentTypeFields;
     this.requiresTypeNameInjection = builder.requiresTypeNameInjection;
     this.resolverDirectiveDefinition = builder.resolverDirectiveDefinition;
     this.serviceNamespace = builder.serviceNamespace;
@@ -58,6 +67,8 @@ public class FieldResolverContext {
 
   public static class Builder {
 
+    private final Map<String, FieldDefinition> parentTypeFields = new HashMap<>();
+
     private FieldDefinition fieldDefinition;
     private TypeDefinition parentTypeDefinition;
     private boolean requiresTypeNameInjection;
@@ -71,15 +82,16 @@ public class FieldResolverContext {
     public Builder() {
     }
 
-    public Builder(FieldResolverContext copy) {
-      this.fieldDefinition = copy.getFieldDefinition();
-      this.parentTypeDefinition = copy.getParentTypeDefinition();
-      this.requiresTypeNameInjection = copy.isRequiresTypeNameInjection();
-      this.resolverDirectiveDefinition = copy.getResolverDirectiveDefinition();
-      this.serviceNamespace = copy.getServiceNamespace();
-      this.targetFieldContext = copy.getTargetFieldContext();
-      this.targetFieldDefinition = copy.getTargetFieldDefinition();
-      this.requiredFields = copy.getRequiredFields();
+    public Builder(FieldResolverContext sourceObject) {
+      this.fieldDefinition = sourceObject.getFieldDefinition();
+      this.parentTypeDefinition = sourceObject.getParentTypeDefinition();
+      this.parentTypeFields.putAll(sourceObject.parentTypeFields);
+      this.requiresTypeNameInjection = sourceObject.isRequiresTypeNameInjection();
+      this.resolverDirectiveDefinition = sourceObject.getResolverDirectiveDefinition();
+      this.serviceNamespace = sourceObject.getServiceNamespace();
+      this.targetFieldContext = sourceObject.getTargetFieldContext();
+      this.targetFieldDefinition = sourceObject.getTargetFieldDefinition();
+      this.requiredFields = sourceObject.getRequiredFields();
     }
 
     public FieldResolverContext.Builder fieldDefinition(FieldDefinition fieldDefinition) {
@@ -89,6 +101,9 @@ public class FieldResolverContext {
 
     public FieldResolverContext.Builder parentTypeDefinition(TypeDefinition parentTypeDefinition) {
       this.parentTypeDefinition = parentTypeDefinition;
+      parentTypeFields.putAll(
+          getFieldDefinitions(parentTypeDefinition).stream()
+              .collect(Collectors.toMap(FieldDefinition::getName, Function.identity())));
       return this;
     }
 
