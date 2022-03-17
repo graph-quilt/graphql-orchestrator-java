@@ -8,12 +8,14 @@ import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 
 /**
  * Collects set of fields from a selection set.  Fields collected may be from Inline Fragments
@@ -21,11 +23,12 @@ import org.apache.commons.collections4.CollectionUtils;
  */
 public class SelectionCollector {
 
-  private final Map<String, FragmentDefinition> fragmentsByName;
+  private final Map<String, FragmentDefinition> fragmentsByName = new HashMap<>();
 
   public SelectionCollector(Map<String, FragmentDefinition> fragmentsByName) {
-    Objects.requireNonNull(fragmentsByName);
-    this.fragmentsByName = fragmentsByName;
+    if (MapUtils.isNotEmpty(fragmentsByName)) {
+      this.fragmentsByName.putAll(fragmentsByName);
+    }
   }
 
   public Map<String, Field> collectFields(SelectionSet selectionSet) {

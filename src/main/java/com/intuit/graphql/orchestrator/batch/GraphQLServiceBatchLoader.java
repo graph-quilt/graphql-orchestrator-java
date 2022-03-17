@@ -273,7 +273,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
         new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(typeCondition),
             serviceMetadata, fragmentsByName));
-
   }
 
   /**
@@ -303,7 +302,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    * NoExternalReferenceSelectionSetModifier}
    * @return a modified field
    */
-  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType, Map<String, FragmentDefinition> fragmentsByName) {
+  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType, Map<String,
+      FragmentDefinition> fragmentsByName) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (Field) AST_TRANSFORMER.transform(origField,
         new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType), serviceMetadata, fragmentsByName));
