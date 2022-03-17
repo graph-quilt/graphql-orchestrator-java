@@ -15,7 +15,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class TypeMetadataTest {
 
   private static final String TEST_FIELD_NAME = "testField";
-  private static final String TEST_PARENT_TYPE_NAME = "ParentType";
   private TypeMetadata subjectUnderTest;
 
   @Mock
@@ -27,21 +26,6 @@ public class TypeMetadataTest {
   @Before
   public void setup() {
     subjectUnderTest = new TypeMetadata(typeDefinitionMock);
-  }
-
-  @Test
-  public void hasResolverDirective_noAddedFieldResolvers_returnsFalse() {
-    boolean actual = subjectUnderTest.hasResolverDirective(TEST_FIELD_NAME);
-    assertThat(actual).isFalse();
-  }
-
-  @Test
-  public void hasResolverDirective_withFieldResolvers_canReturnTrue() {
-    when(fieldResolverContextMock.getFieldName()).thenReturn(TEST_FIELD_NAME);
-
-    subjectUnderTest.addFieldResolverContext(fieldResolverContextMock);
-    boolean actual = subjectUnderTest.hasResolverDirective(TEST_FIELD_NAME);
-    assertThat(actual).isTrue();
   }
 
   @Test

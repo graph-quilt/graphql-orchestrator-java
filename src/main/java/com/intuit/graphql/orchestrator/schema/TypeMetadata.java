@@ -14,15 +14,6 @@ public class TypeMetadata {
   @NonNull private final TypeDefinition typeDefinition;
   private final Map<String, FieldResolverContext> fieldResolverContextsByFieldName = new HashMap<>();
 
-  /**
-   * checks if the given field has resolver directive
-   * @param fieldName field name
-   * @return true or false
-   */
-  public boolean hasResolverDirective(String fieldName) {
-    return fieldResolverContextsByFieldName.containsKey(fieldName);
-  }
-
   public void addFieldResolverContext(FieldResolverContext fieldResolverContext) {
     String fieldName = fieldResolverContext.getFieldName();
     fieldResolverContextsByFieldName.put(fieldName, fieldResolverContext);
