@@ -16,10 +16,10 @@ import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverException;
+import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverValidator;
 import com.intuit.graphql.orchestrator.fieldresolver.ResolverArgumentDefinitionValidator;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentNotAFieldOfParentException;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-
 public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
 
   @Override
@@ -46,7 +45,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     if (CollectionUtils.isNotEmpty(sourceXtextGraph.getFieldResolverContexts())) {
       List<FieldResolverContext> fieldResolverContexts = sourceXtextGraph.getFieldResolverContexts()
               .stream()
-              .peek(this::validateRequiredFields)
+              .peek(FieldResolverValidator::validateRequiredFields)
               .peek(fieldResolverContext -> validateTargetTypeExists(fieldResolverContext,sourceXtextGraph))
               .peek(fieldResolverContext -> validateFieldResolverType(fieldResolverContext,sourceXtextGraph))
               .peek(fieldResolverContext -> replacePlaceholderTypeWithActual(fieldResolverContext, sourceXtextGraph))
@@ -67,18 +66,6 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
       return newXtextGraph;
     }
     return sourceXtextGraph;
-  }
-
-  private void validateRequiredFields(FieldResolverContext fieldResolverContext) {
-    fieldResolverContext.getRequiredFields().forEach(reqdFieldName -> {
-      if (!fieldResolverContext.getParentTypeFields().containsKey(reqdFieldName)) {
-        String serviceName = fieldResolverContext.getServiceNamespace();
-        String parentTypeName = fieldResolverContext.getParentTypename();
-        String fieldResolverName = fieldResolverContext.getFieldName();
-        throw new ResolverArgumentNotAFieldOfParentException(reqdFieldName, serviceName,
-            parentTypeName, fieldResolverName);
-      }
-    });
   }
 
   private void addToParentTypeMetadata(FieldResolverContext fieldResolverContext, XtextGraph xtextGraph) {
