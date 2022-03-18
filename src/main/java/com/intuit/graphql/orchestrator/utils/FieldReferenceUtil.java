@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 
 public class FieldReferenceUtil {
 
+  private static final Pattern pattern = Pattern.compile("\\$\\w+"); // matches a-z A-Z _ 0-9
+
   private FieldReferenceUtil() {}
 
   /**
@@ -24,7 +26,6 @@ public class FieldReferenceUtil {
     }
 
     Set<String> output = new HashSet<>();
-    Pattern pattern = Pattern.compile("\\$\\w+"); // matches a-z A-Z _ 0-9
     Matcher matcher = pattern.matcher(inputString);
     while (matcher.find()) {
       String fieldRef = extractVariable(matcher.group());
