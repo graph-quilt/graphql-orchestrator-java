@@ -39,9 +39,17 @@ class BaseIntegrationTestSpecification extends Specification {
         return builder.build()
     }
 
+    static ExecutionInput createExecutionInput(String graphqlQuery, Map<String, Object> variables) {
+        ExecutionInput.newExecutionInput()
+                .query(graphqlQuery)
+                .variables(variables)
+                .build()
+    }
+
     static ExecutionInput createExecutionInput(String graphqlQuery) {
         ExecutionInput.newExecutionInput()
                 .query(graphqlQuery)
+                .variables(Collections.emptyMap())
                 .build()
     }
 
