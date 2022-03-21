@@ -58,7 +58,7 @@ class DirectivesUtil {
 
       if (directive.isPresent()) {
         Map<String, String> args = directive.get().getArguments().stream()
-            .collect(toMap(GraphQLArgument::getName, arg -> (String) arg.getValue()));
+            .collect(toMap(GraphQLArgument::getName, arg -> (String) arg.getArgumentValue().getValue()));
         if (args.isEmpty()) {
           return NO_LONGER_SUPPORTED; // default value from spec
         } else {

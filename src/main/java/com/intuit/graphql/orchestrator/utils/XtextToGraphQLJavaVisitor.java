@@ -80,28 +80,35 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private static final GraphQLScalarType FIELD_SET_SCALAR;
 
   static {
-    STANDARD_SCALAR_TYPES = ScalarInfo.STANDARD_SCALARS.stream()
+    STANDARD_SCALAR_TYPES = ScalarInfo.GRAPHQL_SPECIFICATION_SCALARS.stream()
         .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity()));
 
 //    TODO REMOVE ONCE GRAPH-QL JAVA IS UPGRADED.....FIELD SET WILL ALREADY BE IN STANDARD SCALARS
-    FIELD_SET_SCALAR = new GraphQLScalarType("_FieldSet", "A selection set",  new Coercing<String, String>() {
-      public String serialize(Object input) {
-        return input.toString();
-      }
+    FIELD_SET_SCALAR = GraphQLScalarType.newScalar()
+        .name("_FieldSet")
+        .description("A selection set")
+        .coercing(new Coercing<String, String>() {
+          public String serialize(Object input) {
+            return input.toString();
+          }
 
-      public String parseValue(Object input) {
-        return this.serialize(input);
-      }
+          public String parseValue(Object input) {
+            return this.serialize(input);
+          }
 
-      public String parseLiteral(Object input) {
-        if (!(input instanceof StringValue)) {
-          throw new CoercingParseLiteralException("Expected AST type '_FieldSet' or 'StringValue'");
-        } else {
-          return ((StringValue)input).getValue();
-        }
-      }
-    });
+          public String parseLiteral(Object input) {
+            if (!(input instanceof StringValue)) {
+              throw new CoercingParseLiteralException("Expected AST type '_FieldSet' or 'StringValue'");
+            } else {
+              return ((StringValue)input).getValue();
+            }
+          }
+        })
+        .build();
+
     STANDARD_SCALAR_TYPES.put("_FieldSet", FIELD_SET_SCALAR);
+    STANDARD_SCALAR_TYPES.putAll(ExtendedScalarsSupport.GRAPHQL_EXTENDED_SCALARS.stream()
+        .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity())));
   }
 
   private XtextToGraphQLJavaVisitor(Builder builder) {
