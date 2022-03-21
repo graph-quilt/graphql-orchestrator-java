@@ -1,12 +1,10 @@
 package com.intuit.graphql.orchestrator.integration
 
-import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
-import spock.lang.Specification
 
-class CustomScalarsSpec extends Specification {
+import helpers.BaseIntegrationTestSpecification
+import spock.lang.Subject
 
-    def graphqlQuery = "{ uuid url }"
+class CustomScalarsSpec extends BaseIntegrationTestSpecification {
 
     def testSchema = """
         type Query {
@@ -25,27 +23,25 @@ class CustomScalarsSpec extends Specification {
             ]
     ]
 
-    ServiceProvider testService = new SimpleMockServiceProvider().builder()
-            .sdlFiles(["schema.graphqls": testSchema])
-            .mockResponse(mockServiceResponse)
-            .build()
+    @Subject
+    def specUnderTest
+
+    void setup() {
+        testService = createSimpleMockService(testSchema, mockServiceResponse)
+        specUnderTest = createGraphQLOrchestrator(testService)
+    }
 
     // TODO use latest grammar
     /*
-    def specUnderTest = createGraphQLOrchestrator(new AsyncExecutionStrategy(),
-            new AsyncExecutionStrategy(), testService)
-
-
     def "Custom Scalars can be queried"() {
         given:
 
-        ExecutionInput executionInput = ExecutionInput.newExecutionInput()
-                .query(graphqlQuery)
-                .build()
+        def graphqlQuery = "{ uuid url }"
+
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
 
         when:
-        CompletableFuture<ExecutionResult> futureExecutionResult = specUnderTest.execute(executionInput)
-        ExecutionResult executionResult = futureExecutionResult.get()
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
         executionResult.getErrors().isEmpty()

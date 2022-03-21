@@ -1,17 +1,11 @@
 package com.intuit.graphql.orchestrator.integration
 
-import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
-import graphql.execution.AsyncExecutionStrategy
-import spock.lang.Specification
+import helpers.BaseIntegrationTestSpecification
+import spock.lang.Subject
 
-import java.util.concurrent.CompletableFuture
-
-import static com.intuit.graphql.orchestrator.GraphQLOrchestratorTest.createGraphQLOrchestrator
-
-class JavaPrimitiveScalarSpec extends Specification {
+class JavaPrimitiveScalarSpec extends BaseIntegrationTestSpecification {
 
     def testSchema = """
         type Query {
@@ -44,26 +38,22 @@ class JavaPrimitiveScalarSpec extends Specification {
             ]
     ]
 
-    ServiceProvider testService = new SimpleMockServiceProvider().builder()
-            .sdlFiles(["schema.graphqls": testSchema])
-            .mockResponse(mockServiceResponse)
-            .build()
+    @Subject
+    def specUnderTest
 
-    def specUnderTest = createGraphQLOrchestrator(new AsyncExecutionStrategy(),
-            new AsyncExecutionStrategy(), testService)
-
+    void setup() {
+        testService = createSimpleMockService(testSchema, mockServiceResponse)
+        specUnderTest = createGraphQLOrchestrator(testService)
+    }
 
     def "Extended Scalars for Primitive types are stitched and queried"() {
         given:
         def graphqlQuery = "{ a b c d e f g }"
 
-        ExecutionInput executionInput = ExecutionInput.newExecutionInput()
-                .query(graphqlQuery)
-                .build()
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
 
         when:
-        CompletableFuture<ExecutionResult> futureExecutionResult = specUnderTest.execute(executionInput)
-        ExecutionResult executionResult = futureExecutionResult.get()
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
         executionResult.getErrors().isEmpty()

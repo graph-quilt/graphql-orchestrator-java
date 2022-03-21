@@ -100,13 +100,10 @@ class InterfaceImplementInterfaceSpec extends Specification {
 
     def "interface can extends another interface"() {
         given:
-        ExecutionInput executionInput = ExecutionInput.newExecutionInput()
-                .query(graphqlQuery)
-                .build()
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
 
         when:
-        CompletableFuture<ExecutionResult> futureExecutionResult = specUnderTest.execute(executionInput)
-        ExecutionResult executionResult = futureExecutionResult.get()
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
         executionResult.getErrors().isEmpty()
