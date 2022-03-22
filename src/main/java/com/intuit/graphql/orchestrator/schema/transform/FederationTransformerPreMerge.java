@@ -5,6 +5,7 @@ import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATI
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
 
@@ -64,7 +65,7 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
                 List<KeyDirectiveMetadata> keyDirectives;
                 Map<String, Set<Field>> requiredFieldsByFieldName;
 
-                if(typeSystemDefinition.getType() != null) {
+                if(isTypeSystemForBaseType(typeSystemDefinition)) {
                     TypeDefinition typeDefinition = typeSystemDefinition.getType();
                     typeDefinitionName = typeDefinition.getName();
                     requiredFieldsByFieldName = getRequiredFields(typeDefinition);

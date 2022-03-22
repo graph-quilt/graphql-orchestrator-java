@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.federation.FieldSetUtils.getParsedFieldSet;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class FieldSetValidator {
@@ -30,12 +31,8 @@ public class FieldSetValidator {
             throw new EmptyFieldsArgumentFederationDirective(typeDefinition.getName(), originatingDirective);
         }
 
-        if(!fieldSet.startsWith("{")) {
-            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
-        }
-
         //Throws InvalidSyntaxException if fieldSet is incorrect
-        Document fieldSetDocument = Parser.parse(fieldSet);
+        Document fieldSetDocument = getParsedFieldSet(fieldSet);
 
         List<OperationDefinition> definitions = fieldSetDocument.getDefinitions().stream()
                 .map(OperationDefinition.class::cast).collect(Collectors.toList());
@@ -57,12 +54,8 @@ public class FieldSetValidator {
             throw new EmptyFieldsArgumentFederationDirective(typeExtensionDefinition.getName(), originatingDirective);
         }
 
-        if(!fieldSet.startsWith("{")) {
-            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
-        }
-
         //Throws InvalidSyntaxException if fieldSet is incorrect
-        Document fieldSetDocument = Parser.parse(fieldSet);
+        Document fieldSetDocument = getParsedFieldSet(fieldSet);
 
         List<OperationDefinition> definitions = fieldSetDocument.getDefinitions().stream()
                 .map(OperationDefinition.class::cast).collect(Collectors.toList());

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_FIELDS_ARGUMENT;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
 import static java.lang.String.format;
 
@@ -62,7 +63,7 @@ public class KeyDirectiveValidator {
 
     List<String> subsetKeys;
 
-    if(entityMergingContext.getExtensionSystemDefinition().getType() != null) {
+    if(isTypeSystemForBaseType(entityMergingContext.getExtensionSystemDefinition())) {
       subsetKeys = getDirectivesWithNameFromDefinition(entityMergingContext.getExtensionSystemDefinition().getType(), FEDERATION_KEY_DIRECTIVE).stream()
               .map(this::getDirectiveFieldSet)
               .map(FederationUtils::getUniqueIdFromFieldSet)

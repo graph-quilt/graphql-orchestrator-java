@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static org.apache.commons.collections4.CollectionUtils.containsAny;
 
@@ -24,7 +25,7 @@ public class EntityTypeMerger {
   private void merge(EntityMergingContext entityMergingContext) {
     List<FieldDefinition> baseTypeFields = getFieldDefinitions(entityMergingContext.getBaseType());
     List<FieldDefinition> typeExtensionFields = null;
-    if(entityMergingContext.getExtensionSystemDefinition().getType() != null) {
+    if(isTypeSystemForBaseType(entityMergingContext.getExtensionSystemDefinition())) {
       typeExtensionFields = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getType());
     } else {
       typeExtensionFields = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());

@@ -6,6 +6,7 @@ import com.intuit.graphql.graphQL.ArrayValueWithVariable;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.EnumTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.EnumValueDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.GraphQLFactory;
@@ -92,6 +93,10 @@ public class GraphQLFactoryDelegate {
 
   public static EnumValueDefinition createEnumValueDefinition() {
     return instance.createEnumValueDefinition();
+  }
+
+  public static EnumTypeExtensionDefinition createEnumTypeExtensionDefinition() {
+    return instance.createEnumTypeExtensionDefinition();
   }
 
   public static FieldDefinition createFieldDefinition() {

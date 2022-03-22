@@ -1,6 +1,9 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeExtensionDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeExtensionDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -8,17 +11,22 @@ import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.EnumTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
 import com.intuit.graphql.graphQL.InputValueDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ListType;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.PrimitiveType;
 import com.intuit.graphql.graphQL.ScalarTypeDefinition;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextScalars;
 import org.junit.Test;
+
+import java.util.List;
 
 public class XtextTypeUtilsTest {
 
@@ -271,6 +279,76 @@ public class XtextTypeUtilsTest {
 
     assertThat(XtextTypeUtils.isCompatible(listType, namedType2)).isFalse();
     assertThat(XtextTypeUtils.isCompatible(namedType2, listType)).isFalse();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void getFieldDefinitionThrowsExceptionForNonEntityExtensionTypes(){
+    EnumTypeExtensionDefinition badExtension = GraphQLFactoryDelegate.createEnumTypeExtensionDefinition();
+    getFieldDefinitions(badExtension);
+  }
+
+  @Test
+  public void getFieldDefinitionReturnsEmptyListForNonEntityExtensionTypesWithDefaultSet(){
+    EnumTypeExtensionDefinition badExtension = GraphQLFactoryDelegate.createEnumTypeExtensionDefinition();
+    List<FieldDefinition> fields = getFieldDefinitions(badExtension, true);
+
+    assert fields.size() == 0;
+  }
+
+  @Test
+  public void getFieldDefinitionReturnsFieldsForObjectTypeExtensionDefinition(){
+    String fieldName = "Test Field";
+    ObjectTypeExtensionDefinition objectTypeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition();
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+    fieldDefinition.setName(fieldName);
+
+    objectTypeExtensionDefinition.getFieldDefinition().add(fieldDefinition);
+
+    List<FieldDefinition> fieldDefinitionList = getFieldDefinitions(objectTypeExtensionDefinition);
+
+    assert fieldDefinitionList.size() == 1;
+    assert fieldDefinitionList.get(0).getName().equals(fieldName);
+  }
+
+  @Test
+  public void getFieldDefinitionReturnsFieldsForInterfaceTypeExtensionDefinition(){
+    String fieldName = "Test Interface Field";
+    InterfaceTypeExtensionDefinition interfaceTypeExtensionDefinition = GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition();
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+    fieldDefinition.setName(fieldName);
+
+    interfaceTypeExtensionDefinition.getFieldDefinition().add(fieldDefinition);
+
+    List<FieldDefinition> fieldDefinitionList = getFieldDefinitions(interfaceTypeExtensionDefinition);
+
+    assert fieldDefinitionList.size() == 1;
+    assert fieldDefinitionList.get(0).getName().equals(fieldName);
+  }
+
+  @Test
+  public void isObjectTypeExtensionDefinitionReturnsTrueForObjectTypeExtension() {
+    assert isObjectTypeExtensionDefinition(GraphQLFactoryDelegate.createObjectTypeExtensionDefinition());
+  }
+  @Test
+  public void isObjectTypeExtensionDefinitionReturnsFalseForInterfaceTypeExtension() {
+    assert !isObjectTypeExtensionDefinition(GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition());
+  }
+  @Test
+  public void isObjectTypeExtensionDefinitionReturnsFalseForNull() {
+    assert !isObjectTypeExtensionDefinition(null);
+  }
+
+  @Test
+  public void isInterfaceTypeExtensionDefinitionReturnsFalseForObjectTypeExtension() {
+    assert isInterfaceTypeExtensionDefinition(GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition());
+  }
+  @Test
+  public void isInterfaceTypeExtensionDefinitionReturnsTrueeForInterfaceTypeExtension() {
+    assert !isInterfaceTypeExtensionDefinition(GraphQLFactoryDelegate.createObjectTypeExtensionDefinition());
+  }
+  @Test
+  public void isInterfaceTypeExtensionDefinitionReturnsFalseForNull() {
+    assert !isInterfaceTypeExtensionDefinition(null);
   }
 
 

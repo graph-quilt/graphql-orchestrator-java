@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
@@ -40,8 +41,6 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
   private static final EntityTypeMerger entityTypeMerger = new EntityTypeMerger();
   private final ExternalValidator externalValidator = new ExternalValidator();
   private final KeyDirectiveValidator keyDirectiveValidator = new KeyDirectiveValidator();
-
-  private final String TYPE_CONFLICT_ERR_MSG = "Failed to merge entity extension to base type. typename%s, serviceNamespace=%s";
 
   @Override
   public XtextGraph transform(XtextGraph xtextGraph) {
@@ -109,14 +108,14 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
       TypeDefinition baseType = entityMergingContext.getBaseType();
       TypeSystemDefinition typeSystemDefinition = entityMergingContext.getExtensionSystemDefinition();
 
-      if(typeSystemDefinition.getType() != null) {
+      if(isTypeSystemForBaseType(typeSystemDefinition)) {
           TypeDefinition typeExtension = typeSystemDefinition.getType();
 
           if (!(isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)
                   || isObjectTypeDefinition(baseType) && isObjectTypeDefinition(typeExtension))) {
               throw new TypeConflictException(
                       format(
-                              TYPE_CONFLICT_ERR_MSG,
+                              "Failed to merge entity extension to base type. typename%s, serviceNamespace=%s",
                               entityMergingContext.getTypename(),
                               entityMergingContext.getServiceNamespace()
                       )
@@ -136,7 +135,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
                   || isObjectTypeDefinition(baseType) && isObjectTypeExtensionDefinition(typeExtension))) {
               throw new TypeConflictException(
                       format(
-                              TYPE_CONFLICT_ERR_MSG,
+                              "Incompatible type definitions for Entity extension and Entity base type . typename%s, serviceNamespace=%s",
                               entityMergingContext.getTypename(),
                               entityMergingContext.getServiceNamespace()
                       )
@@ -156,7 +155,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
 
   private void checkFederationFieldDirectives(EntityMergingContext entityMergingContext) {
       List<FieldDefinition> extFieldDefinitions = null;
-      if(entityMergingContext.getExtensionSystemDefinition().getType() != null) {
+      if(isTypeSystemForBaseType(entityMergingContext.getExtensionSystemDefinition())) {
           extFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getType());
       } else {
           extFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());

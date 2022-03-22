@@ -9,6 +9,7 @@ import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
@@ -17,6 +18,7 @@ import graphql.parser.Parser;
 import java.util.Comparator;
 import java.util.List;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -61,5 +63,13 @@ public class FederationUtils {
         }).reduce("", (partialId, childSelectionNames) -> partialId + childSelectionNames);
 
         return directChildrenUniqueId + descendantsUniqueId;
+    }
+
+    public static boolean isTypeSystemForBaseType(TypeSystemDefinition typeSystemDefinition) {
+        return Objects.nonNull(typeSystemDefinition) && typeSystemDefinition.getType() != null;
+    }
+
+    public static boolean isTypeSystemForExtensionType(TypeSystemDefinition typeSystemDefinition) {
+        return Objects.nonNull(typeSystemDefinition) && typeSystemDefinition.getTypeExtension() != null;
     }
 }
