@@ -1,12 +1,13 @@
 package com.intuit.graphql.orchestrator;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createDirectiveDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createEnumTypeDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createEnumValueDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createFieldDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createInterfaceTypeDefinition;
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectTypeDefinition;
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectTypeExtensionDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createUnionMembers;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createUnionMembership;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createUnionTypeDefinition;
@@ -18,8 +19,10 @@ import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.EnumValueDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.UnionMemberShip;
 import com.intuit.graphql.graphQL.UnionMembers;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
@@ -76,10 +79,36 @@ public class XtextObjectCreationUtil {
     return objectTypeDefinition;
   }
 
+  public static ObjectTypeExtensionDefinition buildObjectTypeExtensionDefinition(String name, List<FieldDefinition> fieldDefinitions) {
+    ObjectTypeExtensionDefinition objectTypeDefinition = buildObjectTypeExtensionDefinition(name);
+
+    objectTypeDefinition.getFieldDefinition().addAll(fieldDefinitions);
+    return objectTypeDefinition;
+  }
+
+  public static ObjectTypeExtensionDefinition buildObjectTypeExtensionDefinition(String name) {
+    ObjectTypeExtensionDefinition objectTypeDefinition = createObjectTypeExtensionDefinition();
+    objectTypeDefinition.setName(name);
+    return objectTypeDefinition;
+  }
+
   public static InterfaceTypeDefinition buildInterfaceTypeDefinition(String name, List<FieldDefinition> fieldDefinitions) {
     InterfaceTypeDefinition interfaceTypeDefinition = createInterfaceTypeDefinition();
     interfaceTypeDefinition.setName(name);
     interfaceTypeDefinition.getFieldDefinition().addAll(fieldDefinitions);
+    return interfaceTypeDefinition;
+  }
+
+  public static InterfaceTypeExtensionDefinition buildInterfaceTypeExtensionDefinition(String name, List<FieldDefinition> fieldDefinitions) {
+    InterfaceTypeExtensionDefinition interfaceTypeDefinition = buildInterfaceTypeExtensionDefinition(name);
+
+    interfaceTypeDefinition.getFieldDefinition().addAll(fieldDefinitions);
+    return interfaceTypeDefinition;
+  }
+
+  public static InterfaceTypeExtensionDefinition buildInterfaceTypeExtensionDefinition(String name) {
+    InterfaceTypeExtensionDefinition interfaceTypeDefinition = createInterfaceTypeExtensionDefinition();
+    interfaceTypeDefinition.setName(name);
     return interfaceTypeDefinition;
   }
 

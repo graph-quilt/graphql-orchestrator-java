@@ -3,7 +3,9 @@ package com.intuit.graphql.orchestrator.federation;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
 import com.intuit.graphql.orchestrator.federation.validators.FieldSetValidator;
@@ -35,7 +37,7 @@ public class FieldSetValidatorTest {
         XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
         String fieldSet = "";
 
-        fieldSetValidator.validate(sourceGraphMock, null, fieldSet, FEDERATION_KEY_DIRECTIVE);
+        fieldSetValidator.validate(sourceGraphMock, (TypeDefinition) null, fieldSet, FEDERATION_KEY_DIRECTIVE);
     }
 
     @Test(expected = EmptyFieldsArgumentFederationDirective.class)
@@ -138,6 +140,148 @@ public class FieldSetValidatorTest {
         XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
 
         ObjectTypeDefinition testDefinitionMock = Mockito.mock(ObjectTypeDefinition.class);
+        FieldDefinition fieldDefinition1 = Mockito.mock(FieldDefinition.class);
+        FieldDefinition fieldDefinition2 = Mockito.mock(FieldDefinition.class);
+        FieldDefinition fieldDefinition3 = Mockito.mock(FieldDefinition.class);
+
+        ObjectTypeDefinition fooBarTypeMock = Mockito.mock(ObjectTypeDefinition.class);
+        FieldDefinition childFieldMock1 = Mockito.mock(FieldDefinition.class);
+        FieldDefinition childFieldMock2 = Mockito.mock(FieldDefinition.class);
+
+        EList<FieldDefinition> testFieldDefinitions = ECollections.asEList(fieldDefinition1, fieldDefinition2, fieldDefinition3);
+        EList<FieldDefinition> foobarChildDefinitions = ECollections.asEList(childFieldMock1, childFieldMock2);
+
+        when(fieldDefinition1.getName()).thenReturn("foo");
+        when(fieldDefinition2.getName()).thenReturn("bar");
+        when(fieldDefinition3.getName()).thenReturn("foobar");
+        when(childFieldMock1.getName()).thenReturn("childField1");
+        when(childFieldMock2.getName()).thenReturn("childField2");
+        when(sourceGraphMock.getType((NamedType) any())).thenReturn(fooBarTypeMock);
+        when(testDefinitionMock.getFieldDefinition()).thenReturn(testFieldDefinitions);
+        when(fooBarTypeMock.getFieldDefinition()).thenReturn(foobarChildDefinitions);
+
+
+        String fieldSet = "foobar { childField1 childField2 }";
+
+        fieldSetValidator.validate(sourceGraphMock, testDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void npeFromNullSourceGraphWhenCheckingEmptyFieldSetTypeExtension() {
+        TypeExtensionDefinition typeDefinitionMock = Mockito.mock(TypeExtensionDefinition.class);
+        String fieldSet = "";
+
+        fieldSetValidator.validate(null, typeDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void npeFromNullTypeDefWhenCheckingEmptyFieldSetTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+        String fieldSet = "";
+
+        fieldSetValidator.validate(sourceGraphMock, (TypeExtensionDefinition) null, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = EmptyFieldsArgumentFederationDirective.class)
+    public void EmptyFieldsExceptionWhenCheckingEmptyFieldSetWithEmptyFieldSetTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+        TypeExtensionDefinition typeDefinitionMock = Mockito.mock(TypeExtensionDefinition.class);
+        String fieldSet = "";
+
+        fieldSetValidator.validate(sourceGraphMock, typeDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = EmptyFieldsArgumentFederationDirective.class)
+    public void EmptyFieldsExceptionWhenCheckingEmptyFieldSetWithNullFieldSetTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+        TypeExtensionDefinition typeDefinitionMock = Mockito.mock(TypeExtensionDefinition.class);
+
+        fieldSetValidator.validate(sourceGraphMock, typeDefinitionMock, null, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = InvalidSyntaxException.class)
+    public void ExceptionFromInvalidFieldSetWhenCheckingFieldSetTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+        TypeExtensionDefinition typeDefinitionMock = Mockito.mock(TypeExtensionDefinition.class);
+        String fieldSet = "foo bar }";
+
+        fieldSetValidator.validate(sourceGraphMock, typeDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = InvalidFieldSetReferenceException.class)
+    public void invalidFieldReferenceExceptionWithFieldSetWithInvalidReferenceTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+        ObjectTypeExtensionDefinition typeDefinitionMock = Mockito.mock(ObjectTypeExtensionDefinition.class);
+        FieldDefinition fieldDefinition1 = Mockito.mock(FieldDefinition.class);
+        when(fieldDefinition1.getName()).thenReturn("foo");
+        FieldDefinition fieldDefinition2 = Mockito.mock(FieldDefinition.class);
+        when(fieldDefinition2.getName()).thenReturn("bar");
+        FieldDefinition fieldDefinition3 = Mockito.mock(FieldDefinition.class);
+        when(fieldDefinition3.getName()).thenReturn("foobar");
+
+        EList<FieldDefinition> fieldDefinitionEList = ECollections.asEList(fieldDefinition1, fieldDefinition2, fieldDefinition3);
+        when(typeDefinitionMock.getFieldDefinition()).thenReturn(fieldDefinitionEList);
+
+        String fieldSet = "foo bar badField";
+
+        fieldSetValidator.validate(sourceGraphMock, typeDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test(expected = InvalidFieldSetReferenceException.class)
+    public void invalidFieldReferenceExceptionWithFieldSetWithInvalidChildrenTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+
+        ObjectTypeExtensionDefinition testDefinitionMock = Mockito.mock(ObjectTypeExtensionDefinition.class);
+        FieldDefinition fieldDefinition1 = Mockito.mock(FieldDefinition.class);
+        FieldDefinition fieldDefinition2 = Mockito.mock(FieldDefinition.class);
+        FieldDefinition fieldDefinition3 = Mockito.mock(FieldDefinition.class);
+
+        ObjectTypeDefinition fooBarTypeMock = Mockito.mock(ObjectTypeDefinition.class);
+        FieldDefinition childFieldMock1 = Mockito.mock(FieldDefinition.class);
+        FieldDefinition childFieldMock2 = Mockito.mock(FieldDefinition.class);
+
+        EList<FieldDefinition> testFieldDefinitions = ECollections.asEList(fieldDefinition1, fieldDefinition2, fieldDefinition3);
+        EList<FieldDefinition> foobarChildDefinitions = ECollections.asEList(childFieldMock1, childFieldMock2);
+
+        when(fieldDefinition1.getName()).thenReturn("foo");
+        when(fieldDefinition2.getName()).thenReturn("bar");
+        when(fieldDefinition3.getName()).thenReturn("foobar");
+        when(childFieldMock1.getName()).thenReturn("childField1");
+        when(childFieldMock2.getName()).thenReturn("childField2");
+        when(sourceGraphMock.getType((NamedType) any())).thenReturn(fooBarTypeMock);
+        when(testDefinitionMock.getFieldDefinition()).thenReturn(testFieldDefinitions);
+        when(fooBarTypeMock.getFieldDefinition()).thenReturn(foobarChildDefinitions);
+
+
+        String fieldSet = "foobar { childField1 childField2 missingField}";
+
+        fieldSetValidator.validate(sourceGraphMock, testDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test
+    public void noExceptionWithValidFieldSetTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+        ObjectTypeExtensionDefinition typeDefinitionMock = Mockito.mock(ObjectTypeExtensionDefinition.class);
+        FieldDefinition fieldDefinition1 = Mockito.mock(FieldDefinition.class);
+        when(fieldDefinition1.getName()).thenReturn("foo");
+        FieldDefinition fieldDefinition2 = Mockito.mock(FieldDefinition.class);
+        when(fieldDefinition2.getName()).thenReturn("bar");
+        FieldDefinition fieldDefinition3 = Mockito.mock(FieldDefinition.class);
+        when(fieldDefinition3.getName()).thenReturn("foobar");
+
+        EList<FieldDefinition> fieldDefinitionEList = ECollections.asEList(fieldDefinition1, fieldDefinition2, fieldDefinition3);
+        when(typeDefinitionMock.getFieldDefinition()).thenReturn(fieldDefinitionEList);
+
+        String fieldSet = "foo bar";
+
+        fieldSetValidator.validate(sourceGraphMock, typeDefinitionMock, fieldSet, FEDERATION_KEY_DIRECTIVE);
+    }
+
+    @Test
+    public void noExceptionWithValidFieldSetWithChildrenTypeExtension() {
+        XtextGraph sourceGraphMock = Mockito.mock(XtextGraph.class);
+
+        ObjectTypeExtensionDefinition testDefinitionMock = Mockito.mock(ObjectTypeExtensionDefinition.class);
         FieldDefinition fieldDefinition1 = Mockito.mock(FieldDefinition.class);
         FieldDefinition fieldDefinition2 = Mockito.mock(FieldDefinition.class);
         FieldDefinition fieldDefinition3 = Mockito.mock(FieldDefinition.class);

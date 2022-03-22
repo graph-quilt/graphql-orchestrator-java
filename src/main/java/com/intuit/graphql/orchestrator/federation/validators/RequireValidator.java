@@ -3,25 +3,24 @@ package com.intuit.graphql.orchestrator.federation.validators;
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.orchestrator.federation.exceptions.DirectiveMissingRequiredArgumentException;
 import com.intuit.graphql.orchestrator.federation.exceptions.IncorrectDirectiveArgumentSizeException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
 
 import java.util.List;
 import java.util.Optional;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_FIELDS_ARGUMENT;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
 
 public class RequireValidator {
     private final FieldSetValidator fieldSetValidator = new FieldSetValidator();
 
-    public void validate(XtextGraph sourceGraph, EObject typeDefinition, Directive requireDirective) {
-        String containerName = getTypeDefinitionName(typeDefinition);
+    public void validate(XtextGraph sourceGraph, TypeDefinition typeDefinition, Directive requireDirective) {
+        String containerName = typeDefinition.getName();
 
         checkDirectivesArgumentSize(requireDirective.getArguments(), containerName);
 
@@ -31,6 +30,20 @@ public class RequireValidator {
 
             String fieldSet = argument.get().getValueWithVariable().getStringValue();
             fieldSetValidator.validate(sourceGraph, typeDefinition, fieldSet, FEDERATION_REQUIRES_DIRECTIVE);
+        }
+    }
+
+    public void validate(XtextGraph sourceGraph, TypeExtensionDefinition typeExtensionDefinition, Directive requireDirective) {
+        String containerName = typeExtensionDefinition.getName();
+
+        checkDirectivesArgumentSize(requireDirective.getArguments(), containerName);
+
+        Optional<Argument> argument = requireDirective.getArguments().stream().findFirst();
+        if(argument.isPresent()) {
+            checkRequireArgumentName(argument.get(), containerName);
+
+            String fieldSet = argument.get().getValueWithVariable().getStringValue();
+            fieldSetValidator.validate(sourceGraph, typeExtensionDefinition, fieldSet, FEDERATION_REQUIRES_DIRECTIVE);
         }
     }
 

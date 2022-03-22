@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import lombok.Builder;
 import lombok.Getter;
-import org.eclipse.emf.ecore.EObject;
 
 public class EntityTypeMerger {
 
@@ -23,7 +23,13 @@ public class EntityTypeMerger {
 
   private void merge(EntityMergingContext entityMergingContext) {
     List<FieldDefinition> baseTypeFields = getFieldDefinitions(entityMergingContext.getBaseType());
-    List<FieldDefinition> typeExtensionFields =  getFieldDefinitions(entityMergingContext.getTypeExtension());
+    List<FieldDefinition> typeExtensionFields = null;
+    if(entityMergingContext.getExtensionSystemDefinition().getType() != null) {
+      typeExtensionFields = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getType());
+    } else {
+      typeExtensionFields = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());
+    }
+
     Set<String> baseTypeFieldNames =
         baseTypeFields.stream().map(FieldDefinition::getName).collect(Collectors.toSet());
 
@@ -40,6 +46,6 @@ public class EntityTypeMerger {
     private final String typename;
     private final String serviceNamespace;
     private final TypeDefinition baseType;
-    private final EObject typeExtension;
+    private final TypeSystemDefinition extensionSystemDefinition;
   }
 }

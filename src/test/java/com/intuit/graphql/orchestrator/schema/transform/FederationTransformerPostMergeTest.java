@@ -4,8 +4,10 @@ import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildDirec
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildDirectiveDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
+import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeExtensionDefinition;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createTypeSystemDefinition;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -18,7 +20,9 @@ import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.graphQL.impl.ArgumentImpl;
 import com.intuit.graphql.orchestrator.federation.exceptions.ExternalFieldNotFoundInBaseException;
@@ -31,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.emf.ecore.EObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,15 +57,18 @@ public class FederationTransformerPostMergeTest {
   @Before
   public void setup() {
     Map<String, TypeDefinition> entitiesByTypeName = new HashMap<>();
-
-    Map<String, Map<String, EObject>> entityExtensionsByNamespace = new HashMap<>();
+    Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
     ObjectTypeDefinition baseObjectType =
             buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION));
     entitiesByTypeName.put("EntityType", baseObjectType);
 
     ObjectTypeDefinition objectTypeExtension =
             buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
-    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", objectTypeExtension));
+
+    TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition();
+    typeSystemDefinition.setType(objectTypeExtension);
+
+    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition));
 
     when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(entitiesByTypeName);
     when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
@@ -78,10 +84,10 @@ public class FederationTransformerPostMergeTest {
 
   @Test
   public void transform_success_extension_key_in_subset() {
-    HashMap<String, Map<String, EObject>> extensionsByNamespace = new HashMap<>();
-
-    HashMap<String, EObject> extDefinitionsByName = new HashMap<>();
+    HashMap<String, Map<String, TypeSystemDefinition>> extensionsByNamespace = new HashMap<>();
+    HashMap<String, TypeSystemDefinition> extDefinitionsByName = new HashMap<>();
     HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
+    TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition();
 
     Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
     Directive sharedKeyDirective2 = createMockKeyDirectory("testField1");
@@ -95,8 +101,43 @@ public class FederationTransformerPostMergeTest {
             buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
     objectTypeExtension.getDirectives().add(sharedKeyDirective2);
 
+    typeSystemDefinition.setType(objectTypeExtension);
     baseDefinitionsByName.put("EntityType", baseObjectType);
-    extDefinitionsByName.put("EntityType", objectTypeExtension);
+    extDefinitionsByName.put("EntityType", typeSystemDefinition);
+    extensionsByNamespace.put("testNamespace", extDefinitionsByName);
+
+    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
+    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
+
+    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
+    assertThat(actual).isSameAs(xtextGraphMock);
+    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+  }
+
+  @Test
+  public void transform_success_extension_ObjectTypeExtension_key_in_subset() {
+    HashMap<String, Map<String, TypeSystemDefinition>> extensionsByNamespace = new HashMap<>();
+
+    HashMap<String, TypeSystemDefinition> extDefinitionsByName = new HashMap<>();
+    HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
+    TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition();
+
+    Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
+    Directive sharedKeyDirective2 = createMockKeyDirectory("testField1");
+    Directive uniqueKeyDirective = createMockKeyDirectory("testField2");
+
+    ObjectTypeDefinition baseObjectType =
+            buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION));
+    baseObjectType.getDirectives().addAll(Arrays.asList(sharedKeyDirective1,uniqueKeyDirective));
+
+    ObjectTypeExtensionDefinition objectTypeExtension =
+            buildObjectTypeExtensionDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
+    objectTypeExtension.getDirectives().add(sharedKeyDirective2);
+
+    typeSystemDefinition.setTypeExtension(objectTypeExtension);
+    baseDefinitionsByName.put("EntityType", baseObjectType);
+    extDefinitionsByName.put("EntityType", typeSystemDefinition);
     extensionsByNamespace.put("testNamespace", extDefinitionsByName);
 
     when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
@@ -110,11 +151,10 @@ public class FederationTransformerPostMergeTest {
 
   @Test(expected = TypeConflictException.class)
   public void transform_fails_extension_key_not_subset() {
-
-    HashMap<String, Map<String, EObject>> extensionsByNamespace = new HashMap<>();
-
-    HashMap<String, EObject> extDefinitionsByName = new HashMap<>();
+    HashMap<String, Map<String, TypeSystemDefinition>> extensionsByNamespace = new HashMap<>();
+    HashMap<String, TypeSystemDefinition> extDefinitionsByName = new HashMap<>();
     HashMap<String, TypeDefinition> baseDefinitionsByName = new HashMap<>();
+    TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition();
 
     Directive sharedKeyDirective1 = createMockKeyDirectory("testField1");
     Directive sharedKeyDirective2 = createMockKeyDirectory("testField1");
@@ -128,8 +168,9 @@ public class FederationTransformerPostMergeTest {
             buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION));
     objectTypeExtension.getDirectives().addAll(Arrays.asList(sharedKeyDirective2, uniqueKeyDirective));
 
+    typeSystemDefinition.setType(objectTypeExtension);
     baseDefinitionsByName.put("EntityType", baseObjectType);
-    extDefinitionsByName.put("EntityType", objectTypeExtension);
+    extDefinitionsByName.put("EntityType", typeSystemDefinition);
     extensionsByNamespace.put("testNamespace", extDefinitionsByName);
 
     when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
@@ -143,11 +184,13 @@ public class FederationTransformerPostMergeTest {
 
   @Test(expected = SharedOwnershipException.class)
   public void transform_fails_shared_field_without_external(){
-    Map<String, Map<String, EObject>> entityExtensionsByNamespace = new HashMap<>();
+    Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition();
 
     ObjectTypeDefinition objectTypeExtension =
             buildObjectTypeDefinition("EntityType", singletonList(buildFieldDefinition("testField1")));
-    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", objectTypeExtension));
+    typeSystemDefinition.setType(objectTypeExtension);
+    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition));
 
     when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
 
@@ -159,12 +202,14 @@ public class FederationTransformerPostMergeTest {
 
   @Test(expected = ExternalFieldNotFoundInBaseException.class)
   public void transform_fails_external_field_not_in_base(){
-    Map<String, Map<String, EObject>> entityExtensionsByNamespace = new HashMap<>();
+    Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition();
 
     ObjectTypeDefinition objectTypeExtension = buildObjectTypeDefinition("EntityType",
                     Arrays.asList(EXTENSION_FIELD_DEFINITION, buildFieldDefinition("BadField", singletonList(buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null)))));
 
-    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", objectTypeExtension));
+    typeSystemDefinition.setType(objectTypeExtension);
+    entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition));
     when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
 
     XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);

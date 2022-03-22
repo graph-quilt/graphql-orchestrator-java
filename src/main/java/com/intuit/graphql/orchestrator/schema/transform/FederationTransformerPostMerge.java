@@ -2,6 +2,8 @@ package com.intuit.graphql.orchestrator.schema.transform;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger.EntityMergingContext;
 import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
@@ -15,7 +17,6 @@ import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
 
 import java.util.List;
 import java.util.Objects;
@@ -28,10 +29,10 @@ import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATI
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getTypeDefinitionName;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeExtensionDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDefinitionDirectives;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeExtensionDefinition;
 import static java.lang.String.format;
 
 public class FederationTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
@@ -39,6 +40,8 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
   private static final EntityTypeMerger entityTypeMerger = new EntityTypeMerger();
   private final ExternalValidator externalValidator = new ExternalValidator();
   private final KeyDirectiveValidator keyDirectiveValidator = new KeyDirectiveValidator();
+
+  private final String TYPE_CONFLICT_ERR_MSG = "Failed to merge entity extension to base type. typename%s, serviceNamespace=%s";
 
   @Override
   public XtextGraph transform(XtextGraph xtextGraph) {
@@ -76,13 +79,19 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
     return xtextGraph.getEntityExtensionsByNamespace().get(serviceNamespace).values().stream()
         .map(
             entityTypeExtension -> {
-              String entityTypename = getTypeDefinitionName(entityTypeExtension);
-              TypeDefinition entityBaseType = getBaseEntity(xtextGraph, entityTypename, serviceNamespace);
+                String entityTypename = null;
+                if(entityTypeExtension.getType() != null) {
+                  entityTypename = entityTypeExtension.getType().getName();
+                } else {
+                  entityTypename = entityTypeExtension.getTypeExtension().getName();
+                }
 
-              return EntityMergingContext.builder()
+                TypeDefinition entityBaseType = getBaseEntity(xtextGraph, entityTypename, serviceNamespace);
+
+                return EntityMergingContext.builder()
                   .typename(entityTypename)
                   .serviceNamespace(serviceNamespace)
-                  .typeExtension(entityTypeExtension)
+                  .extensionSystemDefinition(entityTypeExtension)
                   .baseType(entityBaseType)
                   .build();
             });
@@ -98,32 +107,61 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
 
   private void validateBaseExtensionCompatibility(EntityMergingContext entityMergingContext) {
       TypeDefinition baseType = entityMergingContext.getBaseType();
-      EObject typeExtension = entityMergingContext.getTypeExtension();
+      TypeSystemDefinition typeSystemDefinition = entityMergingContext.getExtensionSystemDefinition();
 
-      // specification: directive @key(fields: _FieldSet!) repeatable on OBJECT | INTERFACE
-      if (!(isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)
-              || isObjectTypeDefinition(baseType) && isObjectTypeDefinition(typeExtension))) {
-          String errMsgTemplate =
-                  "Failed to merge entity extension to base type. typename%s, serviceNamespace=%s";
-          throw new TypeConflictException(
-                  format(
-                          errMsgTemplate,
-                          entityMergingContext.getTypename(),
-                          entityMergingContext.getServiceNamespace()));
-      }
+      if(typeSystemDefinition.getType() != null) {
+          TypeDefinition typeExtension = typeSystemDefinition.getType();
 
-      getDefinitionDirectives(typeExtension).forEach(directive -> {
-          String directiveName = directive.getDefinition().getName();
-          if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
-              keyDirectiveValidator.validatePostMerge(entityMergingContext);
+          if (!(isInterfaceTypeDefinition(baseType) && isInterfaceTypeDefinition(typeExtension)
+                  || isObjectTypeDefinition(baseType) && isObjectTypeDefinition(typeExtension))) {
+              throw new TypeConflictException(
+                      format(
+                              TYPE_CONFLICT_ERR_MSG,
+                              entityMergingContext.getTypename(),
+                              entityMergingContext.getServiceNamespace()
+                      )
+              );
           }
-      });
+
+          typeExtension.getDirectives().forEach(directive -> {
+              String directiveName = directive.getDefinition().getName();
+              if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
+                  keyDirectiveValidator.validatePostMerge(entityMergingContext);
+              }
+          });
+      } else {
+          TypeExtensionDefinition typeExtension = typeSystemDefinition.getTypeExtension();
+
+          if (!(isInterfaceTypeDefinition(baseType) && isInterfaceTypeExtensionDefinition(typeExtension)
+                  || isObjectTypeDefinition(baseType) && isObjectTypeExtensionDefinition(typeExtension))) {
+              throw new TypeConflictException(
+                      format(
+                              TYPE_CONFLICT_ERR_MSG,
+                              entityMergingContext.getTypename(),
+                              entityMergingContext.getServiceNamespace()
+                      )
+              );
+          }
+
+          typeExtension.getDirectives().forEach(directive -> {
+              String directiveName = directive.getDefinition().getName();
+              if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
+                  keyDirectiveValidator.validatePostMerge(entityMergingContext);
+              }
+          });
+      }
 
       checkFederationFieldDirectives(entityMergingContext);
   }
 
   private void checkFederationFieldDirectives(EntityMergingContext entityMergingContext) {
-      List<FieldDefinition> extFieldDefinitions = getFieldDefinitions(entityMergingContext.getTypeExtension());
+      List<FieldDefinition> extFieldDefinitions = null;
+      if(entityMergingContext.getExtensionSystemDefinition().getType() != null) {
+          extFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getType());
+      } else {
+          extFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());
+      }
+
       List<String> baseFieldNames = getFieldDefinitions(entityMergingContext.getBaseType())
               .stream().map(FieldDefinition::getName).collect(Collectors.toList());
 

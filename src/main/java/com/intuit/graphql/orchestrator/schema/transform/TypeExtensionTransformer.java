@@ -8,21 +8,14 @@ import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
-import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
 import com.intuit.graphql.graphQL.UnionTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.util.GraphQLSwitch;
-import com.intuit.graphql.orchestrator.utils.FederationConstants;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
-
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.resource.XtextResourceSet;
-
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 
 public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGraph> {
 
@@ -32,16 +25,7 @@ public class TypeExtensionTransformer implements Transformer<XtextGraph, XtextGr
     TypeDefinitionVisitor typeDefinitionVisitor = new TypeDefinitionVisitor(xtextGraph.getXtextResourceSet());
     XtextUtils.getAllTypes(xtextGraph.getXtextResourceSet()).forEach(typeDefinitionVisitor::doSwitch);
     //TODO: Maybe remove extension Types form resourceSet??
-    if(xtextGraph.isFederationService()) {
-        return xtextGraph.transform(builder -> builder.entityExtensionDefinitionsByName(
-                XtextUtils.getAllTypeExtensions(xtextGraph.getXtextResourceSet())
-                        .filter(ObjectTypeExtensionDefinition.class::isInstance)
-                        .filter(typeExtensionDefinition ->  definitionContainsDirective(typeExtensionDefinition, FederationConstants.FEDERATION_KEY_DIRECTIVE))
-                        .collect(Collectors.toMap(TypeExtensionDefinition::getName, Function.identity()))
-        ));
-    } else {
-        return xtextGraph;
-    }
+    return xtextGraph;
   }
 
   class TypeDefinitionVisitor extends GraphQLSwitch<EObject> {
