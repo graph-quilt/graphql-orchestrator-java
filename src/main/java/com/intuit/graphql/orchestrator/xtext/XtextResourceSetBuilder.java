@@ -7,6 +7,7 @@ import com.intuit.graphql.GraphQLStandaloneSetupGenerated;
 import com.intuit.graphql.orchestrator.schema.SchemaParseException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +22,7 @@ import org.eclipse.xtext.resource.IResourceFactory;
 import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.resource.XtextResourceSet;
 import org.eclipse.xtext.util.CancelIndicator;
+import org.eclipse.xtext.util.Files;
 import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
@@ -146,7 +148,11 @@ public class XtextResourceSetBuilder {
   private static String getFederationDirectives() {
     String directives = "";
     try {
-      directives = IOUtils.resourceToString("federation_built_in_directives.graphqls", null, ClassLoader.getSystemClassLoader());
+      directives = IOUtils.toString(
+              XtextResourceSetBuilder.class.getClassLoader()
+                      .getResourceAsStream( "federation_built_in_directives.graphqls"),
+              Charset.defaultCharset()
+      );
     } catch (IOException ex) {
       log.error("Failed to read resource");
     }
