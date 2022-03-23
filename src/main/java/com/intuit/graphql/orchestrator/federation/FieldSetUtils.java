@@ -14,8 +14,12 @@ public class FieldSetUtils {
 
   private FieldSetUtils() {}
 
+  public static Document getParsedFieldSet(String fieldSetRawValue) {
+    return parser.parseDocument(join(StringUtils.SPACE, "{",fieldSetRawValue , "}"));
+  }
+
   public static Set<Field> toFieldSet(String fieldSetRawValue) {
-    Document document = parser.parseDocument(join(StringUtils.SPACE, "{",fieldSetRawValue , "}"));
+    Document document = getParsedFieldSet(fieldSetRawValue);
     OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0);
     return operationDefinition.getSelectionSet().getSelections().stream()
         .filter(selection -> selection instanceof Field) // TODO validate that selections are Fields only

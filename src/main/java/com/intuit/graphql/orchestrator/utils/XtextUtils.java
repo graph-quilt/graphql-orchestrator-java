@@ -29,8 +29,6 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.EcoreUtil2;
 import org.eclipse.xtext.resource.XtextResourceSet;
 
-import static java.lang.String.format;
-
 /**
  * The Xtext utils to get information from the XText AST.
  */
@@ -171,7 +169,7 @@ public class XtextUtils {
    * @param <T> generic type that is sub class of {@link TypeExtensionDefinition} to return
    * @return stream of TypeExtensionDefinitions for the given resource set
    */
-  public static <T extends TypeExtensionDefinition> Stream<T> getAllTypeExtension(
+  public static <T extends TypeExtensionDefinition> Stream<T> getAllTypeExtensionForName(
       String name, Class<T> type, @NonNull XtextResourceSet set) {
     return getAllContentsOfType(type, set) //TODO: check this method (domain-types edge case) & getAllTypes.
         .filter(extensionDefinition -> StringUtils.endsWith(extensionDefinition.getName(), name));
@@ -185,6 +183,10 @@ public class XtextUtils {
    */
   public static Stream<TypeDefinition> getAllTypes(@NonNull XtextResourceSet set) {
     return getTypeSystemDefinition(set).map(TypeSystemDefinition::getType).filter(Objects::nonNull);
+  }
+
+  public static Stream<TypeExtensionDefinition> getAllTypeExtensions(@NonNull XtextResourceSet set) {
+    return getTypeSystemDefinition(set).map(TypeSystemDefinition::getTypeExtension).filter(Objects::nonNull);
   }
 
   /**
@@ -221,7 +223,7 @@ public class XtextUtils {
         .getAllContentsOfType(typeSystem, type).stream()).filter(Objects::nonNull);
   }
 
-  private static Stream<TypeSystemDefinition> getTypeSystemDefinition(@NonNull XtextResourceSet set) {
+  public static Stream<TypeSystemDefinition> getTypeSystemDefinition(@NonNull XtextResourceSet set) {
     return filteredStreamOf(TypeSystem.class, set.getResources().stream()
         .flatMap(resource -> resource.getContents().stream()))
         .flatMap(typeSystem -> typeSystem.getTypeSystemDefinition().stream());
@@ -254,44 +256,55 @@ public class XtextUtils {
         : String.format(XTEXT_TYPE_FORMAT, XtextTypeUtils.typeName(namedType), StringUtils.EMPTY, StringUtils.EMPTY);
   }
 
-  public static boolean typeContainsDirective(TypeDefinition typeDefinition, String directiveName) {
-    return typeDefinition.getDirectives().stream()
-            .anyMatch(directive -> directive.getDefinition().getName().equals(directiveName));
-  }
-
-  public static List<Directive> getDefinitionDirectives(EObject definition) {
-    if(definition instanceof TypeDefinition) {
-      return ((TypeDefinition) definition).getDirectives();
-    } else if(definition instanceof FieldDefinition) {
-      return ((FieldDefinition) definition).getDirectives();
-    }
-
-    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
-  }
-
-  public static boolean definitionContainsDirective(EObject definition, String directiveName) {
-    return getDefinitionDirectives(definition).stream()
+  public static boolean definitionContainsDirective(TypeDefinition definition, String directiveName) {
+    return definition.getDirectives().stream()
             .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
   }
 
-  public static List<Directive> getDirectivesWithNameFromDefinition(EObject definition, String directiveName) {
-      return getDefinitionDirectives(definition).stream()
+  public static boolean definitionContainsDirective(TypeExtensionDefinition definition, String directiveName) {
+    return definition.getDirectives().stream()
+            .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
+  }
+
+  public static boolean definitionContainsDirective(FieldDefinition definition, String directiveName) {
+    return definition.getDirectives().stream()
+            .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
+  }
+
+  public static List<Directive> getDirectivesWithNameFromDefinition(FieldDefinition definition, String directiveName) {
+      return definition.getDirectives().stream()
               .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
               .collect(Collectors.toList());
   }
 
-  public static List<Directive> getDirectivesWithNameFromDefinition(EObject definition, Collection<String> directiveNames) {
-    if(definition instanceof TypeDefinition) {
-      return ((TypeDefinition) definition).getDirectives().stream()
-              .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
+  public static List<Directive> getDirectivesWithNameFromDefinition(TypeDefinition definition, String directiveName) {
+      return definition.getDirectives().stream()
+              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
               .collect(Collectors.toList());
-    } else if(definition instanceof FieldDefinition) {
-      return ((FieldDefinition) definition).getDirectives().stream()
-              .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
-              .collect(Collectors.toList());
-    }
+  }
 
-    throw new IllegalArgumentException(format("Failed to get directives for %s. Expecting a TypeDefinition or FieldDefinition", definition.getClass().getName()));
+  public static List<Directive> getDirectivesWithNameFromDefinition(TypeExtensionDefinition definition, String directiveName) {
+      return definition.getDirectives().stream()
+              .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+              .collect(Collectors.toList());
+  }
+
+  public static List<Directive> getDirectivesWithNameFromDefinition(TypeExtensionDefinition definition, Collection<String> directiveNames) {
+    return  definition.getDirectives().stream()
+            .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
+            .collect(Collectors.toList());
+  }
+
+  public static List<Directive> getDirectivesWithNameFromDefinition(TypeDefinition definition, Collection<String> directiveNames) {
+    return  definition.getDirectives().stream()
+            .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
+            .collect(Collectors.toList());
+  }
+
+  public static List<Directive> getDirectivesWithNameFromDefinition(FieldDefinition definition, Collection<String> directiveNames) {
+    return definition.getDirectives().stream()
+            .filter(directive -> directiveNames.contains(directive.getDefinition().getName()))
+            .collect(Collectors.toList());
   }
 
 }

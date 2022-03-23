@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.federation.validators;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.orchestrator.federation.exceptions.EmptyFieldsArgumentFederationDirective;
 import com.intuit.graphql.orchestrator.federation.exceptions.InvalidFieldSetReferenceException;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
@@ -18,6 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.federation.FieldSetUtils.getParsedFieldSet;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class FieldSetValidator {
@@ -29,12 +31,8 @@ public class FieldSetValidator {
             throw new EmptyFieldsArgumentFederationDirective(typeDefinition.getName(), originatingDirective);
         }
 
-        if(!fieldSet.startsWith("{")) {
-            fieldSet = StringUtils.join(StringUtils.SPACE, "{", fieldSet, "}");
-        }
-
         //Throws InvalidSyntaxException if fieldSet is incorrect
-        Document fieldSetDocument = Parser.parse(fieldSet);
+        Document fieldSetDocument = getParsedFieldSet(fieldSet);
 
         List<OperationDefinition> definitions = fieldSetDocument.getDefinitions().stream()
                 .map(OperationDefinition.class::cast).collect(Collectors.toList());
@@ -45,6 +43,29 @@ public class FieldSetValidator {
             List<Field> fields = definition.getSelectionSet().getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
             for(Field field : fields) {
                 checkFieldReferenceRecursively(sourceGraph,typeDefinition.getName(), typeFieldDefinitions, field);
+            }
+        }
+    }
+
+    public void validate(XtextGraph sourceGraph, TypeExtensionDefinition typeExtensionDefinition, String fieldSet, String originatingDirective) {
+        Objects.requireNonNull(sourceGraph);
+        Objects.requireNonNull(typeExtensionDefinition);
+        if(StringUtils.isBlank(fieldSet)) {
+            throw new EmptyFieldsArgumentFederationDirective(typeExtensionDefinition.getName(), originatingDirective);
+        }
+
+        //Throws InvalidSyntaxException if fieldSet is incorrect
+        Document fieldSetDocument = getParsedFieldSet(fieldSet);
+
+        List<OperationDefinition> definitions = fieldSetDocument.getDefinitions().stream()
+                .map(OperationDefinition.class::cast).collect(Collectors.toList());
+
+        List<FieldDefinition> typeFieldDefinitions = getFieldDefinitions(typeExtensionDefinition);
+
+        for( final OperationDefinition definition : definitions) {
+            List<Field> fields = definition.getSelectionSet().getSelections().stream().map(Field.class::cast).collect(Collectors.toList());
+            for(Field field : fields) {
+                checkFieldReferenceRecursively(sourceGraph, typeExtensionDefinition.getName(), typeFieldDefinitions, field);
             }
         }
     }
