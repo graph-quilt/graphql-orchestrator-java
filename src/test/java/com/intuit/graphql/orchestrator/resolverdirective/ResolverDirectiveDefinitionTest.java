@@ -10,49 +10,55 @@ import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
+import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ResolverDirectiveDefinitionTest {
 
-  @Test
-  public void canCreateResolverDirectiveDefinitionTest() {
-    String resolverFieldName = "testField";
-    String resolverArgumentName1 = "testFieldArg1";
-    String resolverArgumentValue1 = "$testFieldValue2";
+  private static final String TEST_RESOLVER_FIELDNAME = "resolverField";
+  private static final String TEST_RESOLVER_ARGUMENT_NAME1 = "testFieldArg1";
+  private static final String TEST_RESOLVER_ARGUMENT_VALUE1 = "$testFieldValue1";
+  private static final String TEST_RESOLVER_ARGUMENT_NAME2 = "testFieldArg1";
+  private static final String TEST_RESOLVER_ARGUMENT_VALUE2 = "$testFieldValue2";
 
-    String resolverArgumentName2 = "testFieldArg1";
-    String resolverArgumentValue2 = "$testFieldValue2";
+  private ResolverDirectiveDefinition subjectUnderTest;
 
-    Argument resolverField = createResolverField(resolverFieldName);
-    Argument resolverArguments = createResolverArguments(resolverArgumentName1, resolverArgumentValue1,
-        resolverArgumentName2, resolverArgumentValue2);
+  @Before
+  public void setup() {
+    Argument resolverField = createResolverField(TEST_RESOLVER_FIELDNAME);
+    Argument resolverArguments = createResolverArguments(TEST_RESOLVER_ARGUMENT_NAME1,
+        TEST_RESOLVER_ARGUMENT_VALUE1,
+        TEST_RESOLVER_ARGUMENT_NAME2, TEST_RESOLVER_ARGUMENT_VALUE2);
 
     Directive directive = GraphQLFactoryDelegate.createDirective();
     directive.getArguments().add(resolverField);
     directive.getArguments().add(resolverArguments);
 
-    ResolverDirectiveDefinition resolverDirectiveDefinition = ResolverDirectiveDefinition.from(directive);
+    subjectUnderTest = ResolverDirectiveDefinition.from(directive);
+  }
 
-    assertThat(resolverDirectiveDefinition.getField()).isEqualTo(resolverFieldName);
-    ResolverArgumentDefinition resolverArgumentEntry1 = resolverDirectiveDefinition.getArguments().get(0);
-    assertThat(resolverArgumentEntry1.getName()).isEqualTo(resolverArgumentName1);
-    assertThat(resolverArgumentEntry1.getValue()).isEqualTo(resolverArgumentValue1);
+  @Test
+  public void canCreateResolverDirectiveDefinitionTest() {
+    assertThat(subjectUnderTest.getField()).isEqualTo(TEST_RESOLVER_FIELDNAME);
+    ResolverArgumentDefinition resolverArgumentEntry1 = subjectUnderTest.getArguments().get(0);
+    assertThat(resolverArgumentEntry1.getName()).isEqualTo(TEST_RESOLVER_ARGUMENT_NAME1);
+    assertThat(resolverArgumentEntry1.getValue()).isEqualTo(TEST_RESOLVER_ARGUMENT_VALUE1);
 
-    ResolverArgumentDefinition resolverArgumentEntry2 = resolverDirectiveDefinition.getArguments().get(1);
-    assertThat(resolverArgumentEntry2.getName()).isEqualTo(resolverArgumentName2);
-    assertThat(resolverArgumentEntry2.getValue()).isEqualTo(resolverArgumentValue2);
+    ResolverArgumentDefinition resolverArgumentEntry2 = subjectUnderTest.getArguments().get(1);
+    assertThat(resolverArgumentEntry2.getName()).isEqualTo(TEST_RESOLVER_ARGUMENT_NAME2);
+    assertThat(resolverArgumentEntry2.getValue()).isEqualTo(TEST_RESOLVER_ARGUMENT_VALUE2);
   }
 
   @Test(expected = ResolverDirectiveException.class)
   public void unexpectedArgumentForResolverDirectiveDefinitionTest() {
     // FootType has testField.  testField has @resolver(field: "resolverField", argument: [...]])
     // argument is not valid.
-    String resolverFieldName = "resolverField";
-
     Argument resolverArguments = GraphQLFactoryDelegate.createArgument();
     resolverArguments.setName("argument"); // should be arguments
 
-    Argument resolverField = createResolverField(resolverFieldName);
+    Argument resolverField = createResolverField(TEST_RESOLVER_FIELDNAME);
 
     Directive directive = GraphQLFactoryDelegate.createDirective();
     directive.getArguments().add(resolverField);
@@ -66,7 +72,7 @@ public class ResolverDirectiveDefinitionTest {
     objectType.setType(fooObjType);
 
     FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
-    fieldDefinition.setName("testField");
+    fieldDefinition.setName(TEST_RESOLVER_FIELDNAME);
     fieldDefinition.setNamedType(objectType);
     fieldDefinition.getDirectives().add(directive);
     ResolverDirectiveDefinition.from(directive);
@@ -75,16 +81,12 @@ public class ResolverDirectiveDefinitionTest {
 
   @Test(expected = ResolverDirectiveException.class)
   public void unexpectedFieldForResolverDirectiveDefinitionTest() {
-    String resolverFieldName = ""; // cannot be empty
-    String resolverArgumentName1 = "testFieldArg1";
-    String resolverArgumentValue1 = "$testFieldValue2";
-
-    String resolverArgumentName2 = "testFieldArg1";
-    String resolverArgumentValue2 = "$testFieldValue2";
+    String resolverFieldName = StringUtils.EMPTY; // cannot be empty
 
     Argument resolverField = createResolverField(resolverFieldName);
-    Argument resolverArguments = createResolverArguments(resolverArgumentName1, resolverArgumentValue1,
-        resolverArgumentName2, resolverArgumentValue2);
+    Argument resolverArguments = createResolverArguments(TEST_RESOLVER_ARGUMENT_NAME1,
+        TEST_RESOLVER_ARGUMENT_VALUE1,
+        TEST_RESOLVER_ARGUMENT_NAME2, TEST_RESOLVER_ARGUMENT_VALUE2);
 
     Directive directive = GraphQLFactoryDelegate.createDirective();
     directive.getArguments().add(resolverField);
@@ -98,7 +100,7 @@ public class ResolverDirectiveDefinitionTest {
     nonNullType.setType(fooObjType);
 
     FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
-    fieldDefinition.setName("testField");
+    fieldDefinition.setName(TEST_RESOLVER_FIELDNAME);
     fieldDefinition.setNamedType(nonNullType);
     fieldDefinition.getDirectives().add(directive);
 
@@ -108,6 +110,15 @@ public class ResolverDirectiveDefinitionTest {
   @Test(expected = NullPointerException.class)
   public void nullDirectiveTest() {
     ResolverDirectiveDefinition.from(null);
+  }
+
+
+  @Test
+  public void extractRequiredFieldsFrom() {
+    Set<String> actual = ResolverDirectiveDefinition.extractRequiredFieldsFrom(subjectUnderTest);
+    assertThat(actual).hasSize(2);
+    assertThat(actual.contains("testFieldValue1")).isTrue();
+    assertThat(actual.contains("testFieldValue2")).isTrue();
   }
 
 }
