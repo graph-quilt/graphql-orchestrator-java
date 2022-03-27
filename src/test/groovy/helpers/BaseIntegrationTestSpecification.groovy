@@ -17,7 +17,7 @@ class BaseIntegrationTestSpecification extends Specification {
 
     public static final Parser PARSER = new Parser()
 
-    SimpleMockServiceProvider testService
+    def testService
 
     def createSimpleMockService(String testSchema, Map<String, Object> mockServiceResponse) {
         return new SimpleMockServiceProvider().builder()
