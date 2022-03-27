@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.integration
 
-
+import graphql.ExecutionInput
+import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
@@ -31,8 +32,6 @@ class CustomScalarsSpec extends BaseIntegrationTestSpecification {
         specUnderTest = createGraphQLOrchestrator(testService)
     }
 
-    // TODO use latest grammar
-    /*
     def "Custom Scalars can be queried"() {
         given:
 
@@ -50,5 +49,4 @@ class CustomScalarsSpec extends BaseIntegrationTestSpecification {
         data.url instanceof String && data.url == "https://127.0.0.1"
     }
 
-     */
 }
