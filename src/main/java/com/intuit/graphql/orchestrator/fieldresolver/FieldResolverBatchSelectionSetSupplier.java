@@ -100,7 +100,6 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                 if (fieldReferenceType == Scalars.GraphQLID) {
                     fieldReferenceType = Scalars.GraphQLString;
                 }
-                //return ValueUtil.astFromValue(valueFromSource, fieldReferenceType);
                 return ValuesResolver.valueToLiteral(newExternalValue(valueFromSource), fieldReferenceType);
 
             } else {
@@ -110,13 +109,11 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                     StringUtils.equals(typename, Scalars.GraphQLID.getName())) {
                     stringLiteralAstValue = String.format("\"%s\"", stringLiteralAstValue);
                 }
-                // old was return AstValueHelper.valueFromAst(stringLiteralAstValue)
                 return Parser.parseValue(stringLiteralAstValue);
 
             }
         } else {
             String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
-            //old was return AstValueHelper.valueFromAst(stringLiteralAstValue)
             return Parser.parseValue(stringLiteralAstValue);
         }
     }
