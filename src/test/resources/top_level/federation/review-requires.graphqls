@@ -1,0 +1,15 @@
+extend type Employee @key(fields: "id"){
+    id: ID! @external
+}
+
+type Store @extends @key(fields: "id") {
+    id: ID @external
+    name: String @external
+    review: Review @requires(fields: "name")
+}
+
+type Review {
+    reviewId: ID!
+    rating: Int!
+    comments: String
+}
