@@ -1,18 +1,33 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createDirectiveDefinition;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createValue;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createValueWithVariable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.intuit.graphql.graphQL.Directive;
+import com.intuit.graphql.graphQL.DirectiveDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.SchemaDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.TestHelper;
 import com.intuit.graphql.orchestrator.schema.Operation;
+import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
+
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.eclipse.xtext.resource.XtextResourceSet;
 import org.junit.Test;
 
@@ -187,4 +202,285 @@ public class XtextUtilsTest {
 
   }
 
+  @Test
+  public void getDirectivesWithNameFromDefinitionsTypeDefReturnsEmptyWhenNotFound() {
+    TypeDefinition typeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+
+    typeDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective));
+
+    List<Directive> result = getDirectivesWithNameFromDefinition(typeDefinition, "Bad");
+
+    assert CollectionUtils.isEmpty(result);
+  }
+
+  @Test
+  public void getDirectivesWithNameFromDefinitionsTypedDefReturnsDirectives() {
+    TypeDefinition typeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+    Directive bar2Directive = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+    bar2Directive.setDefinition(barDirectiveDefinition);
+
+    typeDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive));
+
+    List<Directive> result = getDirectivesWithNameFromDefinition(typeDefinition, "Bar");
+
+    assert CollectionUtils.isNotEmpty(result);
+    assert result.size() == 2;
+    assert result.get(0).getDefinition().getName().equals("Bar");
+  }
+
+  @Test
+  public void definitionContainsDirectiveTypeDefReturnsFalseWhenNotFound() {
+    TypeDefinition typeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+
+    typeDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective));
+
+    assert !definitionContainsDirective(typeDefinition, "Bad");
+  }
+
+  @Test
+  public void definitionContainsDirectiveTypedDefReturnsTrueWhenExists() {
+    TypeDefinition typeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+    Directive bar2Directive = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+    bar2Directive.setDefinition(barDirectiveDefinition);
+
+    typeDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive));
+
+    assert definitionContainsDirective(typeDefinition, "Foo");
+  }
+
+  @Test
+  public void getDirectivesWithNameFromDefinitionsFieldDefReturnsEmptyWhenNotFound() {
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+
+    fieldDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective));
+
+    List<Directive> result = getDirectivesWithNameFromDefinition(fieldDefinition, "Bad");
+
+    assert CollectionUtils.isEmpty(result);
+  }
+
+  @Test
+  public void getDirectivesWithNameFromDefinitionsFieldDefReturnsDirectives() {
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+    Directive bar2Directive = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+    bar2Directive.setDefinition(barDirectiveDefinition);
+
+    fieldDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive));
+
+    List<Directive> result = getDirectivesWithNameFromDefinition(fieldDefinition, "Bar");
+
+    assert CollectionUtils.isNotEmpty(result);
+    assert result.size() == 2;
+    assert result.get(0).getDefinition().getName().equals("Bar");
+  }
+
+  @Test
+  public void definitionContainsDirectivFieldDefReturnsFalseWhenNotFound() {
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+
+    fieldDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective));
+
+    assert !definitionContainsDirective(fieldDefinition, "Bad");
+  }
+
+  @Test
+  public void definitionContainsDirectiveFieldDefReturnsTrueWhenExists() {
+    FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+    Directive bar2Directive = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+    bar2Directive.setDefinition(barDirectiveDefinition);
+
+    fieldDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive));
+
+    assert definitionContainsDirective(fieldDefinition, "Foo");
+  }
+
+  @Test
+  public void getDirectivesWithNameFromDefinitionsTypeExtDefReturnsEmptyWhenNotFound() {
+    ObjectTypeExtensionDefinition typeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+
+    typeExtensionDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective));
+
+    List<Directive> result = getDirectivesWithNameFromDefinition(typeExtensionDefinition, "Bad");
+
+    assert CollectionUtils.isEmpty(result);
+  }
+
+  @Test
+  public void getDirectivesWithNameFromDefinitionsTypeExtDefReturnsDirectives() {
+    ObjectTypeExtensionDefinition typeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+    Directive bar2Directive = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+    bar2Directive.setDefinition(barDirectiveDefinition);
+
+    typeExtensionDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive));
+
+    List<Directive> result = getDirectivesWithNameFromDefinition(typeExtensionDefinition, "Bar");
+
+    assert CollectionUtils.isNotEmpty(result);
+    assert result.size() == 2;
+    assert result.get(0).getDefinition().getName().equals("Bar");
+  }
+
+  @Test
+  public void definitionContainsDirectiveTypeExtDefReturnsFalseWhenNotFound() {
+    TypeExtensionDefinition typeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+
+    typeExtensionDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective));
+
+    assert !definitionContainsDirective(typeExtensionDefinition, "Bad");
+  }
+
+  @Test
+  public void definitionContainsDirectiveTypeExtDefReturnsTrueWhenExists() {
+    TypeExtensionDefinition typeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition();
+
+    Directive fooDirective = GraphQLFactoryDelegate.createDirective();
+    Directive barDirective = GraphQLFactoryDelegate.createDirective();
+    Directive bar2Directive = GraphQLFactoryDelegate.createDirective();
+
+    DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition();
+    DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition();
+
+    fooDirectiveDefinition.setName("Foo");
+    fooDirective.setDefinition(fooDirectiveDefinition);
+
+    barDirectiveDefinition.setName("Bar");
+    barDirective.setDefinition(barDirectiveDefinition);
+    bar2Directive.setDefinition(barDirectiveDefinition);
+
+    typeExtensionDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive));
+
+    assert definitionContainsDirective(typeExtensionDefinition, "Foo");
+  }
 }

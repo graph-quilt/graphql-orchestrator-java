@@ -6,19 +6,23 @@ import com.intuit.graphql.graphQL.ArrayValueWithVariable;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.EnumTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.EnumValueDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.GraphQLFactory;
 import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
 import com.intuit.graphql.graphQL.InputValueDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ListType;
 import com.intuit.graphql.graphQL.ObjectFieldWithVariable;
 import com.intuit.graphql.graphQL.ObjectType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.ObjectValueWithVariable;
 import com.intuit.graphql.graphQL.PrimitiveType;
 import com.intuit.graphql.graphQL.ScalarTypeDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.graphQL.UnionMemberShip;
 import com.intuit.graphql.graphQL.UnionMembers;
 import com.intuit.graphql.graphQL.UnionTypeDefinition;
@@ -43,6 +47,10 @@ public class GraphQLFactoryDelegate {
 
   }
 
+  public static TypeSystemDefinition createTypeSystemDefinition() {
+    return instance.createTypeSystemDefinition();
+  }
+
   public static ScalarTypeDefinition createScalarTypeDefinition() {
     return instance.createScalarTypeDefinition();
   }
@@ -51,12 +59,20 @@ public class GraphQLFactoryDelegate {
     return instance.createObjectTypeDefinition();
   }
 
+  public static ObjectTypeExtensionDefinition createObjectTypeExtensionDefinition() {
+    return instance.createObjectTypeExtensionDefinition();
+  }
+
   public static InputObjectTypeDefinition createInputObjectTypeDefinition() {
     return instance.createInputObjectTypeDefinition();
   }
 
   public static InterfaceTypeDefinition createInterfaceTypeDefinition() {
     return instance.createInterfaceTypeDefinition();
+  }
+
+  public static InterfaceTypeExtensionDefinition createInterfaceTypeExtensionDefinition() {
+    return instance.createInterfaceTypeExtensionDefinition();
   }
 
   public static UnionTypeDefinition createUnionTypeDefinition() {
@@ -77,6 +93,10 @@ public class GraphQLFactoryDelegate {
 
   public static EnumValueDefinition createEnumValueDefinition() {
     return instance.createEnumValueDefinition();
+  }
+
+  public static EnumTypeExtensionDefinition createEnumTypeExtensionDefinition() {
+    return instance.createEnumTypeExtensionDefinition();
   }
 
   public static FieldDefinition createFieldDefinition() {

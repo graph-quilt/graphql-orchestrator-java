@@ -114,6 +114,27 @@ public class XtextTypeUtils {
     }
   }
 
+  public static List<FieldDefinition> getFieldDefinitions(TypeExtensionDefinition typeDefinition) {
+    return getFieldDefinitions(typeDefinition, false);
+  }
+
+  public static List<FieldDefinition> getFieldDefinitions(TypeExtensionDefinition typeDefinition, boolean defaultList) {
+    if (typeDefinition instanceof ObjectTypeExtensionDefinition) {
+      return ((ObjectTypeExtensionDefinition) typeDefinition).getFieldDefinition();
+    }
+    if (typeDefinition instanceof InterfaceTypeExtensionDefinition) {
+      return ((InterfaceTypeExtensionDefinition) typeDefinition).getFieldDefinition();
+    }
+
+    if(defaultList) {
+      return new ArrayList<>();
+    } else {
+      String errorMessage = format("Failed to get fieldDefinitions for typeName=%s, typeInstance=%s",
+              typeDefinition.getName(), typeDefinition.getClass().getName());
+      throw new IllegalArgumentException(errorMessage);
+    }
+  }
+
   public static boolean compareTypes(NamedType lType, NamedType rType) {
     if (isNonNull(lType) != isNonNull(rType) || isWrapped(lType) != isWrapped(rType)) {
       return false;
@@ -283,5 +304,13 @@ public class XtextTypeUtils {
   public static boolean isInterfaceTypeDefinition(TypeDefinition typeDefinition) {
     return Objects.nonNull(typeDefinition) && typeDefinition instanceof InterfaceTypeDefinition;
 
+  }
+
+  public static boolean isObjectTypeExtensionDefinition(TypeExtensionDefinition typeDefinition) {
+    return Objects.nonNull(typeDefinition) && typeDefinition instanceof ObjectTypeExtensionDefinition;
+  }
+
+  public static boolean isInterfaceTypeExtensionDefinition(TypeExtensionDefinition typeDefinition) {
+    return Objects.nonNull(typeDefinition) && typeDefinition instanceof InterfaceTypeExtensionDefinition;
   }
 }

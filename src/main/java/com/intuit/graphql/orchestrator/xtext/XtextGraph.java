@@ -7,6 +7,7 @@ import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
@@ -56,7 +57,7 @@ public class XtextGraph implements ServiceMetadata {
   private Map<String, ObjectTypeDefinition> objectTypeDefinitions;
 
   private final Map<String, TypeDefinition> entitiesByTypeName;
-  private final Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace;
+  private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
 
@@ -266,9 +267,9 @@ public class XtextGraph implements ServiceMetadata {
     return builder.build();
   }
 
-  public Map<String, Map<String, TypeDefinition>> getEntityExtensionsByNamespace() {
+  public Map<String, Map<String, TypeSystemDefinition>> getEntityExtensionsByNamespace() {
     return this.entityExtensionsByNamespace;
-  }
+  }  
 
   public void addFederationMetadata(FederationMetadata federationMetadata) {
     this.federationMetadataByNamespace.put(serviceProvider.getNameSpace(), federationMetadata);
@@ -291,7 +292,7 @@ public class XtextGraph implements ServiceMetadata {
     private Set<DirectiveDefinition> directives = new HashSet<>();
     private Map<String, TypeDefinition> types = new HashMap<>();
     private Map<String, TypeDefinition> entities = new HashMap<>();
-    private Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    private Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
     private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
@@ -436,7 +437,7 @@ public class XtextGraph implements ServiceMetadata {
       return this;
     }
 
-    public Builder entityExtensionsByNamespace(Map<String, Map<String, TypeDefinition>> entityExtensionsByNamespace) {
+    public Builder entityExtensionsByNamespace(Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace) {
       requireNonNull(entityExtensionsByNamespace);
       this.entityExtensionsByNamespace.putAll(entityExtensionsByNamespace);
       return this;
