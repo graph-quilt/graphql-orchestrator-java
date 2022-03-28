@@ -1,10 +1,12 @@
 package com.intuit.graphql.orchestrator.integration
 
-import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
-import spock.lang.Specification
 
-class InterfaceImplementInterfaceSpec extends Specification {
+import graphql.ExecutionInput
+import graphql.ExecutionResult
+import helpers.BaseIntegrationTestSpecification
+import spock.lang.Subject
+
+class InterfaceImplementInterfaceSpec extends BaseIntegrationTestSpecification {
 
     def graphqlQuery = """
         query {
@@ -13,7 +15,9 @@ class InterfaceImplementInterfaceSpec extends Specification {
                     ... on DogEdge {
                         node {
                             id name isServiceDog
+                            __typename
                         }
+                        __typename
                     }
                }
             }
@@ -74,29 +78,29 @@ class InterfaceImplementInterfaceSpec extends Specification {
     def mockServiceResponse = [
             data: [
                     pets: [
-                            edges     : [
-                                    node      : [
-                                            id          : "dog-1",
-                                            name        : "Lassie",
-                                            isServiceDog: false,
-                                            __typename  : "Dog"
-                                    ],
-                                    __typename: "DogEdge"
+                            edges     : [[
+                                             node:
+                                             [
+                                                     id          : "dog-1",
+                                                     name        : "Lassie",
+                                                     isServiceDog: false,
+                                                     __typename  : "Dog"
+                                             ] ,
+                                             __typename: "DogEdge"
+                                         ]
                             ],
                             __typename: "DogConnection"
                     ]
             ]
     ]
 
-    ServiceProvider testService = new SimpleMockServiceProvider().builder()
-            .sdlFiles(["schema.graphqls": testSchema])
-            .mockResponse(mockServiceResponse)
-            .build()
+    @Subject
+    def specUnderTest
 
-// TODO this is currently failing and may need changes on the grammar
-/*
-    def specUnderTest = createGraphQLOrchestrator(new AsyncExecutionStrategy(),
-            new AsyncExecutionStrategy(), testService)
+    void setup() {
+        testService = createSimpleMockService(testSchema, mockServiceResponse)
+        specUnderTest = createGraphQLOrchestrator(testService)
+    }
 
     def "interface can extends another interface"() {
         given:
@@ -109,6 +113,12 @@ class InterfaceImplementInterfaceSpec extends Specification {
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
 
+        ((Map)data.pets).edges instanceof List
+        List<Map<String, Object>> edgeList = ((Map)data.pets).edges
+        edgeList[0].__typename == "DogEdge"
+        ((Map)edgeList[0].node).id == "dog-1"
+        ((Map)edgeList[0].node).__typename == "Dog"
+
     }
-*/
+
 }

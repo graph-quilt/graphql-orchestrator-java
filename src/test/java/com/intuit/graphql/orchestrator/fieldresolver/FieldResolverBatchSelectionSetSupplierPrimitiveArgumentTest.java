@@ -1,5 +1,8 @@
 package com.intuit.graphql.orchestrator.fieldresolver;
 
+import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition;
+import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -40,9 +43,6 @@ public class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentTest {
     private Field dfeFieldMock;
 
     @Mock
-    private ObjectTypeDefinition parentTypeOfFieldWithResolver;
-
-    @Mock
     private FieldDefinition fieldDefinitionWithResolver;
 
     @Mock
@@ -62,6 +62,9 @@ public class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentTest {
         when(dataFetchingEnvironmentMock.getField()).thenReturn(dfeFieldMock);
         when(dataFetchingEnvironmentMock.getSource()).thenReturn(testDFEDataSource);
         dataFetchingEnvironments.add(dataFetchingEnvironmentMock);
+
+        FieldDefinition childFieldDefinition = buildFieldDefinition("childField");
+        ObjectTypeDefinition parentTypeOfFieldWithResolver = buildObjectTypeDefinition("ParentType", singletonList(childFieldDefinition));
 
         testFieldResolverContext = FieldResolverContext.builder()
             .parentTypeDefinition(parentTypeOfFieldWithResolver)
