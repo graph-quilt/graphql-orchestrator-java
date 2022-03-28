@@ -1,5 +1,6 @@
 extend type Employee @key(fields: "id"){
     id: ID! @external
+    review: Review
 }
 
 type Store @extends @key(fields: "id") {
