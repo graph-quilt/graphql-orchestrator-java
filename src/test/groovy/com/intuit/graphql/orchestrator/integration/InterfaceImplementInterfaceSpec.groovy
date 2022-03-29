@@ -109,7 +109,7 @@ class InterfaceImplementInterfaceSpec extends BaseIntegrationTestSpecification {
     }
 
     def "can build schema with interface extending another interface"() {
-        given: "specUnderTest"
+        given: "graphQLSchema"
 
         and:
         GraphQLInterfaceType nodeInterfaceType = (GraphQLInterfaceType) graphQLSchema.getType("Node")

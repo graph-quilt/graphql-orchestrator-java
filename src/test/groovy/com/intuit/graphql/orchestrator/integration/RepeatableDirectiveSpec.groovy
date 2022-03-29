@@ -59,7 +59,7 @@ class RepeatableDirectiveSpec extends BaseIntegrationTestSpecification {
     }
 
     def "can build schema with repeatable directives on interface type, object type and field definitions"() {
-        given: "specUnderTest"
+        given: "graphQLSchema"
 
         and:
         GraphQLInterfaceType graphQLInterfaceType = (GraphQLInterfaceType) graphQLSchema.getType("Pet")
@@ -73,7 +73,7 @@ class RepeatableDirectiveSpec extends BaseIntegrationTestSpecification {
     }
 
     def "can build schema with repeatable directives on scalar type definitions"() {
-        given: "specUnderTest"
+        given: "graphQLSchema"
 
         and:
         GraphQLScalarType scalarType = (GraphQLScalarType) graphQLSchema.getType("SomeNewScalar")
@@ -83,7 +83,7 @@ class RepeatableDirectiveSpec extends BaseIntegrationTestSpecification {
     }
 
     def "can build schema with repeatable directives on enum type definitions"() {
-        given: "specUnderTest"
+        given: "graphQLSchema"
 
         and:
         GraphQLEnumType enumType = (GraphQLEnumType) graphQLSchema.getType("SomeNewEnum")
@@ -93,7 +93,7 @@ class RepeatableDirectiveSpec extends BaseIntegrationTestSpecification {
     }
 
     def "can build schema with repeatable directives on union type definitions"() {
-        given: "specUnderTest"
+        given: "graphQLSchema"
 
         and:
         GraphQLUnionType unionType = (GraphQLUnionType) graphQLSchema.getType("SomeNewUnion")
