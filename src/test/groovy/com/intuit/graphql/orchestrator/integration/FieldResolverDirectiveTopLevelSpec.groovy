@@ -10,8 +10,6 @@ import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
-import static com.intuit.graphql.orchestrator.GraphQLOrchestratorTest.createGraphQLOrchestrator
-
 class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecification {
 
     String PET_BY_ID_DOWNSTREAM_QUERY = "fragment petFragment on Pet {id name} " + \
@@ -308,42 +306,6 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
 
         executionResult?.data?.books[0]?.author?.pet == null
         executionResult?.data?.books[1]?.author?.pet?.name == "Milo"
-        executionResult?.data?.books[2]?.author?.pet == null
-    }
-
-    def "testFieldResolverLinkFieldMissingInQuery"() {
-        given:
-        String testContext = "fieldName=petId,  " + \
-         "parentTypeName=BOOKS_Author,  " + \
-         "resolverDirectiveDefinition=ResolverDirectiveDefinition(field=pet, arguments=[ResolverArgumentDefinition(name=id, value=\$petId)]), " + \
-         "serviceNameSpace=BOOKS"
-
-        String expectedError1 = "Field not found in parent's resolved value.  " + testContext
-        String expectedError2 = "Field not found in parent's resolved value.  " + testContext
-        String expectedError3 = "Field not found in parent's resolved value.  " + testContext
-
-        specUnderTest = createGraphQLOrchestrator([mockBookServiceMissingFieldLink, mockPetsService])
-
-        ExecutionInput query = ExecutionInput.newExecutionInput()
-                .query("query GetQuery { books { id name  author { pet { id name } } } }")
-                .build()
-
-        when:
-        ExecutionResult executionResult = specUnderTest.execute(query).get()
-
-        then:
-
-        executionResult?.errors?.size() == 3
-        executionResult?.errors[0]?.message?.contains(expectedError1)
-        executionResult?.errors[1]?.message?.contains(expectedError2)
-        executionResult?.errors[2]?.message?.contains(expectedError3)
-
-        executionResult?.data?.books?.size() == 3
-        executionResult?.data?.books[0]?.id == "book-1"
-        executionResult?.data?.books[2]?.id == "book-3"
-
-        executionResult?.data?.books[0]?.author?.pet == null
-        executionResult?.data?.books[1]?.author?.pet == null
         executionResult?.data?.books[2]?.author?.pet == null
     }
 

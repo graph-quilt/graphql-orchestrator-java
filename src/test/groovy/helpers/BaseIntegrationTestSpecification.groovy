@@ -4,7 +4,6 @@ import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph
 import com.intuit.graphql.orchestrator.stitching.SchemaStitcher
-import com.intuit.graphql.orchestrator.testhelpers.ServiceProviderMockResponse
 import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.execution.AsyncExecutionStrategy
@@ -36,7 +35,7 @@ class BaseIntegrationTestSpecification extends Specification {
     }
 
     static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider service) {
-        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().services(service)
+        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().service(service)
                 .build().stitchGraph()
 
         GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
