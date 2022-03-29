@@ -37,11 +37,12 @@ jobs:
         cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
         gpg --list-secret-keys --keyid-format LONG  
 
-    - name: Publish Snapshot to OSS Maven Repository
+    - name: Publish Release to OSS Maven Repository
+#      mvn -e release:clean release:prepare release:perform -Prelease  -s ../settings.xml -B -U
       if: ${{ github.ref == 'refs/heads/release-try' }}
-      run: mvn -B --no-transfer-progress --batch-mode -Prelease\
+      run: mvn -B --no-transfer-progress --batch-mode \
         -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} \
-        clean deploy --file pom.xml 
+        release:clean release:prepare release:perform -Prelease --file pom.xml
       env:
         MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
