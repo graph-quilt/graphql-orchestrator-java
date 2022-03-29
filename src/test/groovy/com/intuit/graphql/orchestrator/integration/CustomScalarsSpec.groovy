@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.integration
 
+import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
@@ -25,7 +26,7 @@ class CustomScalarsSpec extends BaseIntegrationTestSpecification {
     ]
 
     @Subject
-    def specUnderTest
+    GraphQLOrchestrator specUnderTest
 
     void setup() {
         testService = createSimpleMockService(testSchema, mockServiceResponse)
