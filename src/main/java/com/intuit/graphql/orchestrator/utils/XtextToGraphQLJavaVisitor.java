@@ -287,6 +287,11 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
     builder.description(object.getDesc());
 
+    if (Objects.nonNull(object.getImplementsInterfaces())) {
+      builder.withInterfaces(
+          createGraphQLTypeReferences(object.getImplementsInterfaces()));
+    }
+
     graphQLType = builder.build();
     graphQLObjectTypes.put(me, graphQLType);
     return graphQLType;
