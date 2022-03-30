@@ -61,6 +61,8 @@ public class XtextGraph implements ServiceMetadata {
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
 
+  private final List<FieldCoordinates> fieldCoordinates;
+
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
     xtextResourceSet = requireNonNull(builder.xtextResourceSet, "Resource Set cannot be null");
@@ -80,6 +82,7 @@ public class XtextGraph implements ServiceMetadata {
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
+    fieldCoordinates = builder.fieldCoordinates;
   }
 
   /**
@@ -113,6 +116,7 @@ public class XtextGraph implements ServiceMetadata {
     builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
+    builder.fieldCoordinates = copy.fieldCoordinates;
     return builder;
   }
 
@@ -296,6 +300,7 @@ public class XtextGraph implements ServiceMetadata {
     private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
+    private List<FieldCoordinates> fieldCoordinates = new ArrayList<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -452,6 +457,11 @@ public class XtextGraph implements ServiceMetadata {
     public Builder entityExtensionMetadatas(List<EntityExtensionMetadata> entityExtensionMetadatas) {
       requireNonNull(entityExtensionMetadatas);
       this.entityExtensionMetadatas.addAll(entityExtensionMetadatas);
+      return this;
+    }
+
+    public Builder fieldCoordinates(List<FieldCoordinates> fieldCoordinates) {
+      this.fieldCoordinates.addAll(fieldCoordinates);
       return this;
     }
 

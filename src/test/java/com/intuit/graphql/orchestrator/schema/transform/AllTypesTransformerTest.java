@@ -26,7 +26,8 @@ public class AllTypesTransformerTest {
 
     XtextGraph transformed = new AllTypesTransformer().transform(xtextGraph);
     assertThat(transformed.getTypes().containsKey("QueryType")).isFalse();
-    assertThat(transformed.getTypes().size() == 5);
+    assertThat(transformed.getTypes()).hasSize(3);
+    assertThat(transformed.getFieldCoordinates()).hasSize(5);
   }
 
 
