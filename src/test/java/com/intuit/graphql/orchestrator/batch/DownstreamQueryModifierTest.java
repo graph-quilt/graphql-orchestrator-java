@@ -5,10 +5,10 @@ import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryM
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
 import static graphql.schema.FieldCoordinates.coordinates;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.ServiceProvider;

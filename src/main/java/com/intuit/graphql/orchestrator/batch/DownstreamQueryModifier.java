@@ -28,6 +28,7 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -126,7 +127,7 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
     context.setVar(GraphQLType.class, parentType);
     String parentTypeName = parentType.getName();
 
-    Set<Field> selectedFields = this.selectionCollector.collectFields(node);
+    Set<Field> selectedFields =  new HashSet<>(this.selectionCollector.collectFields(node).values());
 
     RequiredFieldsCollector fedRequiredFieldsCollector = RequiredFieldsCollector
         .builder()

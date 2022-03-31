@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import graphql.language.Comment;
@@ -17,11 +18,10 @@ import graphql.language.SourceLocation;
 import graphql.language.TypeName;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,34 +64,36 @@ public class SelectionCollectorTest {
 
   @Test
   public void canCollectSelectionsFromField() {
-    Set<Field> collectedSelections = subjectUnderTest.collectFields(TEST_SELECTION_SET);
+    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(TEST_SELECTION_SET);
     assertThat(collectedSelections).hasSize(4);
-    assertThat(
-            collectedSelections.containsAll(
-                Arrays.asList(SUB_FIELD1, SUB_FIELD2, SUB_FIELD3, SUB_FIELD4)))
-        .isTrue();
+    Collection<?> expectedSet = asList(SUB_FIELD1.getName(), SUB_FIELD2.getName(), SUB_FIELD3.getName(), SUB_FIELD4.getName());
+    assertThat(collectedSelections.keySet().containsAll(expectedSet)).isTrue();
   }
 
   @Test
   public void emptySelectionSetReturnsEmptySet() {
-    Set<Field> collectedSelections = subjectUnderTest.collectFields(SelectionSet.newSelectionSet().build());
+    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(SelectionSet.newSelectionSet().build());
     assertThat(collectedSelections).isEmpty();
   }
 
   @Test
   public void nullInputReturnsEmptySet() {
-    Set<Field> collectedSelections = subjectUnderTest.collectFields(null);
+    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(null);
     assertThat(collectedSelections).isEmpty();
   }
 
   @Test(expected = IllegalStateException.class)
   public void unsupportedSelectionThrowsIllegalStateException() {
     SelectionSet NEW_TEST_SELECTION_SET =
-        TEST_SELECTION_SET.transform(builder -> builder.selection(new TestNewSelection()));
+        TEST_SELECTION_SET.transform(builder -> builder.selection(new NewImplementationSelection()));
     subjectUnderTest.collectFields(NEW_TEST_SELECTION_SET);
   }
 
-  static class TestNewSelection implements Selection<TestNewSelection> {
+  /**
+   * Used to test a case where in a new Implementation of Selection is introduced by
+   * future versions of graphql.  See {@link #unsupportedSelectionThrowsIllegalStateException}
+   */
+  static class NewImplementationSelection implements Selection<NewImplementationSelection> {
 
     @Override
     public List<Node> getChildren() {
@@ -104,7 +106,7 @@ public class SelectionCollectorTest {
     }
 
     @Override
-    public TestNewSelection withNewChildren(NodeChildrenContainer newChildren) {
+    public NewImplementationSelection withNewChildren(NodeChildrenContainer newChildren) {
       return null;
     }
 
@@ -134,7 +136,7 @@ public class SelectionCollectorTest {
     }
 
     @Override
-    public TestNewSelection deepCopy() {
+    public NewImplementationSelection deepCopy() {
       return null;
     }
 

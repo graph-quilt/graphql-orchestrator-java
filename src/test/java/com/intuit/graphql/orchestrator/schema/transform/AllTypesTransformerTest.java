@@ -16,8 +16,10 @@ public class AllTypesTransformerTest {
   @Test
   public void testOperationTypesAreFilteredByTransformer() {
 
-    String schema = "schema { query: QueryType } type QueryType { a: A } "
-        + "type A { b: B } type B {c: C} "
+    String schema = "schema { query: QueryType } "
+        + "type QueryType { a: A } "
+        + "type A { b: B } "
+        + "type B {c: C} "
         + "type C { field1: String, field2: String }";
 
     XtextGraph xtextGraph = XtextGraphBuilder
@@ -26,7 +28,8 @@ public class AllTypesTransformerTest {
 
     XtextGraph transformed = new AllTypesTransformer().transform(xtextGraph);
     assertThat(transformed.getTypes().containsKey("QueryType")).isFalse();
-    assertThat(transformed.getTypes().size() == 5);
+    assertThat(transformed.getTypes().size() == 3).isTrue();
+    assertThat(transformed.getTypeMetadatas().size() == 3).isTrue();
   }
 
 
