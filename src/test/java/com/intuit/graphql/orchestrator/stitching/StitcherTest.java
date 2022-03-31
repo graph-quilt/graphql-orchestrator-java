@@ -388,30 +388,6 @@ public class StitcherTest {
     assertThat(aType.getDescription()).contains("description for schema2");
   }
 
-  @Test
-  public void testTopLevelFederationStitching() {
-    ServiceProvider provider1 = serviceProvider(DEFAULT_URL, "Employee",
-            TestHelper.getFileMapFromList("top_level/federation/employee.graphqls"),
-            ServiceType.FEDERATION_SUBGRAPH);
-
-    ServiceProvider provider2 = serviceProvider(DEFAULT_URL, "Inventory",
-            TestHelper.getFileMapFromList("top_level/federation/inventory.graphqls"),
-            ServiceType.FEDERATION_SUBGRAPH);
-
-    List<ServiceProvider> serviceContextList = Arrays.asList(provider1, provider2);
-
-    RuntimeGraph runtimeGraph = stitcher.stitch(serviceContextList);
-    final GraphQLSchema graphQLSchema = runtimeGraph.getExecutableSchema();
-    final GraphQLObjectType queryType = runtimeGraph.getOperation(Operation.QUERY);
-
-    assertThat(graphQLSchema).isNotNull();
-    assertThat(graphQLSchema.getQueryType().getFieldDefinitions().size()).isEqualTo(3);
-
-    assertThat(queryType.getFieldDefinition("employeeById")).isNotNull();
-    assertThat(queryType.getFieldDefinition("getSoldProducts")).isNotNull();
-    assertThat(queryType.getFieldDefinition("getStoreByIdAndName")).isNotNull();
-  }
-
   private ServiceProvider serviceProvider(String url, String namespace, Map<String, String> sdlFiles) {
     return serviceProvider(url, namespace, sdlFiles, ServiceType.GRAPHQL);
   }

@@ -26,8 +26,8 @@ class BaseIntegrationTestSpecification extends Specification {
                 .build()
     }
 
-    static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider service) {
-        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().service(service)
+    static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider... services) {
+        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().services(Arrays.asList(services))
                 .build().stitchGraph()
 
         GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
