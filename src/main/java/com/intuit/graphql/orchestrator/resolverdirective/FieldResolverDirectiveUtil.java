@@ -1,22 +1,27 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import com.intuit.graphql.graphQL.*;
+import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+
+import com.intuit.graphql.graphQL.Directive;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
 
 public class FieldResolverDirectiveUtil {
 
@@ -128,13 +133,16 @@ public class FieldResolverDirectiveUtil {
             return Optional.<FieldResolverContext>empty();
           }
 
+          ResolverDirectiveDefinition resolverDirectiveDefinition = ResolverDirectiveDefinition.from(directives.get(0));
+
           FieldResolverContext fieldResolverContext = FieldResolverContext.builder()
               //.fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
               .fieldDefinition(childFieldDefinition)
               .parentTypeDefinition(typeDefinition)
               .requiresTypeNameInjection(xtextGraph.requiresTypenameInjection())
               .serviceNamespace(xtextGraph.getServiceProvider().getNameSpace())
-              .resolverDirectiveDefinition(ResolverDirectiveDefinition.from(directives.get(0)))
+              .resolverDirectiveDefinition(resolverDirectiveDefinition)
+              .requiredFields(extractRequiredFieldsFrom(resolverDirectiveDefinition))
               .build();
 
           return Optional.of(fieldResolverContext);
