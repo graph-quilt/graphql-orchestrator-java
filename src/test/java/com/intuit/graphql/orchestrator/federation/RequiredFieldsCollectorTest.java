@@ -2,13 +2,16 @@ package com.intuit.graphql.orchestrator.federation;
 
 import static graphql.schema.FieldCoordinates.coordinates;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.language.Field;
 import graphql.language.SelectionSet;
 import graphql.schema.FieldCoordinates;
@@ -59,10 +62,11 @@ public class RequiredFieldsCollectorTest {
   public void setup() {
     subjectUnderTest =
         RequiredFieldsCollector.builder()
+            .excludeFields(Collections.emptySet())
             .parentTypeName(TEST_ENTITY_TYPE_NAME)
             .serviceMetadata(serviceMetadataMock)
-            .fieldsWithResolver(Collections.emptySet())
-            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
+            .fieldResolverContexts(Collections.emptyList())
+            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE.getName(), FIELD_OBJECT.getName()))
             .build();
 
     when(serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME)).thenReturn(true);
@@ -77,10 +81,15 @@ public class RequiredFieldsCollectorTest {
         .thenReturn(ImmutableSet.of(REQD_FIELD_1));
     when(federationMetadataMock.getRequireFields(FIELD_COORDINATE_OBJFIELD))
         .thenReturn(ImmutableSet.of(REQD_FIELD_2));
+
+    when(entityMetadataMock.getKeyDirectives())
+        .thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
+    when(keyDirectiveMetadataMock.getFieldSet())
+        .thenReturn(ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2));
   }
 
   @Test
-  public void get_returnsFieldsFromRequiresDirective() {
+  public void get_returnsRequiredFieldsForRequiresDirective() {
     when(entityMetadataMock.getKeyDirectives()).thenReturn(Collections.emptyList());
     Set<Field> actual = subjectUnderTest.get();
     assertThat(actual).hasSize(2);
@@ -88,14 +97,9 @@ public class RequiredFieldsCollectorTest {
   }
 
   @Test
-  public void get_returnsFieldsFromKeyDirective() {
+  public void get_returnsRequiredFieldsForKeyDirective() {
     when(federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD)).thenReturn(false);
     when(federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD)).thenReturn(false);
-
-    when(entityMetadataMock.getKeyDirectives())
-        .thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
-    when(keyDirectiveMetadataMock.getFieldSet())
-        .thenReturn(ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2));
 
     Set<Field> actual = subjectUnderTest.get();
     assertThat(actual).hasSize(2);
@@ -103,15 +107,75 @@ public class RequiredFieldsCollectorTest {
   }
 
   @Test
-  public void get_returnsFieldsFromKeyDirectivesAndRequiresDirective() {
-    when(entityMetadataMock.getKeyDirectives())
-        .thenReturn(Collections.singletonList(keyDirectiveMetadataMock));
-    when(keyDirectiveMetadataMock.getFieldSet())
-        .thenReturn(ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2));
-
+  public void get_returnsRequiredFieldsForKeyDirectivesAndRequiresDirective() {
     Set<Field> actual = subjectUnderTest.get();
     assertThat(actual).hasSize(4);
     assertThat(actual)
         .isEqualTo(ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2, REQD_FIELD_1, REQD_FIELD_2));
   }
+
+  @Test
+  public void get_returnsRequiredFieldsForKeyDirectivesAndRequiresDirectiveWithoutExcludeFields() {
+    Set<String> excludeFields = ImmutableSet.of(KEY_FIELD_2.getName(), REQD_FIELD_1.getName());
+
+    subjectUnderTest =
+        RequiredFieldsCollector.builder()
+            .excludeFields(excludeFields)
+            .parentTypeName(TEST_ENTITY_TYPE_NAME)
+            .serviceMetadata(serviceMetadataMock)
+            .fieldResolverContexts(Collections.emptyList())
+            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE.getName(), FIELD_OBJECT.getName()))
+            .build();
+
+    Set<Field> actual = subjectUnderTest.get();
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .isEqualTo(ImmutableSet.of(KEY_FIELD_1, REQD_FIELD_2));
+  }
+
+  @Test
+  public void get_returnsRequiredFieldsForFieldResolver() {
+    when(entityMetadataMock.getKeyDirectives()).thenReturn(Collections.emptyList());
+
+    FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
+    when(fieldResolverContextMock.getRequiredFields())
+        .thenReturn(ImmutableSet.of("reqdField"));
+
+    subjectUnderTest =
+        RequiredFieldsCollector.builder()
+            .excludeFields(Collections.emptySet())
+            .parentTypeName(TEST_ENTITY_TYPE_NAME)
+            .serviceMetadata(serviceMetadataMock)
+            .fieldResolverContexts(ImmutableList.of(fieldResolverContextMock))
+            .fieldsWithRequiresDirective(Collections.emptySet())
+            .build();
+
+    Set<Field> actual = subjectUnderTest.get();
+    assertThat(actual).hasSize(1);
+    assertThat(actual.stream().findFirst().get().getName()).isEqualTo("reqdField");
+  }
+
+  @Test
+  public void get_returnsRequiredFieldsForFieldResolverWithExcludedFields() {
+    Set<String> excludeFields = ImmutableSet.of("reqdField");
+
+    when(entityMetadataMock.getKeyDirectives()).thenReturn(Collections.emptyList());
+
+    FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
+    when(fieldResolverContextMock.getRequiredFields())
+        .thenReturn(ImmutableSet.of("reqdField"));
+
+    subjectUnderTest =
+        RequiredFieldsCollector.builder()
+            .excludeFields(excludeFields)
+            .parentTypeName(TEST_ENTITY_TYPE_NAME)
+            .serviceMetadata(serviceMetadataMock)
+            .fieldResolverContexts(ImmutableList.of(fieldResolverContextMock))
+            .fieldsWithRequiresDirective(Collections.emptySet())
+            .build();
+
+    Set<Field> actual = subjectUnderTest.get();
+    assertThat(actual).hasSize(0);
+  }
+
 }

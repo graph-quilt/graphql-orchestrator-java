@@ -8,17 +8,11 @@ import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -37,9 +31,9 @@ public class SelectionCollector {
     }
   }
 
-  public Map<String, Field> collectFields(SelectionSet selectionSet) {
+  public Set<String> collectFields(SelectionSet selectionSet) {
     if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
-      return Collections.emptyMap();
+      return Collections.emptySet();
     }
 
     // TODO test that a selection set has been deduped if same field
@@ -47,7 +41,8 @@ public class SelectionCollector {
     return selectionSet.getSelections().stream()
         .map(this::collectFields)
         .flatMap(Collection::stream)
-        .collect(Collectors.toMap(Field::getName, Function.identity()));
+        .map(Field::getName)
+        .collect(Collectors.toSet());
   }
 
   private List<Field> collectFields(Selection selection) {
