@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.schema;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import graphql.schema.FieldCoordinates;
 
@@ -25,6 +26,8 @@ public interface ServiceMetadata {
   boolean hasFieldResolverDirective();
 
   ServiceProvider getServiceProvider();
+
+  FieldResolverContext getFieldResolverContext(FieldCoordinates fieldCoordinates);
 
   boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates);
 

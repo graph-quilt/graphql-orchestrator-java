@@ -371,7 +371,7 @@
     <connection>scm:git:https://github.com/intuit/graphql-orchestrator-java
     </connection>
     <url>https://github.com/intuit/graphql-orchestrator-java</url>
-    <tag>HEAD</tag>
+    <tag>graphql-orchestrator-java-4.0.12</tag>
   </scm>
 
   <distributionManagement>

@@ -1,21 +1,25 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName;
+import static java.util.stream.Collectors.toMap;
+
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.ObjectFieldWithVariable;
 import com.intuit.graphql.graphQL.ValueWithVariable;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
-
+import com.intuit.graphql.orchestrator.utils.FieldReferenceUtil;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName;
-import static java.util.stream.Collectors.toMap;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Class to represent @resolver directive definition
@@ -28,8 +32,8 @@ public class ResolverDirectiveDefinition {
   private static final String DIRECTIVE_ARG_FIELD = "field";
   private static final String DIRECTIVE_ARG_ARGUMENT = "arguments";
 
-  private final String field; // named after the schema definition
-  private final List<ResolverArgumentDefinition> arguments; // named after the schema definition
+  @NonNull private final String field; // named after the schema definition
+  @NonNull private final List<ResolverArgumentDefinition> arguments; // named after the schema definition
 
   /**
    * Creates an instance of this class based on the given {@link Directive}
@@ -98,4 +102,15 @@ public class ResolverDirectiveDefinition {
     String s = StringUtils.removeStart(name, "\"");
     return StringUtils.removeEnd(s, "\"");
   }
+
+  public static Set<String> extractRequiredFieldsFrom(ResolverDirectiveDefinition resolverDirectiveDefinition) {
+    return resolverDirectiveDefinition.getArguments().stream()
+        .map(ResolverArgumentDefinition::getValue)
+        .filter(StringUtils::isNotEmpty)
+        .map(FieldReferenceUtil::getAllFieldReferenceFromString)
+        .filter(CollectionUtils::isNotEmpty)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
+  }
+
 }
