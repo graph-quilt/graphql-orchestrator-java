@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,21 +65,21 @@ public class SelectionCollectorTest {
 
   @Test
   public void canCollectSelectionsFromField() {
-    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(TEST_SELECTION_SET);
+    Set<String> collectedSelections = subjectUnderTest.collectFields(TEST_SELECTION_SET);
     assertThat(collectedSelections).hasSize(4);
     Collection<?> expectedSet = asList(SUB_FIELD1.getName(), SUB_FIELD2.getName(), SUB_FIELD3.getName(), SUB_FIELD4.getName());
-    assertThat(collectedSelections.keySet().containsAll(expectedSet)).isTrue();
+    assertThat(collectedSelections.containsAll(expectedSet)).isTrue();
   }
 
   @Test
   public void emptySelectionSetReturnsEmptySet() {
-    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(SelectionSet.newSelectionSet().build());
+    Set<String> collectedSelections = subjectUnderTest.collectFields(SelectionSet.newSelectionSet().build());
     assertThat(collectedSelections).isEmpty();
   }
 
   @Test
   public void nullInputReturnsEmptySet() {
-    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(null);
+    Set<String> collectedSelections = subjectUnderTest.collectFields(null);
     assertThat(collectedSelections).isEmpty();
   }
 
