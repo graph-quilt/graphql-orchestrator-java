@@ -1,10 +1,14 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.TestHelper
+import com.intuit.graphql.orchestrator.VirtualOrchestratorProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
+
+import static com.intuit.graphql.orchestrator.VirtualOrchestratorProvider.FIELD_NAME
+import static com.intuit.graphql.orchestrator.VirtualOrchestratorProvider.ORCHESTRATOR
 
 class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
     def epsService, epsMutationService, personService
@@ -46,6 +50,24 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         epsService = createSimpleMockService( "EPS", TestHelper.getResourceAsString("top_level/eps/schema2.graphqls"), mockEpsServiceResponse)
         epsMutationService = createSimpleMockService( "EPS", TestHelper.getResourceAsString("top_level/eps/schema2.graphqls"), mockEpsServiceMutationResponse)
         personService = createSimpleMockService("PERSON", TestHelper.getResourceAsString("top_level/person/schema1.graphqls"), mockPersonServiceResponse)
+    }
+
+    def "Orchestrator works without any provider"() {
+        given:
+        specUnderTest = createGraphQLOrchestrator([])
+
+        def graphqlQuery = "{ ${FIELD_NAME} }"
+
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
+
+        then:
+        executionResult.getErrors().isEmpty()
+        Map<String, Object> data = executionResult.getData()
+        data?._namespace instanceof String && data?._namespace == ORCHESTRATOR
+
     }
 
     def "Person service is stitched and queried"() {

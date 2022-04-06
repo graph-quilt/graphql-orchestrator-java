@@ -62,8 +62,8 @@ public class GraphQLOrchestratorTest {
     }
   };
 
-  @Test(expected = InvalidSchemaException.class)
-  public void testBuilder() {
+  @Test
+  public void testBuilderWithoutService() {
     final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator();
     assertThatThrownBy(() -> baseBuilder.queryExecutionStrategy(null))
         .isInstanceOf(NullPointerException.class);
