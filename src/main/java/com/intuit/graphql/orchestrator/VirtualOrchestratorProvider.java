@@ -20,18 +20,18 @@ public class VirtualOrchestratorProvider implements ServiceProvider {
 
   @Override
   public Map<String, String> sdlFiles() {
-    return createMap(FILE_NAME, SDL);
+    return createData(FILE_NAME, SDL);
   }
 
   @Override
   public CompletableFuture<Map<String, Object>> query(final ExecutionInput executionInput,
       final GraphQLContext context) {
-    return CompletableFuture.completedFuture(createMap("data",createMap(FIELD_NAME, ORCHESTRATOR)));
+    return CompletableFuture.completedFuture(createData("data",createData(FIELD_NAME, ORCHESTRATOR)));
   }
 
-  private <T> Map<String, T> createMap(String key, T value) {
-    final Map<String, T> sdlFiles = new HashMap<String, T>();
-    sdlFiles.put(key, value);
-    return sdlFiles;
+  private static <T> Map<String, T> createData(String key, T value) {
+    final Map<String, T> dataMap = new HashMap<String, T>();
+    dataMap.put(key, value);
+    return dataMap;
   }
 }
