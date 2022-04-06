@@ -52,7 +52,7 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         personService = createSimpleMockService("PERSON", TestHelper.getResourceAsString("top_level/person/schema1.graphqls"), mockPersonServiceResponse)
     }
 
-    def "Orchestrator works without any provider"() {
+    def "Orchestrator works without any downstream service provider"() {
         given:
         specUnderTest = createGraphQLOrchestrator([])
 
