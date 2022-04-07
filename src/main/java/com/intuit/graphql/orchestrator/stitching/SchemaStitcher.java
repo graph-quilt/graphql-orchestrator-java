@@ -54,7 +54,7 @@ public class SchemaStitcher {
   public static final class Builder {
 
     private BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> batchLoaderHooks = BatchLoaderExecutionHooks.DEFAULT_HOOKS;
-    private List<ServiceProvider> serviceProviders = new ArrayList<>(Arrays.asList(new VirtualOrchestratorProvider()));
+    private List<ServiceProvider> serviceProviders = new ArrayList<>(Arrays.asList(VirtualOrchestratorProvider.INSTANCE));
 
     private Builder() {
     }

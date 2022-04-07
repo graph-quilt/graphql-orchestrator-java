@@ -12,6 +12,9 @@ public class VirtualOrchestratorProvider implements ServiceProvider {
   public static final String FIELD_NAME = "_namespace";
   public static final String SDL = String.format("type Query { %s : String }", FIELD_NAME);
   public static final String FILE_NAME = String.format("%s.graphqls", ORCHESTRATOR);
+  public static final ServiceProvider INSTANCE = new VirtualOrchestratorProvider();
+
+  private VirtualOrchestratorProvider(){}
 
   @Override
   public String getNameSpace() {
