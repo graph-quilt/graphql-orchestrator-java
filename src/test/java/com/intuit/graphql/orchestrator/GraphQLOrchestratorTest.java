@@ -16,6 +16,7 @@ import graphql.execution.AsyncExecutionStrategy;
 import graphql.execution.ExecutionIdProvider;
 import graphql.execution.ExecutionStrategy;
 import graphql.language.Document;
+import graphql.schema.validation.InvalidSchemaException;
 import java.math.BigDecimal;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
@@ -62,7 +63,7 @@ public class GraphQLOrchestratorTest {
   };
 
   @Test
-  public void testBuilder() {
+  public void testBuilderWithoutService() {
     final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator();
     assertThatThrownBy(() -> baseBuilder.queryExecutionStrategy(null))
         .isInstanceOf(NullPointerException.class);
@@ -278,7 +279,7 @@ public class GraphQLOrchestratorTest {
   public void canQueryToplevelWithResultTypeOfBaseInterface() throws Exception {
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, new StarWarsService());
-    assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
+    assertThat(orchestrator.getSchema().isSupportingMutations()).isFalse();
 
     // Test query using ExecutionInput
     ExecutionInput executionInput = ExecutionInput
@@ -304,7 +305,7 @@ public class GraphQLOrchestratorTest {
 
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
-    assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
+    assertThat(orchestrator.getSchema().isSupportingMutations()).isFalse();
 
     // Test query using ExecutionInput
     ExecutionInput executionInput = ExecutionInput
@@ -329,7 +330,7 @@ public class GraphQLOrchestratorTest {
 
     final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(
         new AsyncExecutionStrategy(), null, services);
-    assertThat(orchestrator.getSchema().isSupportingMutations()).isTrue();
+    assertThat(orchestrator.getSchema().isSupportingMutations()).isFalse();
 
     // Test query using ExecutionInput
     ExecutionInput executionInput = ExecutionInput

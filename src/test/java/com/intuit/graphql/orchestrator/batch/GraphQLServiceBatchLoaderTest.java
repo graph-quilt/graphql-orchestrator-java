@@ -24,14 +24,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.google.common.collect.ImmutableMap;
+import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.PassthroughQueryModifier;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.GraphQLContext;
 import graphql.Scalars;
-import graphql.execution.ExecutionPath;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
+import graphql.execution.ResultPath;
 import graphql.language.Argument;
 import graphql.language.Directive;
 import graphql.language.Document;
@@ -43,6 +44,7 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.SelectionSet;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import java.util.Collections;
@@ -56,6 +58,21 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 
 public class GraphQLServiceBatchLoaderTest {
+
+  static final GraphQLObjectType FIRST_TYPE = GraphQLObjectType.newObject().name("FirstType")
+      .field(GraphQLFieldDefinition.newFieldDefinition()
+          .name("s1").type(Scalars.GraphQLString)
+          .build())
+      .build();
+
+  static final GraphQLObjectType SECOND_TYPE = GraphQLObjectType.newObject().name("SecondType")
+      .field(GraphQLFieldDefinition.newFieldDefinition()
+          .name("s2").type(Scalars.GraphQLString)
+          .build())
+      .build();
+
+  @Mock
+  public ServiceProvider mockServiceProvider;
 
   @Mock
   public XtextGraph mockServiceMetadata;
@@ -93,7 +110,10 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .field(builder -> builder.name("second").type(SECOND_TYPE))
+        .build();
 
     MergedField mergedField1 = newMergedField(newField("first").build()).build();
     MergedField mergedField2 = newMergedField(newField("second").build()).build();
@@ -108,9 +128,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField1)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField1)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -121,9 +141,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField2)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/second"))
+            .path(ResultPath.parse("/second"))
             .field(mergedField2)
-            .type(GraphQLObjectType.newObject().name("SecondType").build())
+            .type(SECOND_TYPE)
             .build())
         .build();
 
@@ -153,7 +173,10 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .field(builder -> builder.name("second").type(SECOND_TYPE))
+        .build();
 
     MergedField mergedField1 = newMergedField(newField("first").build()).build();
     MergedField mergedField2 = newMergedField(newField("second").build()).build();
@@ -171,9 +194,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField1)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField1)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -184,9 +207,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField2)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/second"))
+            .path(ResultPath.parse("/second"))
             .field(mergedField2)
-            .type(GraphQLObjectType.newObject().name("SecondType").build())
+            .type(SECOND_TYPE)
             .build())
         .build();
 
@@ -210,11 +233,13 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation").build();
+    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
         .query(GraphQLObjectType.newObject().name("Query")
-            .field(builder -> builder.name("first").type(Scalars.GraphQLInt))
+            .field(builder -> builder.name("first").type(FIRST_TYPE))
             .build())
         .mutation(mutationType).build();
 
@@ -229,9 +254,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField)
         .parentType(mutationType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .operationDefinition(opDef)
         .build();
@@ -256,11 +281,13 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation").build();
+    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
         .query(GraphQLObjectType.newObject().name("Query")
-            .field(builder -> builder.name("first").type(Scalars.GraphQLInt))
+            .field(builder -> builder.name("first").type(FIRST_TYPE))
             .build())
         .mutation(mutationType).build();
 
@@ -278,9 +305,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField)
         .parentType(mutationType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .operationDefinition(opDef)
         .build();
@@ -304,7 +331,9 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
         .query(queryType).build();
@@ -318,9 +347,9 @@ public class GraphQLServiceBatchLoaderTest {
         .context(GraphQLContext.newContext().build())
         .parentType(GraphQLObjectType.newObject().name("somerandomtype").build())
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -344,7 +373,9 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
         .query(queryType).build();
@@ -361,9 +392,9 @@ public class GraphQLServiceBatchLoaderTest {
         .context(GraphQLContext.newContext().build())
         .parentType(GraphQLObjectType.newObject().name("somerandomtype").build())
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .operationDefinition(opDef)
         .build();
@@ -388,10 +419,16 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation").build();
+    GraphQLObjectType mutationType = GraphQLObjectType.newObject().name("Mutation")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
+
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("Query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
-        .query(GraphQLObjectType.newObject().name("Query").build())
+        .query(queryType)
         .mutation(mutationType).build();
 
     MergedField mergedField = newMergedField(newField("first").build()).build();
@@ -409,9 +446,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField)
         .parentType(mutationType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .operationDefinition(opDef)
         .build();
@@ -444,7 +481,9 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("fieldWithArgument").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
         .query(queryType).build();
@@ -464,12 +503,12 @@ public class GraphQLServiceBatchLoaderTest {
     final MergedField mergedFieldWithArgument = newMergedField(
         newField("fieldWithArgument").arguments(
             singletonList(Argument.newArgument("SomeArgument",
-                newVariableReference().name("TestVariableDefinition").build())
+                    newVariableReference().name("TestVariableDefinition").build())
                 .build())).build()).build();
 
     final ExecutionStepInfo root = ExecutionStepInfo.newExecutionStepInfo()
         .type(GraphQLObjectType.newObject().name("FakeType").build())
-        .path(ExecutionPath.rootPath())
+        .path(ResultPath.rootPath())
         .build();
 
     DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
@@ -479,10 +518,10 @@ public class GraphQLServiceBatchLoaderTest {
         .context(GraphQLContext.newContext().build())
         .mergedField(mergedFieldWithArgument)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/fieldWithArgument"))
+            .path(ResultPath.parse("/fieldWithArgument"))
             .parentInfo(root)
             .field(mergedFieldWithArgument)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .parentType(queryType)
         .build();
@@ -523,7 +562,9 @@ public class GraphQLServiceBatchLoaderTest {
 
     doReturn(true).when(mockServiceMetadata).requiresTypenameInjection();
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("field").type(FIRST_TYPE))
+        .build();
 
     GraphQLSchema graphQLSchema = newSchema()
         .query(queryType).build();
@@ -536,7 +577,7 @@ public class GraphQLServiceBatchLoaderTest {
 
     final ExecutionStepInfo root = ExecutionStepInfo.newExecutionStepInfo()
         .type(GraphQLObjectType.newObject().name("FakeType").build())
-        .path(ExecutionPath.rootPath())
+        .path(ResultPath.rootPath())
         .build();
 
     DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
@@ -546,10 +587,10 @@ public class GraphQLServiceBatchLoaderTest {
         .context(GraphQLContext.newContext().build())
         .mergedField(mergedField)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/field"))
+            .path(ResultPath.parse("/field"))
             .parentInfo(root)
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .parentType(queryType)
         .build();
@@ -574,7 +615,9 @@ public class GraphQLServiceBatchLoaderTest {
       return CompletableFuture.completedFuture(new HashMap<>());
     };
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     MergedField mergedField = newMergedField(newField("first").build()).build();
 
@@ -594,9 +637,9 @@ public class GraphQLServiceBatchLoaderTest {
         .parentType(queryType)
         .operationDefinition(operationDefinition)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -615,7 +658,10 @@ public class GraphQLServiceBatchLoaderTest {
   public void variableFilterNotCalledWhenEmpty() {
     QueryExecutor fn = (environment, context) -> CompletableFuture.completedFuture(new HashMap<>());
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .field(builder -> builder.name("second").type(SECOND_TYPE))
+        .build();
 
     MergedField mergedField1 = newMergedField(newField("first").build()).build();
     MergedField mergedField2 = newMergedField(newField("second").build()).build();
@@ -630,9 +676,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField1)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField1)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -643,9 +689,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField2)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/second"))
+            .path(ResultPath.parse("/second"))
             .field(mergedField2)
-            .type(GraphQLObjectType.newObject().name("SecondType").build())
+            .type(SECOND_TYPE)
             .build())
         .build();
 
@@ -674,7 +720,9 @@ public class GraphQLServiceBatchLoaderTest {
         .batchLoaderExecutionHooks(mockHooks)
         .build();
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .build();
 
     MergedField mergedField1 = newMergedField(newField("first").build()).build();
 
@@ -688,9 +736,9 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField1)
         .parentType(queryType)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
-            .path(ExecutionPath.parse("/first"))
+            .path(ResultPath.parse("/first"))
             .field(mergedField1)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -713,7 +761,10 @@ public class GraphQLServiceBatchLoaderTest {
         .batchLoaderExecutionHooks(mockHooks)
         .build();
 
-    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query").build();
+    GraphQLObjectType queryType = GraphQLObjectType.newObject().name("query")
+        .field(builder -> builder.name("first").type(FIRST_TYPE))
+        .field(builder -> builder.name("second").type(SECOND_TYPE))
+        .build();
 
     MergedField mergedField1 = newMergedField(newField("first").selectionSet(SelectionSet.newSelectionSet()
         .selection(FragmentSpread.newFragmentSpread("firstFrag").build())
@@ -730,11 +781,11 @@ public class GraphQLServiceBatchLoaderTest {
 
     FragmentDefinition fdb1 =
         FragmentDefinition.newFragmentDefinition()
-          .name("firstFragDef")
-          .selectionSet(SelectionSet.newSelectionSet()
-              .selection(newField().name("first").build())
-              .selection(newField().name("second").build()).build())
-            .typeCondition(newTypeName().name("firstType").build())
+            .name("firstFragDef")
+            .selectionSet(SelectionSet.newSelectionSet()
+                .selection(newField().name("first").build())
+                .selection(newField().name("second").build()).build())
+            .typeCondition(newTypeName().name("query").build())
             .build();
 
     FragmentDefinition fdb2 =
@@ -743,7 +794,7 @@ public class GraphQLServiceBatchLoaderTest {
             .selectionSet(SelectionSet.newSelectionSet()
                 .selection(Field.newField().name("first").build())
                 .selection(Field.newField().name("second").build()).build())
-            .typeCondition(newTypeName().name("secondType").build())
+            .typeCondition(newTypeName().name("query").build())
             .build();
 
     Map<String, FragmentDefinition> m = new HashMap();
@@ -760,14 +811,13 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField2)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
             .parentInfo(ExecutionStepInfo.newExecutionStepInfo()
-                .path(ExecutionPath.parse("/first"))
+                .path(ResultPath.parse(""))
                 .field(mergedField1)
-                .type(GraphQLObjectType.newObject().name("ParentType").build())
+                .type(queryType)
                 .build())
-            .path(ExecutionPath.parse("/first/second"))
-            .field(mergedField2)
-            .field(mergedField2)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .path(ResultPath.parse("/first"))
+            .field(mergedField1)
+            .type(FIRST_TYPE)
             .build())
         .build();
 
@@ -780,14 +830,13 @@ public class GraphQLServiceBatchLoaderTest {
         .mergedField(mergedField2)
         .executionStepInfo(ExecutionStepInfo.newExecutionStepInfo()
             .parentInfo(ExecutionStepInfo.newExecutionStepInfo()
-                .path(ExecutionPath.parse("/first"))
+                .path(ResultPath.parse(""))
                 .field(mergedField1)
-                .type(GraphQLObjectType.newObject().name("ParentType").build())
+                .type(queryType)
                 .build())
-            .path(ExecutionPath.parse("/first/second"))
+            .path(ResultPath.parse("/second"))
             .field(mergedField2)
-            .field(mergedField2)
-            .type(GraphQLObjectType.newObject().name("FirstType").build())
+            .type(SECOND_TYPE)
             .build())
         .build();
 

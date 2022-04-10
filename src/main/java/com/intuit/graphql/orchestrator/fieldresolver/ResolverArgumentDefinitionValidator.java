@@ -9,7 +9,8 @@ import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
-import graphql.language.AstValueHelper;
+import graphql.parser.InvalidSyntaxException;
+import graphql.parser.Parser;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -28,8 +29,9 @@ public class ResolverArgumentDefinitionValidator {
     if (isPrimitiveType(resolverArgumentType) || isObjectType(resolverArgumentType)) {
       if (!isVariableReference(resolverArgumentValue)) {
         try {
-          AstValueHelper.valueFromAst(resolverArgumentValue);
-        } catch(graphql.AssertException e) {
+          // old was AstValueHelper.valueFromAst()
+          Parser.parseValue(resolverArgumentValue);
+        } catch(InvalidSyntaxException e) {
           throw new StitchingException(String.format(INVALID_RESOLVER_ARGUMENT_VALUE, resolverArgumentDefinition), e);
         }
       }

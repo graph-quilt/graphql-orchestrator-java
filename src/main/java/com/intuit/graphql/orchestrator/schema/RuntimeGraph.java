@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.Getter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.dataloader.BatchLoader;
 
 /**
@@ -50,22 +51,6 @@ public class RuntimeGraph {
     return new Builder();
   }
 
-  /**
-   * Empty runtime graph.
-   *
-   * @return the runtime graph
-   */
-  public static RuntimeGraph emptyGraph() {
-
-    Map<Operation, GraphQLObjectType> newMap = new EnumMap<>(Operation.class);
-    for (Operation op : Operation.values()) {
-      newMap.put(op, op.asGraphQLObjectType());
-    }
-    return new Builder()
-        .operationMap(newMap)
-        .build();
-  }
-
   public GraphQLType getType(String name) {
     return graphQLtypes.getOrDefault(name, additionalTypes.get(name));
   }
@@ -94,14 +79,21 @@ public class RuntimeGraph {
    * @return the graphql schema
    */
   private GraphQLSchema makeExecutableSchema() {
-    return GraphQLSchema.newSchema()
+    GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
         .query(operationMap.get(Operation.QUERY))
-        .mutation(operationMap.get(Operation.MUTATION))
         .codeRegistry(codeRegistry.build())
         .additionalTypes(new HashSet<>(additionalTypes.values()))
         .additionalDirectives(addtionalDirectives)
-        .withSchemaDirectives(schemaDirectives.values().toArray(new GraphQLDirective[0]))
-        .build();
+        .withSchemaDirectives(schemaDirectives.values().toArray(new GraphQLDirective[0]));
+    if (hasMutationFields()) {
+      builder.mutation(operationMap.get(Operation.MUTATION));
+    }
+    return builder.build();
+  }
+
+  private boolean hasMutationFields() {
+    return operationMap.containsKey(Operation.MUTATION) &&
+        CollectionUtils.isNotEmpty(operationMap.get(Operation.MUTATION).getFieldDefinitions());
   }
 
   /**

@@ -8,7 +8,7 @@ import com.intuit.graphql.orchestrator.TestHelper;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
 import graphql.Scalars;
 import graphql.execution.DataFetcherResult;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
 import graphql.language.Argument;
@@ -88,7 +88,7 @@ public class ResolverArgumentDataFetcherHelperTest {
     final ExecutionStepInfo executionStepInfo = ExecutionStepInfo.newExecutionStepInfo()
         .type(type)
         .field(MergedField.newMergedField(testFieldNameField).build())
-        .path(ExecutionPath.parse("/test_field"))
+        .path(ResultPath.parse("/test_field"))
         .arguments(Collections.emptyMap())
         .fieldDefinition(queryType.getFieldDefinition(testFieldNameField.getName()))
         .fieldContainer(queryType)
@@ -166,7 +166,7 @@ public class ResolverArgumentDataFetcherHelperTest {
     final ExecutionStepInfo containerExecutionStepInfo = ExecutionStepInfo.newExecutionStepInfo()
         .type(containerObject)
         .field(MergedField.newMergedField(container).build())
-        .path(ExecutionPath.parse("/container"))
+        .path(ResultPath.parse("/container"))
         .arguments(Collections.emptyMap())
         .fieldDefinition(queryType.getFieldDefinition(container.getName()))
         .fieldContainer(queryType)
@@ -175,7 +175,7 @@ public class ResolverArgumentDataFetcherHelperTest {
     final ExecutionStepInfo executionStepInfo = ExecutionStepInfo.newExecutionStepInfo()
         .type(Scalars.GraphQLInt)
         .field(MergedField.newMergedField(testField).build())
-        .path(ExecutionPath.parse("/container/test_field"))
+        .path(ResultPath.parse("/container/test_field"))
         .arguments(Collections.emptyMap())
         .fieldDefinition(queryType.getFieldDefinition(testField.getName()))
         .fieldContainer(containerObject)

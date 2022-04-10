@@ -1,8 +1,10 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
+import graphql.language.StringValue;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLInputType;
+import graphql.schema.InputValueWithState;
 import java.util.Objects;
 import lombok.Getter;
 
@@ -34,9 +36,15 @@ public class ResolverArgumentDirective {
 
     b.argumentName(graphQLArgument.getName());
     b.graphQLInputType(graphQLArgument.getType());
-    b.field((String) directive.getArgument("field").getValue());
-    return b.build();
 
+    InputValueWithState inputValueWithState = directive.getArgument("field").getArgumentValue();
+    if (inputValueWithState.isLiteral()) {
+      StringValue stringValue = (StringValue) inputValueWithState.getValue();
+      b.field(stringValue.getValue());
+    } else {
+      b.field((String) inputValueWithState.getValue());
+    }
+    return b.build();
   }
 
   public static Builder newBuilder() {

@@ -46,8 +46,13 @@ public class MergedFieldModifier {
       return null;
     }
 
-    return new MergedFieldModifierResult(env.getMergedField().transform(builder -> builder.fields(validFields)),
-        modifiedFragmentDefinitions);
+    // MergedField builder has been modified in this PR
+    // https://github.com/graphql-java/graphql-java/pull/2074
+    // it now adds to a field list instead of replacing
+    MergedField mergedRootField = MergedField.newMergedField(validFields)
+            .build();
+
+    return new MergedFieldModifierResult(mergedRootField, modifiedFragmentDefinitions);
   }
 
   private Selection filterIrrelevantFields(Selection field, String acc, String expectedPath) {

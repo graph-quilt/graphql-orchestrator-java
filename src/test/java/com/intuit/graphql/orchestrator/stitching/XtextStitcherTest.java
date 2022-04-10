@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.stitching;
 
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static graphql.schema.FieldCoordinates.coordinates;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -11,6 +12,7 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.TestHelper;
+import com.intuit.graphql.orchestrator.TestHelper.DefaultTestServiceProvider;
 import com.intuit.graphql.orchestrator.TestServiceProvider;
 import com.intuit.graphql.orchestrator.batch.GraphQLServiceBatchLoader;
 import com.intuit.graphql.orchestrator.datafetcher.ResolverArgumentDataFetcher;
@@ -49,14 +51,14 @@ public class XtextStitcherTest {
     final FieldDefinition testField = testType.getFieldDefinition().get(0);
 
     Transformer<XtextGraph, XtextGraph> transformer = source -> {
-      final XtextGraph graphWithResolver = XtextGraph.emptyGraph();
-      graphWithResolver.getCodeRegistry().put(testFieldContext, DataFetcherContext.newBuilder()
+      //final XtextGraph graphWithResolver = XtextGraph.emptyGraph();
+      source.getCodeRegistry().put(testFieldContext, DataFetcherContext.newBuilder()
           .namespace("test_namespace")
           .dataFetcherType(RESOLVER_ARGUMENT)
           .build());
-      graphWithResolver.getResolverArgumentFields().put(testFieldContext, testField.getArgumentsDefinition());
+      source.getResolverArgumentFields().put(testFieldContext, testField.getArgumentsDefinition());
 
-      return graphWithResolver;
+      return source;
     };
 
     XtextStitcher xtextStitcher = XtextStitcher.newBuilder()
@@ -64,7 +66,7 @@ public class XtextStitcherTest {
         .postMergeTransformers(Collections.singletonList(transformer))
         .build();
 
-    final RuntimeGraph runtimeGraph = xtextStitcher.stitch(Collections.emptyList());
+    final RuntimeGraph runtimeGraph = xtextStitcher.stitch(singletonList(new DefaultTestServiceProvider()));
 
     assertThat(
         runtimeGraph.getCodeRegistry().build()

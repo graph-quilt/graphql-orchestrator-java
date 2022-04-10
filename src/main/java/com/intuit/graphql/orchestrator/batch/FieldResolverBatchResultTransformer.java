@@ -7,7 +7,7 @@ import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +28,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
       + "encountered an error while calling downstream service.";
 
   private final String[] resolverSelectedFields;
-  private final ExecutionPath resolverExecutionPath;
+  private final ResultPath resolverExecutionPath;
   private final FieldResolverContext fieldResolverContext;
 
 
@@ -40,7 +40,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     }
 
     this.resolverSelectedFields = resolverSelectedFields;
-    this.resolverExecutionPath = ExecutionPath.fromList(Arrays.asList(resolverSelectedFields));
+    this.resolverExecutionPath = ResultPath.fromList(Arrays.asList(resolverSelectedFields));
 
     this.fieldResolverContext = fieldResolverContext;
   }
@@ -83,7 +83,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     int lastIndex = resolverSelectedFields.length - 1;
     String leafFieldName = resolverSelectedFields[lastIndex];
 
-    ExecutionPath aliasedResolverExecutionPath = resolverExecutionPath
+    ResultPath aliasedResolverExecutionPath = resolverExecutionPath
         .replaceSegment(createAlias(leafFieldName, aliasCounter));
 
     List<GraphQLError> errorsWithoutPath = Collections.emptyList();
@@ -104,10 +104,10 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
   }
 
   private GraphQLError mapErrorToPath(GraphQLError graphQLError) {
-    return mapErrorToPath(graphQLError, ExecutionPath.fromList(Collections.emptyList()));
+    return mapErrorToPath(graphQLError, ResultPath.fromList(Collections.emptyList()));
   }
 
-  private GraphQLError mapErrorToPath(GraphQLError graphQLError, ExecutionPath dfeExecutionPath) {
+  private GraphQLError mapErrorToPath(GraphQLError graphQLError, ResultPath dfeExecutionPath) {
     final Map<String, Object> extensions = new HashMap<>();
     extensions.put("serviceNamespace", fieldResolverContext.getServiceNamespace());
     extensions.put("parentTypename", fieldResolverContext.getParentTypename());

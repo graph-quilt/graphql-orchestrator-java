@@ -3,8 +3,10 @@ package com.intuit.graphql.orchestrator.datafetcher;
 import static com.intuit.graphql.orchestrator.TestHelper.document;
 import static com.intuit.graphql.orchestrator.TestHelper.schema;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import graphql.analysis.QueryTransformer;
+import graphql.language.Argument;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
@@ -40,8 +42,10 @@ public class ArgumentAppenderVisitorTest {
         .rootParentType(graphQLSchema.getQueryType())
         .build();
 
+    Argument mockArgument = mock(Argument.class);
+
     final Document result = (Document) queryTransformer
-        .transform(new ArgumentAppenderVisitor("Query", "needs_arguments", Collections.singletonList(null)));
+        .transform(new ArgumentAppenderVisitor("Query", "needs_arguments", Collections.singletonList(mockArgument)));
     assertThat(
         result.getDefinitionsOfType(OperationDefinition.class).get(0).getSelectionSet().getSelectionsOfType(Field.class)
             .get(0))
@@ -66,8 +70,10 @@ public class ArgumentAppenderVisitorTest {
         .rootParentType(graphQLSchema.getQueryType())
         .build();
 
+    Argument mockArgument = mock(Argument.class);
+
     final Document result = (Document) queryTransformer
-        .transform(new ArgumentAppenderVisitor("NestedType", "needs_arguments", Collections.singletonList(null)));
+        .transform(new ArgumentAppenderVisitor("NestedType", "needs_arguments", Collections.singletonList(mockArgument)));
 
     assertThat(
         result.getDefinitionsOfType(OperationDefinition.class).get(0).getSelectionSet().getSelectionsOfType(Field.class)

@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static graphql.execution.ExecutionPath.rootPath;
+import static graphql.execution.ResultPath.rootPath;
 import static graphql.execution.ExecutionStepInfo.newExecutionStepInfo;
 import static graphql.execution.MergedField.newMergedField;
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -10,7 +10,7 @@ import graphql.analysis.QueryVisitor;
 import graphql.analysis.QueryVisitorFieldEnvironment;
 import graphql.analysis.QueryVisitorFragmentSpreadEnvironment;
 import graphql.analysis.QueryVisitorInlineFragmentEnvironment;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.execution.ExecutionStepInfo;
 import graphql.language.Document;
 import graphql.language.Field;
@@ -131,7 +131,7 @@ public class GraphQLTestUtil {
         .parentInfo(parent)
         .field(newMergedField().addField(f).build())
         .type(newObject().name("FakeType").build())
-        .path(ExecutionPath.parse(accumulatedPath))
+        .path(ResultPath.parse(accumulatedPath))
         .build();
 
     hierarchy.push(result);

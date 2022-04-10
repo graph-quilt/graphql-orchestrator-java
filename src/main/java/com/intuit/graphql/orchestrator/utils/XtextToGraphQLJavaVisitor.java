@@ -75,8 +75,11 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   public final Map<String, GraphQLDirective> directiveDefinitions;
 
   static {
-    STANDARD_SCALAR_TYPES = ScalarInfo.STANDARD_SCALARS.stream()
+    STANDARD_SCALAR_TYPES = ScalarInfo.GRAPHQL_SPECIFICATION_SCALARS.stream()
         .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity()));
+
+    STANDARD_SCALAR_TYPES.putAll(ExtendedScalarsSupport.GRAPHQL_EXTENDED_SCALARS.stream()
+        .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity())));
   }
 
   private XtextToGraphQLJavaVisitor(Builder builder) {
@@ -167,6 +170,8 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     }
 
     builder.description(object.getDesc());
+
+    createGraphqlDirectives(object.getDirectives()).forEach(builder::withDirective);
 
     graphQLType = builder.build();
     graphQLObjectTypes.put(me, graphQLType);
@@ -281,6 +286,11 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     builder.typeResolver(new ExplicitTypeResolver());
 
     builder.description(object.getDesc());
+
+    if (Objects.nonNull(object.getImplementsInterfaces())) {
+      builder.withInterfaces(
+          createGraphQLTypeReferences(object.getImplementsInterfaces()));
+    }
 
     graphQLType = builder.build();
     graphQLObjectTypes.put(me, graphQLType);
@@ -515,6 +525,10 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     object.getDirectiveLocations()
         .forEach(location -> builder.validLocation(DirectiveLocation.valueOf(location.getNamedDirective())));
 
+    builder.repeatable(object.isRepeatable());
+    if (Objects.nonNull(object.getDesc())) {
+      builder.description(object.getDesc());
+    }
     graphQLDirective = builder.build();
     directiveDefinitions.put(me, graphQLDirective);
     return graphQLDirective;
