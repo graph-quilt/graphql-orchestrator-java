@@ -9,10 +9,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
-import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
-import com.intuit.graphql.orchestrator.utils.FieldEquator;
-import com.intuit.graphql.orchestrator.utils.IntrospectionUtil;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
@@ -28,12 +26,12 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.IterableUtils;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -118,28 +116,24 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
     return TraversalControl.CONTINUE;
   }
 
-  private static final FieldEquator fieldEquator = new FieldEquator();
-
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
     context.setVar(GraphQLType.class, parentType);
     String parentTypeName = parentType.getName();
 
-    Set<Field> selectedFields = this.selectionCollector.collectFields(node);
+    Set<String> selectedFields =  this.selectionCollector.collectFields(node);
 
     RequiredFieldsCollector fedRequiredFieldsCollector = RequiredFieldsCollector
         .builder()
+        .excludeFields(selectedFields)
         .parentTypeName(parentTypeName)
         .serviceMetadata(this.serviceMetadata)
-        .fieldsWithResolver(getFieldsWithResolverDirective(selectedFields, parentType))
+        .fieldResolverContexts(getFieldsWithResolverDirective(selectedFields, parentTypeName))
         .fieldsWithRequiresDirective(getFieldsWithRequiresDirective(selectedFields, parentTypeName))
         .build();
 
-    Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get().stream()
-        // TODO avoid loop.  Field does not have equals().  One option is to use Map but logically this should be Set
-        .filter(field -> !IterableUtils.contains(selectedFields, field, fieldEquator))
-        .collect(Collectors.toSet());
+    Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get();
 
     if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
       SelectionSet newNode = node.transform(builder -> {
@@ -154,28 +148,28 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
     return TraversalControl.CONTINUE;
   }
 
-  private Set<GraphQLFieldDefinition> getFieldsWithResolverDirective(Set<Field> selections, GraphQLFieldsContainer parentType) {
-    if (CollectionUtils.isEmpty(selections)) {
-      return Collections.emptySet();
-    }
-
-    return selections.stream()
-        .filter(field -> !IntrospectionUtil.INTROSPECTION_FIELDS.contains(field.getName()))
-        .map(field -> parentType.getFieldDefinition(field.getName()))
-        .filter(FieldResolverDirectiveUtil::hasResolverDirective)
-        .collect(Collectors.toSet());
+  private List<FieldResolverContext> getFieldsWithResolverDirective(
+      Set<String> selectedFields, String parentTypename) {
+    return selectedFields.stream()
+        .map(
+            fieldName -> {
+              FieldCoordinates fieldCoordinates = coordinates(parentTypename, fieldName);
+              return serviceMetadata.getFieldResolverContext(fieldCoordinates);
+            })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
   }
 
-  private Set<Field> getFieldsWithRequiresDirective(Set<Field> selections, String parentTypeName) {
-    if (CollectionUtils.isEmpty(selections)) {
+  private Set<String> getFieldsWithRequiresDirective(Set<String> selectedFields, String parentTypeName) {
+    if (CollectionUtils.isEmpty(selectedFields)) {
       return Collections.emptySet();
     }
 
     FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
-    return selections.stream()
-        .filter(field -> isExternalField(parentTypeName, field.getName()))
-        .filter(field -> {
-          FieldCoordinates fieldCoordinates = coordinates(parentTypeName, field.getName());
+    return selectedFields.stream()
+        .filter(fieldName -> isExternalField(parentTypeName, fieldName))
+        .filter(fieldName -> {
+          FieldCoordinates fieldCoordinates = coordinates(parentTypeName, fieldName);
           return federationMetadata.hasRequiresFieldSet(fieldCoordinates);
         })
         .collect(Collectors.toSet());

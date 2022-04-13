@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.ServiceProvider;
@@ -18,6 +18,7 @@ import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper;
 import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.TestService;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.language.AstTransformer;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
@@ -30,6 +31,7 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLSchema;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -201,10 +203,119 @@ public class DownstreamQueryModifierTest {
 
     List<Selection> selections = newA1.getSelectionSet().getSelections();
     assertThat(selections).hasSize(2);
+  }
 
-    // this should be a correct assertion but equals() is not called
-    // assertThat(selections).contains(Field.newField("id").build());
-    // assertThat(selections).contains(Field.newField("reqdField").build());
+  @Test
+  public void visitSelectionSet_reqFieldNotSelected_addRequiredFields() {
+    FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
+    when(fieldResolverContextMock.getRequiredFields())
+        .thenReturn(ImmutableSet.of("reqdField"));
+
+    FieldCoordinates testFieldCoordinate = coordinates("AObjectType", "af1");
+    when(serviceMetadataMock.getFieldResolverContext(testFieldCoordinate)).thenReturn(fieldResolverContextMock);
+
+    // test '{ a1 { af1 } }', where af1 has @resolver and requires reqdField
+    Field a1 = Field.newField("a1")
+        .selectionSet(SelectionSet.newSelectionSet()
+            .selection(af1)
+            .build())
+        .build();
+
+    AstTransformer astTransformer = new AstTransformer();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    // test '{ a1 { af1 reqdField} }', expected
+    @SuppressWarnings("rawtypes")
+    List<Selection> actualSelections = newA1.getSelectionSet().getSelections();
+    assertThat(actualSelections).hasSize(2);
+
+    assertThat(toFieldNameSet(actualSelections)).contains("af1", "reqdField");
+  }
+
+  @Test
+  public void visitSelectionSet_reqFieldAlreadySelected_doesNotAddRequiredField() {
+    FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
+    when(fieldResolverContextMock.getRequiredFields())
+        .thenReturn(ImmutableSet.of("reqdField"));
+
+    FieldCoordinates testFieldCoordinate = coordinates("AObjectType", "af1");
+    when(serviceMetadataMock.getFieldResolverContext(testFieldCoordinate)).thenReturn(fieldResolverContextMock);
+
+    // test '{ a1 { af1 reqdField} }', where af1 has @resolver and requires reqdField
+    Field a1 = Field.newField("a1")
+        .selectionSet(SelectionSet.newSelectionSet()
+            .selection(af1)
+            .selection(Field.newField("reqdField").build())
+            .build())
+        .build();
+
+    AstTransformer astTransformer = new AstTransformer();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    // test '{ a1 { af1 reqdField} }', expected
+    @SuppressWarnings("rawtypes")
+    List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections();
+    assertThat(actualA1Selections).hasSize(2);
+
+    assertThat(toFieldNameSet(actualA1Selections)).contains("af1", "reqdField");
+  }
+
+  @Test
+  public void visitSelectionSet_noRequiredFields_doesNotAddRequiredField() {
+    FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
+    when(fieldResolverContextMock.getRequiredFields()).thenReturn(Collections.emptySet());
+
+    FieldCoordinates testFieldCoordinate = coordinates("AObjectType", "af1");
+    when(serviceMetadataMock.getFieldResolverContext(testFieldCoordinate)).thenReturn(fieldResolverContextMock);
+
+    // test '{ a1 { af1} }', where af1 has @resolver and requires reqdField
+    Field a1 = Field.newField("a1")
+        .selectionSet(SelectionSet.newSelectionSet()
+            .selection(af1)
+            .build())
+        .build();
+
+    AstTransformer astTransformer = new AstTransformer();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    // test '{ a1 { af1} }', expected
+    @SuppressWarnings("rawtypes")
+    List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections();
+    assertThat(actualA1Selections).hasSize(1);
+
+    assertThat(toFieldNameSet(actualA1Selections)).contains("af1");
+  }
+
+  @Test
+  public void visitSelectionSet_noFieldResolvers_doesNotAddRequiredField() {
+    FieldCoordinates testFieldCoordinate = coordinates("AObjectType", "af1");
+    when(serviceMetadataMock.getFieldResolverContext(testFieldCoordinate)).thenReturn(null);
+
+    // test '{ a1 { af1} }', where af1 has @resolver and requires reqdField
+    Field a1 = Field.newField("a1")
+        .selectionSet(SelectionSet.newSelectionSet()
+            .selection(af1)
+            .build())
+        .build();
+
+    AstTransformer astTransformer = new AstTransformer();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    // test '{ a1 { af1} }', expected
+    @SuppressWarnings("rawtypes")
+    List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections();
+    assertThat(actualA1Selections).hasSize(1);
+
+    assertThat(toFieldNameSet(actualA1Selections)).contains("af1");
+  }
+
+  private List<String> toFieldNameSet(@SuppressWarnings("rawtypes") List<Selection> fields) {
+    return fields.stream()
+        .filter(selection -> selection instanceof Field)
+        .map(selection -> (Field) selection)
+        .map(Field::getName)
+        .collect(Collectors.toList());
+
   }
 
 
