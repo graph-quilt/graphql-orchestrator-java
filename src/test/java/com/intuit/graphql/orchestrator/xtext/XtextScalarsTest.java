@@ -12,7 +12,6 @@ import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newIntType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newLongType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newShortType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newStringType;
-import static graphql.schema.idl.ScalarInfo.isStandardScalar;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
@@ -38,11 +37,5 @@ public class XtextScalarsTest {
   @Test
   public void testStandardScalarMap() {
     assertThat(XtextScalars.STANDARD_SCALARS).hasSize(12);
-  }
-
-  @Test
-  public void fieldSetNotInStandardScalars(){
-    //If this is true, remove addition of field set scalar in XtextGraphQlVisitor(Should be done after upgrading graphql java)
-    assertThat(isStandardScalar("_FieldSet")).isFalse();
   }
 }

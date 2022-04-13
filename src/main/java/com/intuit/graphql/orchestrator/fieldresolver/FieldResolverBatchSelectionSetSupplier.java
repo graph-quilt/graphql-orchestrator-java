@@ -1,28 +1,34 @@
 package com.intuit.graphql.orchestrator.fieldresolver;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getNameFromFieldReference;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
+import com.intuit.graphql.orchestrator.utils.ValueUtil;
 import graphql.Scalars;
-import graphql.language.*;
+import graphql.language.Argument;
+import graphql.language.Field;
+import graphql.language.Selection;
+import graphql.language.SelectionSet;
+import graphql.language.Value;
+import graphql.parser.Parser;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
-import lombok.AllArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.*;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
-import static graphql.language.AstValueHelper.astFromValue;
 
 @AllArgsConstructor
 public class FieldResolverBatchSelectionSetSupplier implements Supplier<SelectionSet> {
@@ -93,7 +99,7 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                 if (fieldReferenceType == Scalars.GraphQLID) {
                     fieldReferenceType = Scalars.GraphQLString;
                 }
-                return astFromValue(valueFromSource, fieldReferenceType);
+                return ValueUtil.astFromValue(valueFromSource, fieldReferenceType);
 
             } else {
                 String typename = com.intuit.graphql.utils.XtextTypeUtils.typeName(resolverArgumentDefinition.getNamedType());
@@ -102,11 +108,14 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                     StringUtils.equals(typename, Scalars.GraphQLID.getName())) {
                     stringLiteralAstValue = String.format("\"%s\"", stringLiteralAstValue);
                 }
-                return AstValueHelper.valueFromAst(stringLiteralAstValue);
+                // old was return AstValueHelper.valueFromAst(stringLiteralAstValue)
+                return Parser.parseValue(stringLiteralAstValue);
+
             }
         } else {
             String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
-            return AstValueHelper.valueFromAst(stringLiteralAstValue);
+            //old was return AstValueHelper.valueFromAst(stringLiteralAstValue)
+            return Parser.parseValue(stringLiteralAstValue);
         }
     }
 
