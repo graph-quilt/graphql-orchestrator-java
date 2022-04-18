@@ -152,10 +152,11 @@ class AliasFragmentSpreadWithNestedSpec extends BaseIntegrationTestSpecification
         then:
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
-        data.a?.b?.foo?.d?.f1 instanceof String && data.a?.b?.foo?.d?.f1 == "foo1"
-        data.a?.b?.foo?.d?.f2 instanceof String && data.a?.b?.foo?.d?.f2 == "foo2"
-        data.a?.b?.bar?.d?.f1 instanceof String && data.a?.b?.bar?.d?.f1 == "bar1"
-        data.a?.b?.bar?.d?.f2 instanceof String && data.a?.b?.bar?.d?.f2 == "bar2"
+        data.a?.b?.c?.d?.f1 instanceof String && data.a?.b?.c?.d?.f1 == "foo1"
+        data.a?.b?.c?.d?.f2 instanceof String && data.a?.b?.c?.d?.f2 == "foo2"
+        data.a?.b?.c?.f?.f1 instanceof String && data.a?.b?.c?.f?.f1 == "bar1"
+        data.a?.b?.c?.f?.f2 instanceof String && data.a?.b?.c?.f?.f2 == "bar2"
+        data.a?.e?.f1 instanceof String && data.a?.e?.f1 == "eoo"
     }
 
 //    fragment fr on C {d {f1 f2}}
