@@ -36,6 +36,8 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -125,7 +127,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         if (mergedFragmentDefinitions.containsKey(fragmentDefinition.getName())) {
           FragmentDefinition old = mergedFragmentDefinitions.get(fragmentDefinition.getName());
 
-          List<Selection> newSelections = fragmentDefinition.getSelectionSet().getSelections();
+          List<Selection> newSelections = new ArrayList<>(fragmentDefinition.getSelectionSet().getSelections());
           List<Selection> oldSelections = old.getSelectionSet().getSelections();
 
           oldSelections.addAll(newSelections);
