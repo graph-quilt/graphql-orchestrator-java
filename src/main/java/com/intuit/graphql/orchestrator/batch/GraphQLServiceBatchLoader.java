@@ -127,8 +127,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         if (mergedFragmentDefinitions.containsKey(fragmentDefinition.getName())) {
           FragmentDefinition old = mergedFragmentDefinitions.get(fragmentDefinition.getName());
 
-          List<Selection> newSelections = new ArrayList<>(fragmentDefinition.getSelectionSet().getSelections());
-          List<Selection> oldSelections = old.getSelectionSet().getSelections();
+          List<Selection> newSelections = fragmentDefinition.getSelectionSet().getSelections();
+          List<Selection> oldSelections = new ArrayList<>(old.getSelectionSet().getSelections());
 
           oldSelections.addAll(newSelections);
 
