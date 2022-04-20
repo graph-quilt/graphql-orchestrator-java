@@ -1,7 +1,12 @@
 package com.intuit.graphql.orchestrator.integration
 
+import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import graphql.ExecutionInput
 import graphql.ExecutionResult
+import graphql.schema.GraphQLArgument
+import graphql.schema.GraphQLDirective
+import graphql.schema.GraphQLScalarType
+import graphql.schema.GraphQLSchema
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
@@ -24,12 +29,28 @@ class CustomScalarsSpec extends BaseIntegrationTestSpecification {
             ]
     ]
 
+    GraphQLSchema graphQLSchema
+
     @Subject
-    def specUnderTest
+    GraphQLOrchestrator specUnderTest
 
     void setup() {
         testService = createSimpleMockService(testSchema, mockServiceResponse)
         specUnderTest = createGraphQLOrchestrator(testService)
+        graphQLSchema = specUnderTest.getSchema()
+    }
+
+    def "can build schema with custom scalars"() {
+        given: "graphQLSchema"
+
+        and:
+        GraphQLScalarType scalarType = (GraphQLScalarType) graphQLSchema.getType("UUID")
+        GraphQLDirective graphQLDirective = (GraphQLDirective) scalarType.getDirective("specifiedBy")
+        GraphQLArgument graphQLArgument = graphQLDirective.getArgument("url")
+        String actualUrlArg = (String) graphQLArgument.getArgumentValue().getValue()
+
+        expect:
+        actualUrlArg == "https://tools.ietf.org/html/rfc4122"
     }
 
     def "Custom Scalars can be queried"() {

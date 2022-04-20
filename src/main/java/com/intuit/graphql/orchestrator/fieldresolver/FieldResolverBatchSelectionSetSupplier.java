@@ -4,13 +4,14 @@ import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDir
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+import static graphql.schema.InputValueWithState.newExternalValue;
 
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
-import com.intuit.graphql.orchestrator.utils.ValueUtil;
 import graphql.Scalars;
+import graphql.execution.ValuesResolver;
 import graphql.language.Argument;
 import graphql.language.Field;
 import graphql.language.Selection;
@@ -99,7 +100,7 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                 if (fieldReferenceType == Scalars.GraphQLID) {
                     fieldReferenceType = Scalars.GraphQLString;
                 }
-                return ValueUtil.astFromValue(valueFromSource, fieldReferenceType);
+                return ValuesResolver.valueToLiteral(newExternalValue(valueFromSource), fieldReferenceType);
 
             } else {
                 String typename = com.intuit.graphql.utils.XtextTypeUtils.typeName(resolverArgumentDefinition.getNamedType());
@@ -108,13 +109,11 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
                     StringUtils.equals(typename, Scalars.GraphQLID.getName())) {
                     stringLiteralAstValue = String.format("\"%s\"", stringLiteralAstValue);
                 }
-                // old was return AstValueHelper.valueFromAst(stringLiteralAstValue)
                 return Parser.parseValue(stringLiteralAstValue);
 
             }
         } else {
             String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
-            //old was return AstValueHelper.valueFromAst(stringLiteralAstValue)
             return Parser.parseValue(stringLiteralAstValue);
         }
     }

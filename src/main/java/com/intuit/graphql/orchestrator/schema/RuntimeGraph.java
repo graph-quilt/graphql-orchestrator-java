@@ -51,22 +51,6 @@ public class RuntimeGraph {
     return new Builder();
   }
 
-  /**
-   * Empty runtime graph.
-   *
-   * @return the runtime graph
-   */
-  public static RuntimeGraph emptyGraph() {
-
-    Map<Operation, GraphQLObjectType> newMap = new EnumMap<>(Operation.class);
-    for (Operation op : Operation.values()) {
-      newMap.put(op, op.asGraphQLObjectType());
-    }
-    return new Builder()
-        .operationMap(newMap)
-        .build();
-  }
-
   public GraphQLType getType(String name) {
     return graphQLtypes.getOrDefault(name, additionalTypes.get(name));
   }

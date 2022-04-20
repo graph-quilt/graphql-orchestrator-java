@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.integration
 
+import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import graphql.language.Directive
@@ -24,7 +25,7 @@ class DirectivesOnVariableDefinitionSpec extends BaseIntegrationTestSpecificatio
     ]
 
     @Subject
-    def specUnderTest
+    GraphQLOrchestrator specUnderTest
 
     void setup() {
         testService = createSimpleMockService(testSchema, mockServiceResponse)

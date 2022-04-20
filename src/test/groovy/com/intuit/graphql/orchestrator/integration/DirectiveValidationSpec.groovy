@@ -4,7 +4,7 @@ import com.intuit.graphql.orchestrator.schema.SchemaParseException
 import com.intuit.graphql.orchestrator.stitching.SchemaStitcher
 import helpers.BaseIntegrationTestSpecification
 
-class DirectiveSpec extends BaseIntegrationTestSpecification {
+class DirectiveValidationSpec extends BaseIntegrationTestSpecification {
 
     def testSchema = """
         type  Foo1 {

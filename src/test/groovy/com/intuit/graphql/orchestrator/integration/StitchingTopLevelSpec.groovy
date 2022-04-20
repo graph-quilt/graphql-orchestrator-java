@@ -50,19 +50,19 @@ class StitchingTopLevelSpec extends BaseIntegrationTestSpecification {
         final GraphQLSchema graphQLSchema = specUnderTest?.runtimeGraph?.getExecutableSchema();
         final GraphQLObjectType queryType = specUnderTest?.runtimeGraph?.getOperation(Operation.QUERY);
 
-        graphQLSchema?.getQueryType()?.getFieldDefinitions()?.size() == 1
+        graphQLSchema?.getQueryType()?.getFieldDefinitions()?.size() == 2
         queryType?.getFieldDefinition("employeeById") != null
     }
 
     def "Federation employee and inventory is stitched"() {
         when:
-        specUnderTest = createGraphQLOrchestrator(employeeProvider, inventoryProvider)
+        specUnderTest = createGraphQLOrchestrator([employeeProvider, inventoryProvider])
 
         then:
         final GraphQLSchema graphQLSchema = specUnderTest?.runtimeGraph?.getExecutableSchema()
         final GraphQLObjectType queryType = specUnderTest?.runtimeGraph?.getOperation(Operation.QUERY)
 
-        graphQLSchema?.getQueryType()?.getFieldDefinitions()?.size() == 3
+        graphQLSchema?.getQueryType()?.getFieldDefinitions()?.size() == 4
         queryType.getFieldDefinition("employeeById") != null
         queryType.getFieldDefinition("getSoldProducts") != null
         queryType.getFieldDefinition("getStoreByIdAndName") != null
@@ -104,7 +104,7 @@ class StitchingTopLevelSpec extends BaseIntegrationTestSpecification {
                 .build()
 
         when:
-        specUnderTest = createGraphQLOrchestrator(valueProvider1, valueProvider2)
+        specUnderTest = createGraphQLOrchestrator([valueProvider1, valueProvider2])
 
         then:
         final GraphQLObjectType queryType = specUnderTest?.runtimeGraph?.getOperation(Operation.QUERY)
@@ -115,7 +115,7 @@ class StitchingTopLevelSpec extends BaseIntegrationTestSpecification {
 
     def "Federation entities can be extended with extends directive and extend keyword"() {
         when:
-        specUnderTest = createGraphQLOrchestrator(employeeProvider, inventoryProvider, reviewsProvider)
+        specUnderTest = createGraphQLOrchestrator([employeeProvider, inventoryProvider, reviewsProvider])
 
         then:
         final GraphQLSchema graphQLSchema = specUnderTest?.runtimeGraph?.getExecutableSchema()

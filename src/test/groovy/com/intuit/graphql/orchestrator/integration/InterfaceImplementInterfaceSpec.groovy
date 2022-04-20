@@ -1,8 +1,11 @@
 package com.intuit.graphql.orchestrator.integration
 
-
+import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import graphql.ExecutionInput
 import graphql.ExecutionResult
+import graphql.schema.GraphQLInterfaceType
+import graphql.schema.GraphQLObjectType
+import graphql.schema.GraphQLSchema
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
@@ -94,12 +97,29 @@ class InterfaceImplementInterfaceSpec extends BaseIntegrationTestSpecification {
             ]
     ]
 
+    GraphQLSchema graphQLSchema
+
     @Subject
-    def specUnderTest
+    GraphQLOrchestrator specUnderTest
 
     void setup() {
         testService = createSimpleMockService(testSchema, mockServiceResponse)
         specUnderTest = createGraphQLOrchestrator(testService)
+        graphQLSchema = specUnderTest.getSchema()
+    }
+
+    def "can build schema with interface extending another interface"() {
+        given: "graphQLSchema"
+
+        and:
+        GraphQLInterfaceType nodeInterfaceType = (GraphQLInterfaceType) graphQLSchema.getType("Node")
+        GraphQLInterfaceType petInterfaceType = (GraphQLInterfaceType) graphQLSchema.getType("Pet")
+        GraphQLObjectType dogType = (GraphQLObjectType) graphQLSchema.getType("Dog")
+
+        expect:
+        nodeInterfaceType.getInterfaces().size() == 0
+        petInterfaceType.getInterfaces().size() == 1
+        dogType.getInterfaces().size() == 2
     }
 
     def "interface can extends another interface"() {

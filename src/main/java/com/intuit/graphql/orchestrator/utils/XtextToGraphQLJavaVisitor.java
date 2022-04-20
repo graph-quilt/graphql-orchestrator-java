@@ -200,6 +200,8 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
     builder.description(object.getDesc());
 
+    createGraphqlDirectives(object.getDirectives()).forEach(builder::withDirective);
+
     graphQLType = builder.build();
     graphQLObjectTypes.put(me, graphQLType);
     return graphQLType;
@@ -313,6 +315,11 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     builder.typeResolver(new ExplicitTypeResolver());
 
     builder.description(object.getDesc());
+
+    if (Objects.nonNull(object.getImplementsInterfaces())) {
+      builder.withInterfaces(
+          createGraphQLTypeReferences(object.getImplementsInterfaces()));
+    }
 
     graphQLType = builder.build();
     graphQLObjectTypes.put(me, graphQLType);
@@ -547,6 +554,10 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     object.getDirectiveLocations()
         .forEach(location -> builder.validLocation(DirectiveLocation.valueOf(location.getNamedDirective())));
 
+    builder.repeatable(object.isRepeatable());
+    if (Objects.nonNull(object.getDesc())) {
+      builder.description(object.getDesc());
+    }
     graphQLDirective = builder.build();
     directiveDefinitions.put(me, graphQLDirective);
     return graphQLDirective;

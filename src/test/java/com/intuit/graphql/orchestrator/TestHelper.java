@@ -15,6 +15,7 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class TestHelper {
   public static String getResourceAsString(String fileName) {
     String content = "";
     try {
-      content = IOUtils.toString(TestHelper.class.getClassLoader().getResourceAsStream(fileName));
+      content = IOUtils.toString(TestHelper.class.getClassLoader().getResourceAsStream(fileName), Charset.defaultCharset());
     } catch (IOException e) {
       e.printStackTrace();
     }

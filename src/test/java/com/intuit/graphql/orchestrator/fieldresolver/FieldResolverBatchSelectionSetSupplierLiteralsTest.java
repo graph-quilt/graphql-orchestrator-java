@@ -18,10 +18,12 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefini
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import graphql.Scalars;
+import graphql.language.Argument;
 import graphql.language.BooleanValue;
 import graphql.language.EnumValue;
 import graphql.language.Field;
 import graphql.language.IntValue;
+import graphql.language.ObjectValue;
 import graphql.language.SelectionSet;
 import graphql.language.StringValue;
 import graphql.schema.DataFetchingEnvironment;
@@ -89,7 +91,7 @@ public class FieldResolverBatchSelectionSetSupplierLiteralsTest {
         objectType.setType(petIdType);
 
         when(resolverDirectiveDefinitionMock.getArguments()).thenReturn(singletonList(
-            new ResolverArgumentDefinition("name", "{ id : \"$petId\" }", objectType)
+            new ResolverArgumentDefinition("petIdInputObject", "{ id : \"$petId\" }", objectType)
         ));
 
         String[] resolverSelectedFields = new String[] {"petById"};
@@ -101,7 +103,15 @@ public class FieldResolverBatchSelectionSetSupplierLiteralsTest {
         // THEN
         SelectionSet actual = subject.get();
 
-        assertThat(actual).isNotNull();
+        Field actualPetByIdField = (Field)actual.getSelections().get(0);
+        Argument actualArgument = actualPetByIdField.getArguments().get(0);
+        assertThat(actualArgument.getName()).isEqualTo("petIdInputObject");
+        ObjectValue actualArgumentValue = (ObjectValue)actualArgument.getValue();
+        assertThat(actualArgumentValue.getObjectFields().get(0).getName()).isEqualTo("id");
+        StringValue actualStringValue = (StringValue) actualArgumentValue.getObjectFields().get(0).getValue();
+        assertThat(actualStringValue.getValue()).isEqualTo("pet-901");
+
+
     }
 
     @Test

@@ -26,8 +26,29 @@ class BaseIntegrationTestSpecification extends Specification {
                 .build()
     }
 
-    static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider... services) {
-        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().services(Arrays.asList(services))
+    def createSimpleMockService(String namespace, String testSchema, Map<String, Object> mockServiceResponse) {
+        return new SimpleMockServiceProvider().builder()
+                .sdlFiles(["schema.graphqls": testSchema])
+                .namespace(namespace)
+                .mockResponse(mockServiceResponse)
+                .build()
+    }
+
+    static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider service) {
+        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().service(service)
+                .build().stitchGraph()
+
+        GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
+        builder.runtimeGraph(runtimeGraph)
+        builder.instrumentations(Collections.emptyList())
+        builder.executionIdProvider(ExecutionIdProvider.DEFAULT_EXECUTION_ID_PROVIDER);
+        builder.queryExecutionStrategy(new AsyncExecutionStrategy())
+        builder.mutationExecutionStrategy(new AsyncExecutionStrategy())
+        return builder.build()
+    }
+
+    static GraphQLOrchestrator createGraphQLOrchestrator(List<ServiceProvider> services) {
+        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().services(services)
                 .build().stitchGraph()
 
         GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
