@@ -59,6 +59,7 @@ public class XtextGraph implements ServiceMetadata {
    */
   private Map<String, ObjectTypeDefinition> objectTypeDefinitions;
 
+  private Map<String, TypeDefinition> valueTypesByName;
   private final Map<String, TypeDefinition> entitiesByTypeName;
   private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
@@ -80,6 +81,7 @@ public class XtextGraph implements ServiceMetadata {
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
     resolverArgumentFields = builder.resolverArgumentFields;
     fieldResolverContexts = builder.fieldResolverContexts;
+    valueTypesByName = builder.valueTypesByName;
     entitiesByTypeName = builder.entities;
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
@@ -114,6 +116,7 @@ public class XtextGraph implements ServiceMetadata {
     builder.hasFieldResolverDefinition = copy.hasFieldResolverDefinition;
     builder.resolverArgumentFields = copy.resolverArgumentFields;
     builder.fieldResolverContexts = copy.fieldResolverContexts;
+    builder.valueTypesByName = copy.valueTypesByName;
     builder.entities = copy.entitiesByTypeName;
     builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
@@ -306,6 +309,7 @@ public class XtextGraph implements ServiceMetadata {
     private Set<DirectiveDefinition> directives = new HashSet<>();
     private Map<String, TypeDefinition> types = new HashMap<>();
     private Map<String, TypeMetadata> typeMetadatas = new HashMap<>();
+    private Map<String, TypeDefinition> valueTypesByName = new HashMap<>();
     private Map<String, TypeDefinition> entities = new HashMap<>();
     private Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
     private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
@@ -455,6 +459,12 @@ public class XtextGraph implements ServiceMetadata {
 
     public Builder clearFieldResolverContexts() {
       this.fieldResolverContexts.clear();
+      return this;
+    }
+
+    public Builder valueTypesByName(Map<String, TypeDefinition> valueTypes) {
+      requireNonNull(valueTypes);
+      this.valueTypesByName.putAll(valueTypes);
       return this;
     }
 
