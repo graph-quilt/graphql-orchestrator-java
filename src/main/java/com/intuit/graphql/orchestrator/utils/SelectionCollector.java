@@ -18,8 +18,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
 /**
- * Collects set of fields from a selection set.  Fields collected may be from Inline Fragments
- * or Fragment Spreads.
+ * Collects set of fields from a selection set.  Fields collected may be from Inline Fragments or Fragment Spreads.
  */
 public class SelectionCollector {
 
@@ -41,7 +40,7 @@ public class SelectionCollector {
     return selectionSet.getSelections().stream()
         .map(this::collectFields)
         .flatMap(Collection::stream)
-        .collect(Collectors.toMap(Field::getName, Function.identity()));
+        .collect(Collectors.toMap(Field::getName, Function.identity(), (f1, f2) -> f1));
   }
 
   private List<Field> collectFields(Selection selection) {
