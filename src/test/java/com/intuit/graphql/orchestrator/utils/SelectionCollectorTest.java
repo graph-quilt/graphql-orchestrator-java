@@ -40,6 +40,7 @@ public class SelectionCollectorTest {
       SelectionSet.newSelectionSet()
           .selection(SUB_FIELD1)
           .selection(SUB_FIELD2)
+          .selection(SUB_FIELD1)
           .selection(FragmentSpread.newFragmentSpread().name(TEST_FRAGMENT_NAME).build())
           .selection(
               InlineFragment.newInlineFragment()
