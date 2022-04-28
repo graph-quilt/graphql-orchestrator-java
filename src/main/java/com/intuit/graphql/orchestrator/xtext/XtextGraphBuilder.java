@@ -20,7 +20,7 @@ public class XtextGraphBuilder {
   public static XtextGraph build(ServiceProvider serviceProvider) {
     XtextResourceSet xtextResourceSet = XtextResourceSetBuilder.newBuilder()
         .files(serviceProvider.sdlFiles())
-        .isFederatedResourceSet(serviceProvider.isFederationProvider())
+        .isFederatedResourceSet(serviceProvider.isFederationProvider() && serviceProvider.getSeviceType() != ServiceProvider.ServiceType.FEDERATION_BETA)
         .build();
 
     final Map<Operation, ObjectTypeDefinition> operationMap = new EnumMap<>(Operation.class);
