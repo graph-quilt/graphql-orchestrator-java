@@ -2,8 +2,10 @@ package com.intuit.graphql.orchestrator.federation;
 
 import graphql.ErrorType;
 import graphql.GraphqlErrorException;
+import org.apache.commons.lang3.StringUtils;
 
 public class EntityFetchingException extends GraphqlErrorException {
+
 
   private EntityFetchingException(EntityFetchingException.Builder builder) {
     super(builder);
@@ -29,6 +31,8 @@ public class EntityFetchingException extends GraphqlErrorException {
     private String parentTypeName;
     private String serviceNameSpace;
 
+    private String additionalInfo;
+
     public EntityFetchingException.Builder fieldName(String fieldName) {
       this.fieldName = fieldName;
       return this;
@@ -44,10 +48,19 @@ public class EntityFetchingException extends GraphqlErrorException {
       return this;
     }
 
+    public EntityFetchingException.Builder additionalInfo(String additionalInfo) {
+      this.additionalInfo = additionalInfo;
+      return this;
+    }
+
     public EntityFetchingException build() {
       this.message = String.format(ERROR_MESSAGE, fieldName, parentTypeName,
-          serviceNameSpace);
-      this.errorClassification = ErrorType.ExecutionAborted;
+              serviceNameSpace);
+
+      if(StringUtils.isNotBlank(additionalInfo)) {
+        this.message += " " + additionalInfo;
+      }
+
       return new EntityFetchingException(this);
     }
   }

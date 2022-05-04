@@ -32,6 +32,7 @@ import org.apache.commons.collections4.CollectionUtils;
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
 
   private final EntityExtensionMetadata entityExtensionMetadata; // Field added in entity
+  public static final String NO_ENTITY_FIELD = "Faulty entity response due to null _entities field";
 
   @Override
   public CompletableFuture<Object> get(final DataFetchingEnvironment dataFetchingEnvironment) {
@@ -83,6 +84,16 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
               Map<String, Object> data = (Map<String, Object>) result.get("data");
               List<Map<String, Object>> _entities =
                   (List<Map<String, Object>>) data.get("_entities");
+
+              if(_entities == null) {
+                throw EntityFetchingException.builder()
+                        .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
+                        .fieldName(fieldName)
+                        .parentTypeName(entityTypename)
+                        .additionalInfo(NO_ENTITY_FIELD)
+                        .build();
+              }
+
               return _entities.get(0).get(fieldName);
             });
   }
