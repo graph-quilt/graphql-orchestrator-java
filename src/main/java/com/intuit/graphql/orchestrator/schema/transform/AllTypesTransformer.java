@@ -73,9 +73,15 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
       HashMap<String, Map<String, TypeSystemDefinition>> extensionEntitiesByNamespace = new HashMap<>();
       extensionEntitiesByNamespace.put(source.getServiceProvider().getNameSpace(), extensionEntities);
 
+      Map<String, TypeDefinition> valueTypes = types.values().stream()
+              .filter(typeDefinition -> !definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+              .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
+
+
       return source.transform(builder -> builder
         .types(types)
         .typeMetadatas(createTypeMetadatas(types))
+        .valueTypesByName(valueTypes)
         .entitiesByTypeName(baseEntities)
         .entityExtensionsByNamespace(extensionEntitiesByNamespace)
       );
