@@ -2,8 +2,10 @@ package com.intuit.graphql.orchestrator.federation;
 
 import graphql.ErrorType;
 import graphql.GraphqlErrorException;
+import org.apache.commons.lang3.StringUtils;
 
 public class EntityFetchingException extends GraphqlErrorException {
+
 
   private EntityFetchingException(EntityFetchingException.Builder builder) {
     super(builder);
@@ -20,14 +22,14 @@ public class EntityFetchingException extends GraphqlErrorException {
 
   public static class Builder extends BuilderBase<EntityFetchingException.Builder, EntityFetchingException> {
 
-    private static final String ERROR_MESSAGE = "Failed to execute entity data fetcher. "
-        + " fieldName=%s, "
-        + " parentTypeName=%s, "
-        + " serviceNameSpace=%s";
+    private static final String ERROR_MESSAGE = "Failed to execute entity data fetcher. ";
+    private static final String TEMPLATE_MSG = " fieldName=%s, parentTypeName=%s, serviceNameSpace=%s";
 
     private String fieldName;
     private String parentTypeName;
     private String serviceNameSpace;
+
+    private String additionalInfo;
 
     public EntityFetchingException.Builder fieldName(String fieldName) {
       this.fieldName = fieldName;
@@ -44,10 +46,16 @@ public class EntityFetchingException extends GraphqlErrorException {
       return this;
     }
 
+    public EntityFetchingException.Builder additionalInfo(String additionalInfo) {
+      this.additionalInfo = additionalInfo;
+      return this;
+    }
+
     public EntityFetchingException build() {
-      this.message = String.format(ERROR_MESSAGE, fieldName, parentTypeName,
-          serviceNameSpace);
-      this.errorClassification = ErrorType.ExecutionAborted;
+      this.message = StringUtils.join(ERROR_MESSAGE,
+              (StringUtils.isNotBlank(additionalInfo)) ? additionalInfo : "",
+              String.format(TEMPLATE_MSG, fieldName, parentTypeName, serviceNameSpace));
+
       return new EntityFetchingException(this);
     }
   }

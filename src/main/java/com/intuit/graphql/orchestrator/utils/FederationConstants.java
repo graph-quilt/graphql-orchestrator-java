@@ -49,6 +49,8 @@ public class FederationConstants {
 
     public static final String _ENTITIES_FIELD_NAME = "_entities";
 
+    public static final String DATA_RESPONSE_FIELD = "data";
+
 
 
 }

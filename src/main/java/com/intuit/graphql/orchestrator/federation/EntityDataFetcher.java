@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.federation;
 
-import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
-
 import com.intuit.graphql.orchestrator.batch.QueryExecutor;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
@@ -13,6 +11,9 @@ import graphql.language.SelectionSet;
 import graphql.language.TypeName;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
+
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.DATA_RESPONSE_FIELD;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants._ENTITIES_FIELD_NAME;
+import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
 
 /**
  * This class is used for resolving fields added to an Entity by making an entity fetch request. To
@@ -32,6 +35,7 @@ import org.apache.commons.collections4.CollectionUtils;
 public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>> {
 
   private final EntityExtensionMetadata entityExtensionMetadata; // Field added in entity
+  public static final String NO_ENTITY_FIELD = "Faulty entity response due to null _entities field";
 
   @Override
   public CompletableFuture<Object> get(final DataFetchingEnvironment dataFetchingEnvironment) {
@@ -80,9 +84,19 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
         .thenApply(
             result -> {
               // TODO transformer
-              Map<String, Object> data = (Map<String, Object>) result.get("data");
+              Map<String, Object> data = (Map<String, Object>) result.get(DATA_RESPONSE_FIELD);
               List<Map<String, Object>> _entities =
-                  (List<Map<String, Object>>) data.get("_entities");
+                  (List<Map<String, Object>>) data.get(_ENTITIES_FIELD_NAME);
+
+              if(_entities == null) {
+                throw EntityFetchingException.builder()
+                        .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
+                        .fieldName(fieldName)
+                        .parentTypeName(entityTypename)
+                        .additionalInfo(NO_ENTITY_FIELD)
+                        .build();
+              }
+
               return _entities.get(0).get(fieldName);
             });
   }
