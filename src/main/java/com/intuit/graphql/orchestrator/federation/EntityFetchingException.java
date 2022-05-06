@@ -22,10 +22,8 @@ public class EntityFetchingException extends GraphqlErrorException {
 
   public static class Builder extends BuilderBase<EntityFetchingException.Builder, EntityFetchingException> {
 
-    private static final String ERROR_MESSAGE = "Failed to execute entity data fetcher. "
-        + " fieldName=%s, "
-        + " parentTypeName=%s, "
-        + " serviceNameSpace=%s";
+    private static final String ERROR_MESSAGE = "Failed to execute entity data fetcher. ";
+    private static final String TEMPLATE_MSG = " fieldName=%s, parentTypeName=%s, serviceNameSpace=%s";
 
     private String fieldName;
     private String parentTypeName;
@@ -54,12 +52,9 @@ public class EntityFetchingException extends GraphqlErrorException {
     }
 
     public EntityFetchingException build() {
-      this.message = String.format(ERROR_MESSAGE, fieldName, parentTypeName,
-              serviceNameSpace);
-
-      if(StringUtils.isNotBlank(additionalInfo)) {
-        this.message += " " + additionalInfo;
-      }
+      this.message = StringUtils.join(ERROR_MESSAGE,
+              (StringUtils.isNotBlank(additionalInfo)) ? additionalInfo : "",
+              String.format(TEMPLATE_MSG, fieldName, parentTypeName, serviceNameSpace));
 
       return new EntityFetchingException(this);
     }
