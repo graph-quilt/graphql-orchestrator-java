@@ -1,45 +1,44 @@
 package com.intuit.graphql.orchestrator.fieldresolver;
 
-import org.apache.velocity.Template;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
-import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.resource.loader.StringResourceLoader;
-import org.apache.velocity.runtime.resource.util.StringResourceRepository;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
-import java.io.StringWriter;
 import java.util.Map;
 
-/**
- * This uses org.apache.velocity.app.VelocityEngine in a separate instance mode.  Meaning this class should be instantiated
- * for every use.
- */
 public class ValueTemplate {
 
-    private final VelocityEngine engine = new VelocityEngine();
+    private FieldResolverContext fieldResolverContext;
+    private String template;
+    private boolean formatStringRef;
 
-    public ValueTemplate(String stringTemplate) {
-        engine.setProperty(Velocity.RESOURCE_LOADERS, "string");
-        engine.addProperty("resource.loader.string.class", StringResourceLoader.class.getName());
-        engine.addProperty("resource.loader.string.repository.static", "false");
-        engine.init();
-
-        StringResourceRepository repo = (StringResourceRepository) engine.getApplicationAttribute(StringResourceLoader.REPOSITORY_NAME_DEFAULT);
-        repo.putStringResource("1", stringTemplate);
+    public ValueTemplate(FieldResolverContext fieldResolverContext, String template) {
+        this.fieldResolverContext = fieldResolverContext;
+        this.template = template;
+        this.formatStringRef = StringUtils.containsAny(template, "[", "{");
     }
-
     public String compile(Map<String, Object> dataSource) {
-        VelocityContext context = new VelocityContext();
+        String resolverReferenceTemplate1 = "\"$%s\"";
+        String resolverReferenceTemplate2 = "$%s";
 
-        dataSource.keySet().stream()
-                .forEach(key -> context.put(key, dataSource.get(key)));
+        //Create as new String to not interfere with resolver reference
+        return CollectionUtils.isNotEmpty(fieldResolverContext.getRequiredFields()) ? fieldResolverContext.getRequiredFields().stream().reduce(template, (formattedTemplate, resolverRef) -> {
+            String stringValue;
+            Object resolverValue = dataSource.get(resolverRef);
+            if(resolverValue == null) {
+                stringValue = "null";
+            } else if(formatStringRef && resolverValue instanceof String) {
+                stringValue = StringUtils.join("\"", resolverValue.toString(), "\"");
+            } else {
+                stringValue = resolverValue.toString();
+            }
 
-        // Get and merge the template with my parameters.
-        Template template = engine.getTemplate("1");
-        StringWriter writer = new StringWriter();
-        template.merge(context, writer);
+            String resolverReference1 = String.format(resolverReferenceTemplate1, resolverRef);
+            String resolverReference2 = String.format(resolverReferenceTemplate2, resolverRef);
 
-        return writer.toString();
+            String replaceQuotedRef = StringUtils.replace(formattedTemplate, resolverReference1, stringValue);
+            return StringUtils.replace(replaceQuotedRef, resolverReference2, stringValue);
+        }) : template;
     }
 
 }

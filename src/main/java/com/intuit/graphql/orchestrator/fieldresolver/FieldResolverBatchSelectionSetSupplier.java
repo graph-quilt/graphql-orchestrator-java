@@ -1,11 +1,5 @@
 package com.intuit.graphql.orchestrator.fieldresolver;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getNameFromFieldReference;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
-import static graphql.schema.InputValueWithState.newExternalValue;
-
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
@@ -22,14 +16,21 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
+import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getNameFromFieldReference;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+import static graphql.schema.InputValueWithState.newExternalValue;
 
 @AllArgsConstructor
 public class FieldResolverBatchSelectionSetSupplier implements Supplier<SelectionSet> {
@@ -104,7 +105,7 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
 
             } else {
                 String typename = com.intuit.graphql.utils.XtextTypeUtils.typeName(resolverArgumentDefinition.getNamedType());
-                String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
+                String stringLiteralAstValue = compileTemplate(fieldResolverContext, resolverArgumentDefinition.getValue(), parentSource);
                 if (StringUtils.equals(typename, Scalars.GraphQLString.getName()) ||
                     StringUtils.equals(typename, Scalars.GraphQLID.getName())) {
                     stringLiteralAstValue = String.format("\"%s\"", stringLiteralAstValue);
@@ -113,7 +114,7 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
 
             }
         } else {
-            String stringLiteralAstValue = compileTemplate(resolverArgumentDefinition.getValue(), parentSource);
+            String stringLiteralAstValue = compileTemplate(fieldResolverContext, resolverArgumentDefinition.getValue(), parentSource);
             return Parser.parseValue(stringLiteralAstValue);
         }
     }
@@ -152,8 +153,8 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
         return currField;
     }
 
-    private String compileTemplate(String stringTemplate, Map<String, Object> dataSource) {
-        ValueTemplate valueTemplate = new ValueTemplate(stringTemplate);
+    private String compileTemplate(FieldResolverContext fieldResolverContext, String stringTemplate, Map<String, Object> dataSource) {
+        ValueTemplate valueTemplate = new ValueTemplate(fieldResolverContext, stringTemplate);
         return valueTemplate.compile(dataSource);
     }
 
