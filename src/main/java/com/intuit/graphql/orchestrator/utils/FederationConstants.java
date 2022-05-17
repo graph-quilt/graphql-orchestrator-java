@@ -48,8 +48,8 @@ public class FederationConstants {
                     .build();
 
     public static final String _ENTITIES_FIELD_NAME = "_entities";
-
     public static final String DATA_RESPONSE_FIELD = "data";
+    public static final String ERRORS_RESPONSE_FIELD = "errors";
 
 
 

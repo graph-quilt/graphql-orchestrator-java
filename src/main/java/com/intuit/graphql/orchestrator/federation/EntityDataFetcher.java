@@ -13,6 +13,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.DATA_RESPONSE_FIELD;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.ERRORS_RESPONSE_FIELD;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants._ENTITIES_FIELD_NAME;
 import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
 
@@ -39,7 +41,6 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
 
   @Override
   public CompletableFuture<Object> get(final DataFetchingEnvironment dataFetchingEnvironment) {
-    // TODO validate that base entity key's value are present
     GraphQLContext graphQLContext = dataFetchingEnvironment.getContext();
     String fieldName = dataFetchingEnvironment.getField().getName();
     Map<String, Object> dfeSource = dataFetchingEnvironment.getSource();
@@ -84,11 +85,24 @@ public class EntityDataFetcher implements DataFetcher<CompletableFuture<Object>>
         .thenApply(
             result -> {
               // TODO transformer
-              Map<String, Object> data = (Map<String, Object>) result.get(DATA_RESPONSE_FIELD);
-              List<Map<String, Object>> _entities =
-                  (List<Map<String, Object>>) data.get(_ENTITIES_FIELD_NAME);
+              List<HashMap<String, Object>> errors = (List<HashMap<String, Object>>) result.get(ERRORS_RESPONSE_FIELD);
 
-              if(_entities == null) {
+              if(CollectionUtils.isNotEmpty(errors)) {
+                throw EntityFetchingException.builder()
+                        .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
+                        .fieldName(fieldName)
+                        .parentTypeName(entityTypename)
+                        .additionalInfo(errors.stream()
+                                .map(error -> (String)error.getOrDefault("message", ""))
+                                .reduce("", (partialString, errMsg) -> StringUtils.join(partialString, errMsg, " "))
+                        )
+                        .build();
+              }
+
+              Map<String, Object> data = (Map<String, Object>) result.get(DATA_RESPONSE_FIELD);
+              List<Map<String, Object>> _entities = (List<Map<String, Object>>) data.get(_ENTITIES_FIELD_NAME);
+
+              if(CollectionUtils.isEmpty(_entities)) {
                 throw EntityFetchingException.builder()
                         .serviceNameSpace(entityExtensionMetadata.getServiceProvider().getNameSpace())
                         .fieldName(fieldName)
