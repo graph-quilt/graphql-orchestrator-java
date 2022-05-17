@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.xtext;
 
+import graphql.schema.FieldCoordinates;
 import java.util.Objects;
 import lombok.Getter;
 
@@ -8,10 +9,12 @@ public class FieldContext {
 
   private final String parentType;
   private final String fieldName;
+  private final FieldCoordinates fieldCoordinates;
 
   public FieldContext(String parentType, String fieldName) {
     this.parentType = parentType;
     this.fieldName = fieldName;
+    this.fieldCoordinates = FieldCoordinates.coordinates(parentType, fieldName);
   }
 
   @Override

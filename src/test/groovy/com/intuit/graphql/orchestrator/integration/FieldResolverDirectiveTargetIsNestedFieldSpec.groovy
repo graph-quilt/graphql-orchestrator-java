@@ -8,7 +8,7 @@ import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
-class FieldResolverDirectiveNestedSpec extends BaseIntegrationTestSpecification {
+class FieldResolverDirectiveTargetIsNestedFieldSpec extends BaseIntegrationTestSpecification {
     def PERSON_DOWNSTREAM_QUERY = "query Get_Person {person {id} person {name}}";
     def BOOK_DOWNSTREAM_QUERY = "query Get_Person {person {book {id name author {lastName}}}}";
     def PETS_DOWNSTREAM_QUERY = "query Get_Person {person {pets {name}}}";
@@ -62,7 +62,7 @@ class FieldResolverDirectiveNestedSpec extends BaseIntegrationTestSpecification 
                 .build();
     }
 
-    def "testFieldResolverInNestedField"() {
+    def "FieldResolver target is a nested field"() {
         given:
         specUnderTest = createGraphQLOrchestrator([mockPersonService, mockBookService, mockPetsService]);
 

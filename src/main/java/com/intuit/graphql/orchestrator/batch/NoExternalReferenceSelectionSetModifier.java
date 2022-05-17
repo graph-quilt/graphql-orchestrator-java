@@ -15,6 +15,7 @@ import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
 import graphql.language.NodeVisitorStub;
+import graphql.language.OperationDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
@@ -86,6 +87,12 @@ public class NoExternalReferenceSelectionSetModifier extends NodeVisitorStub {
   public TraversalControl visitInlineFragment(InlineFragment node, TraverserContext<Node> context) {
     GraphQLType parentType = getParentType(context);
     context.setVar(GraphQLType.class, parentType);
+    return TraversalControl.CONTINUE;
+  }
+
+  @Override
+  public TraversalControl visitOperationDefinition(OperationDefinition node, TraverserContext<Node> context) {
+    context.setVar(GraphQLType.class, rootType);
     return TraversalControl.CONTINUE;
   }
 
