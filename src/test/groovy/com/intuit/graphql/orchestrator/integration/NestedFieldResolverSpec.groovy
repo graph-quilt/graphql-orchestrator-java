@@ -28,16 +28,17 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         }         
     """
 
-    def QUERY_A = "query Resolver_Directive_Query {aTopField_0:aTopField(p1:\"bObjectFieldValue\") {aObjectField}}"
+    def QUERY_A = "query Resolver_Directive_Query {aTopField_0:aTopField(p1:\"bObjectFieldValue1\") {aObjectField} aTopField_1:aTopField(p1:\"bObjectFieldValue2\") {aObjectField cTopField {cObjectField}}}"
     def mockServiceResponseA = [
             (QUERY_A): [data: [
-                    aTopField_0: [ aObjectField: "aObjectFieldValue"]
+                    aTopField_0: [ aObjectField: "aObjectFieldValue1"],
+                    aTopField_1: [ aObjectField: "aObjectFieldValue2"]
             ]]
     ]
 
     def schemaB = """
         type Query {
-            bTopField: BObjectType
+            bTopField: [BObjectType]
         }
         
         type BObjectType {
@@ -57,7 +58,7 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
     def QUERY_B = "query QUERY {bTopField {bObjectField}}"
     def mockServiceResponseB = [
             (QUERY_B) : [ data: [
-                    bTopField: [ bObjectField: "bObjectFieldValue"]
+                    bTopField: [[ bObjectField: "bObjectFieldValue1"], [ bObjectField: "bObjectFieldValue2"]]
             ]]
     ]
 
@@ -71,10 +72,11 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         }
     """
 
-    def QUERY_C = "query Resolver_Directive_Query {cTopField_0:cTopField {cObjectField}}"
+    def QUERY_C = "query Resolver_Directive_Query {cTopField_0:cTopField {cObjectField} cTopField_1:cTopField {cObjectField}}"
     def mockServiceResponseC = [
             (QUERY_C): [data: [
-                    cTopField_0: [ cObjectField: "cObjectFieldValue"]
+                    cTopField_0: [ cObjectField: "cObjectFieldValue1"],
+                    cTopField_1: [ cObjectField: "cObjectFieldValue2"],
             ]]
     ]
 
@@ -114,12 +116,18 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         then:
         executionResult.getErrors().isEmpty()
         executionResult?.data?.bTopField?.size() == 2
-        executionResult?.data?.bTopField?.bObjectField == "bObjectFieldValue"
-        executionResult?.data?.bTopField?.aTopField?.size() == 2
-        executionResult?.data?.bTopField?.aTopField?.aObjectField == "aObjectFieldValue"
-        executionResult?.data?.bTopField?.aTopField?.cTopField?.size() == 1
-        executionResult?.data?.bTopField?.aTopField?.cTopField?.cObjectField == "cObjectFieldValue"
-
+        executionResult?.data?.bTopField[0]?.size() == 2
+        executionResult?.data?.bTopField[1]?.size() == 2
+        executionResult?.data?.bTopField[0]?.bObjectField == "bObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField == "aObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.cTopField?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.cTopField?.cObjectField == "cObjectFieldValue1"
+        executionResult?.data?.bTopField[1]?.bObjectField == "bObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField == "aObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.cTopField?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.cTopField?.cObjectField == "cObjectFieldValue2"
     }
 
 }
