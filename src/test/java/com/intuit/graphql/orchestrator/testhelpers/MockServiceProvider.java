@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.collections4.MapUtils;
 
 public class MockServiceProvider implements ServiceProvider {
 
@@ -52,7 +53,11 @@ public class MockServiceProvider implements ServiceProvider {
   @Override
   public CompletableFuture<Map<String, Object>> query(ExecutionInput executionInput,
       GraphQLContext context) {
-    return CompletableFuture.completedFuture(this.responseMap.get(executionInput.getQuery()));
+    Map<String, Object> data = this.responseMap.get(executionInput.getQuery());
+    if (MapUtils.isEmpty(data)) {
+      throw new IllegalArgumentException("Mock response not found for query: " + executionInput.getQuery());
+    }
+    return CompletableFuture.completedFuture(data);
   }
 
   public static Builder builder() {
