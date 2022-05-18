@@ -4,6 +4,7 @@ import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph
 import com.intuit.graphql.orchestrator.stitching.SchemaStitcher
+import com.intuit.graphql.orchestrator.testhelpers.MockServiceProvider
 import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.execution.AsyncExecutionStrategy
@@ -20,17 +21,25 @@ class BaseIntegrationTestSpecification extends Specification {
     def testService
 
     def createSimpleMockService(String testSchema, Map<String, Object> mockServiceResponse) {
-        return new SimpleMockServiceProvider().builder()
+        return SimpleMockServiceProvider.builder()
                 .sdlFiles(["schema.graphqls": testSchema])
                 .mockResponse(mockServiceResponse)
                 .build()
     }
 
     def createSimpleMockService(String namespace, String testSchema, Map<String, Object> mockServiceResponse) {
-        return new SimpleMockServiceProvider().builder()
+        return SimpleMockServiceProvider.builder()
                 .sdlFiles(["schema.graphqls": testSchema])
                 .namespace(namespace)
                 .mockResponse(mockServiceResponse)
+                .build()
+    }
+
+    def createQueryMatchingService(String namespace, String testSchema, Map<String, Object> mockServiceResponse) {
+        return MockServiceProvider.builder()
+                .sdlFiles(["schema.graphqls": testSchema])
+                .namespace(namespace)
+                .responseMap(mockServiceResponse)
                 .build()
     }
 
