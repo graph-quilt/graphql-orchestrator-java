@@ -13,6 +13,8 @@ jobs:
       - run: echo "Will release to central maven"
 
       - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
 
       - name: Set up Maven Central Repository
         uses: actions/setup-java@v1
@@ -37,4 +39,3 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.OSS_SONATYPE_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSS_SONATYPE_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
