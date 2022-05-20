@@ -173,7 +173,7 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
         .operationName(resolverQueryOpDef.getName())
         .build();
 
-    return serviceProvider.query(resolverQueryExecutionInput, dataFetchingEnvironment.getLocalContext());
+    return serviceProvider.query(resolverQueryExecutionInput, dataFetchingEnvironment.getContext());
   }
 
 }
