@@ -11,6 +11,10 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
 
     def schemaA = """   
         type Query {
+            arootField: ARootType
+        }
+
+        type ARootType {
             aTopField(p1: String!): AObjectType!
         }
         
@@ -28,11 +32,13 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         }         
     """
 
-    def QUERY_A = "query Resolver_Directive_Query {aTopField_0:aTopField(p1:\"bObjectFieldValue1\") {aObjectField} aTopField_1:aTopField(p1:\"bObjectFieldValue2\") {aObjectField cTopField {cObjectField}}}"
+    def QUERY_A = "query Resolver_Directive_Query {arootField {aTopField_0:aTopField(p1:\"bObjectFieldValue1\") {aObjectField}} arootField {aTopField_1:aTopField(p1:\"bObjectFieldValue2\") {aObjectField cTopField {cObjectField}}}}"
     def mockServiceResponseA = [
             (QUERY_A): [data: [
-                    aTopField_0: [ aObjectField: "aObjectFieldValue1"],
-                    aTopField_1: [ aObjectField: "aObjectFieldValue2"]
+                    arootField : [
+                            aTopField_0: [ aObjectField: "aObjectFieldValue1"],
+                            aTopField_1: [ aObjectField: "aObjectFieldValue2"]
+                    ]
             ]]
     ]
 
@@ -43,7 +49,7 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         
         type BObjectType {
             bObjectField: String
-            aTopField: AObjectType @resolver(field: "aTopField", arguments: [{name : "p1", value: "\$bObjectField"}])
+            aTopField: AObjectType @resolver(field: "arootField.aTopField", arguments: [{name : "p1", value: "\$bObjectField"}])
         }
 
         type AObjectType

@@ -1,6 +1,8 @@
 package com.intuit.graphql.orchestrator.batch;
 
 import static com.intuit.graphql.orchestrator.GraphQLOrchestrator.DATA_LOADER_REGISTRY_CONTEXT_KEY;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_FIELD_SEPARATOR;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverOperationName;
 import static graphql.language.AstPrinter.printAstCompact;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
@@ -70,7 +72,7 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
     this.fieldResolverContext = fieldResolverContext;
     ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
 
-    this.resolverSelectedFields = StringUtils.split(resolverDirectiveDefinition.getField(), '.');
+    this.resolverSelectedFields = StringUtils.split(resolverDirectiveDefinition.getField(), FQN_FIELD_SEPARATOR);
     this.batchResultTransformer = new FieldResolverBatchResultTransformer(resolverSelectedFields, fieldResolverContext);
   }
 
@@ -118,25 +120,39 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
   }
 
   private ServiceMetadata getServiceMetadata(DataFetchingEnvironment dataFetchingEnvironment) {
-    GraphQLCodeRegistry graphQLCodeRegistry = dataFetchingEnvironment.getGraphQLSchema().getCodeRegistry();
-    GraphQLFieldDefinition graphQLFieldDefinition = dataFetchingEnvironment.getFieldDefinition();
+    GraphQLSchema graphQLSchema = dataFetchingEnvironment.getGraphQLSchema();
+    GraphQLCodeRegistry graphQLCodeRegistry = graphQLSchema.getCodeRegistry();
+
+    int start = 0;
+    if (FQN_KEYWORD_QUERY.equals(resolverSelectedFields[0])) {
+      start = 1;
+    }
+
+    GraphQLFieldsContainer currentParentType = graphQLSchema.getQueryType();
+    for (int i = start; i < resolverSelectedFields.length; i++) {
+      String fieldName = resolverSelectedFields[i];
+      GraphQLFieldDefinition graphQLFieldDefinition = currentParentType.getFieldDefinition(fieldName);
+      FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(currentParentType.getName(), fieldName);
+      DataFetcher<?> dataFetcher = graphQLCodeRegistry.getDataFetcher(fieldCoordinates, graphQLFieldDefinition);
+      if (Objects.nonNull(dataFetcher) && dataFetcher instanceof ServiceDataFetcher) {
+        ServiceDataFetcher serviceDataFetcher = (ServiceDataFetcher) dataFetcher;
+        return serviceDataFetcher.getServiceMetadata();
+      }
+      if (!(graphQLFieldDefinition.getType() instanceof GraphQLFieldsContainer)) {
+        break;
+      }
+      currentParentType = (GraphQLFieldsContainer) graphQLFieldDefinition.getType();
+    }
 
     FieldContext fieldContext = this.fieldResolverContext.getTargetFieldContext();
     FieldCoordinates fieldCoordinates = fieldContext.getFieldCoordinates();
-
-    DataFetcher<?> dataFetcher = graphQLCodeRegistry.getDataFetcher(fieldCoordinates, graphQLFieldDefinition);
-    if (Objects.nonNull(dataFetcher) && dataFetcher instanceof ServiceDataFetcher) {
-      ServiceDataFetcher serviceDataFetcher = (ServiceDataFetcher) dataFetcher;
-      return serviceDataFetcher.getServiceMetadata();
-    } else {
-      throw FieldResolverGraphQLError.builder()
-          .errorMessage("ServiceDataFetcher not found.")
-          .fieldName(fieldCoordinates.getFieldName())
-          .parentTypeName(fieldCoordinates.getTypeName())
-          .resolverDirectiveDefinition(this.fieldResolverContext.getResolverDirectiveDefinition())
-          .serviceNameSpace(fieldResolverContext.getServiceNamespace())
-          .build();
-    }
+    throw FieldResolverGraphQLError.builder()
+        .errorMessage("Service DataFetcher not found.")
+        .fieldName(fieldCoordinates.getFieldName())
+        .parentTypeName(fieldCoordinates.getTypeName())
+        .resolverDirectiveDefinition(this.fieldResolverContext.getResolverDirectiveDefinition())
+        .serviceNameSpace(fieldResolverContext.getServiceNamespace())
+        .build();
   }
 
   private List<Definition<FragmentDefinition>> createResolverQueryFragmentDefinitions(DataFetchingEnvironment dataFetchingEnvironment) {
