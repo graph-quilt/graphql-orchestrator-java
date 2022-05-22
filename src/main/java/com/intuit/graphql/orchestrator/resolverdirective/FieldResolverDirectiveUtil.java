@@ -28,6 +28,9 @@ public class FieldResolverDirectiveUtil {
   public static final String RESOLVER_DIRECTIVE_NAME = "resolver";
   public static final String FIELD_REFERENCE_PREFIX = "$";
 
+  public static final String FQN_KEYWORD_QUERY = "query";
+  public static final char FQN_FIELD_SEPARATOR = '.';
+
   public static final CharSequence OPERATION_NAME_SEPARATOR = "_";
   public static final CharSequence RESOLVER_DIRECTIVE_QUERY_NAME = "Resolver_Directive_Query";
 

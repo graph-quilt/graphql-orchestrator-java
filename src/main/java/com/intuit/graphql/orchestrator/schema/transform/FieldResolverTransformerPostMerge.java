@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_FIELD_SEPARATOR;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
@@ -198,9 +200,9 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
 
   private FieldDefinition getFieldDefinitionByFQN(final String queryFieldFQN, XtextGraph xtextGraph) {
 
-    String queryFieldFQNNoQuery = StringUtils.removeStart(queryFieldFQN ,"query."); // remove if exists
+    String queryFieldFQNNoQuery = StringUtils.removeStart(queryFieldFQN ,FQN_KEYWORD_QUERY + FQN_FIELD_SEPARATOR); // remove if exists
 
-    String[] queryFieldFQNTokens = StringUtils.split(queryFieldFQNNoQuery, '.');
+    String[] queryFieldFQNTokens = StringUtils.split(queryFieldFQNNoQuery, FQN_FIELD_SEPARATOR);
     if (ArrayUtils.isEmpty(queryFieldFQNTokens)) {
       String errorMessage = String.format("Failed to tokenize queryFieldFQN.  queryFieldFQN=%s", queryFieldFQN);
       throw new IllegalArgumentException(errorMessage);
