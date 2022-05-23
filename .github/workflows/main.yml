@@ -35,5 +35,5 @@ jobs:
       if: ${{ github.ref == 'refs/heads/master' }}
       run: mvn -B --batch-mode deploy --file pom.xml
       env:
-        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+        MAVEN_USERNAME: ${{ secrets.OSS_SONATYPE_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.OSS_SONATYPE_PASSWORD }}
