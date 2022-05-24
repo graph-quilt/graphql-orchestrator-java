@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
 /**
- * Collects set of fields from a selection set.  Fields collected may be from Inline Fragments
- * or Fragment Spreads.
+ * Collects set of fields from a selection set.  Fields collected may be from Inline Fragments or Fragment Spreads.
  */
 public class SelectionCollector {
 
@@ -31,9 +31,9 @@ public class SelectionCollector {
     }
   }
 
-  public Set<String> collectFields(SelectionSet selectionSet) {
+  public Map<String, Field> collectFields(SelectionSet selectionSet) {
     if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
-      return Collections.emptySet();
+      return Collections.emptyMap();
     }
 
     // TODO test that a selection set has been deduped if same field
@@ -41,8 +41,7 @@ public class SelectionCollector {
     return selectionSet.getSelections().stream()
         .map(this::collectFields)
         .flatMap(Collection::stream)
-        .map(Field::getName)
-        .collect(Collectors.toSet());
+        .collect(Collectors.toMap(Field::getName, Function.identity(), (f1, f2) -> f1));
   }
 
   private List<Field> collectFields(Selection selection) {

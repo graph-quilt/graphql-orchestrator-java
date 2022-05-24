@@ -4,14 +4,12 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.SelectionSet;
 
-import java.util.function.Supplier;
-
 public class QueryOperationFactory {
 
-    public OperationDefinition create(String operationName, Supplier<SelectionSet> selectionSetSupplier) {
+    public OperationDefinition create(String operationName, SelectionSet selectionSet) {
         return OperationDefinition.newOperationDefinition()
                 .name(operationName)
-                .selectionSet(selectionSetSupplier.get())
+                .selectionSet(selectionSet)
                 .operation(Operation.QUERY)
                 .build();
 

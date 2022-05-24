@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
@@ -16,6 +17,7 @@ import graphql.language.Field;
 import graphql.language.SelectionSet;
 import graphql.schema.FieldCoordinates;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,11 +64,12 @@ public class RequiredFieldsCollectorTest {
   public void setup() {
     subjectUnderTest =
         RequiredFieldsCollector.builder()
-            .excludeFields(Collections.emptySet())
+            .excludeFields(Collections.emptyMap())
             .parentTypeName(TEST_ENTITY_TYPE_NAME)
             .serviceMetadata(serviceMetadataMock)
             .fieldResolverContexts(Collections.emptyList())
-            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE.getName(), FIELD_OBJECT.getName()))
+            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT)
+            )
             .build();
 
     when(serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME)).thenReturn(true);
@@ -116,7 +119,7 @@ public class RequiredFieldsCollectorTest {
 
   @Test
   public void get_returnsRequiredFieldsForKeyDirectivesAndRequiresDirectiveWithoutExcludeFields() {
-    Set<String> excludeFields = ImmutableSet.of(KEY_FIELD_2.getName(), REQD_FIELD_1.getName());
+    Map<String, Field> excludeFields = ImmutableMap.of(KEY_FIELD_2.getName(),KEY_FIELD_2, REQD_FIELD_1.getName(),REQD_FIELD_1);
 
     subjectUnderTest =
         RequiredFieldsCollector.builder()
@@ -124,7 +127,7 @@ public class RequiredFieldsCollectorTest {
             .parentTypeName(TEST_ENTITY_TYPE_NAME)
             .serviceMetadata(serviceMetadataMock)
             .fieldResolverContexts(Collections.emptyList())
-            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE.getName(), FIELD_OBJECT.getName()))
+            .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
             .build();
 
     Set<Field> actual = subjectUnderTest.get();
@@ -143,7 +146,7 @@ public class RequiredFieldsCollectorTest {
 
     subjectUnderTest =
         RequiredFieldsCollector.builder()
-            .excludeFields(Collections.emptySet())
+            .excludeFields(Collections.emptyMap())
             .parentTypeName(TEST_ENTITY_TYPE_NAME)
             .serviceMetadata(serviceMetadataMock)
             .fieldResolverContexts(ImmutableList.of(fieldResolverContextMock))
@@ -157,13 +160,13 @@ public class RequiredFieldsCollectorTest {
 
   @Test
   public void get_returnsRequiredFieldsForFieldResolverWithExcludedFields() {
-    Set<String> excludeFields = ImmutableSet.of("reqdField");
+    Map<String, Field> excludeFields = ImmutableMap.of(REQD_FIELD_1.getName(),REQD_FIELD_1);
 
     when(entityMetadataMock.getKeyDirectives()).thenReturn(Collections.emptyList());
 
     FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
     when(fieldResolverContextMock.getRequiredFields())
-        .thenReturn(ImmutableSet.of("reqdField"));
+        .thenReturn(ImmutableSet.of("reqdField1"));
 
     subjectUnderTest =
         RequiredFieldsCollector.builder()

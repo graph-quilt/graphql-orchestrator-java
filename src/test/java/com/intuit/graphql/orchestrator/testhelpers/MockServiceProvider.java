@@ -1,26 +1,64 @@
 package com.intuit.graphql.orchestrator.testhelpers;
 
-import static com.intuit.graphql.orchestrator.testhelpers.TestFileLoader.loadJsonAsMap;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static com.intuit.graphql.orchestrator.testhelpers.JsonTestUtils.jsonToMap;
 
-import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.orchestrator.ServiceProvider;
-import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
+import com.intuit.graphql.orchestrator.TestHelper;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.mockito.Mockito;
+import org.apache.commons.collections4.MapUtils;
 
-public class MockServiceProvider {
+public class MockServiceProvider implements ServiceProvider {
+
+  private final String namespace;
+  private final Map<String, String> sdlFiles;
+  private final Set<String> domainTypes;
+  private final ServiceType serviceType;
+  private final Map<String, Map<String, Object>> responseMap;
+
+  public MockServiceProvider(Builder builder) {
+    this.namespace = builder.namespace;
+    this.sdlFiles = builder.sdlFiles;
+    this.domainTypes = builder.domainTypes;
+    this.serviceType = builder.serviceType;
+    this.responseMap = builder.responseMap;
+  }
+
+  @Override
+  public String getNameSpace() {
+    return this.namespace;
+  }
+
+  @Override
+  public Set<String> domainTypes() {
+    return this.domainTypes;
+  }
+
+  @Override
+  public Map<String, String> sdlFiles() {
+    return this.sdlFiles;
+  }
+
+  @Override
+  public ServiceType getSeviceType() {
+    return this.serviceType;
+  }
+
+  @Override
+  public CompletableFuture<Map<String, Object>> query(ExecutionInput executionInput,
+      GraphQLContext context) {
+    Map<String, Object> data = this.responseMap.get(executionInput.getQuery());
+    if (MapUtils.isEmpty(data)) {
+      throw new IllegalArgumentException("Mock response not found for query: " + executionInput.getQuery());
+    }
+    return CompletableFuture.completedFuture(data);
+  }
 
   public static Builder builder() {
     return new MockServiceProvider.Builder();
@@ -28,55 +66,50 @@ public class MockServiceProvider {
 
   public static final class Builder {
 
-    private ServiceProvider mockServiceProvider = Mockito.mock(ServiceProvider.class);
-    private List<ServiceProviderMockResponse> mockResponses = new ArrayList<>();
+    private String namespace;
+    private Map<String, String> sdlFiles = new HashMap<>();
+    private Set<String> domainTypes = Collections.emptySet();
+    private ServiceType serviceType = ServiceType.GRAPHQL;
+    private Map<String, Map<String, Object>> responseMap = new HashMap<>();
 
     private Builder() {
-      when(mockServiceProvider.domainTypes()).thenReturn(Collections.emptySet());
-      when(mockServiceProvider.getSeviceType()).thenReturn(ServiceType.GRAPHQL);
-      doReturn(CompletableFuture.completedFuture(ImmutableMap.of("data", Collections.emptyMap())))
-          .when(mockServiceProvider)
-          .query(any(ExecutionInput.class), any(GraphQLContext.class));
     }
 
     public Builder namespace(String namespace) {
-      when(mockServiceProvider.getNameSpace()).thenReturn(namespace);
+      this.namespace = namespace;
       return this;
     }
 
     public Builder sdlFiles(Map<String, String> sdlFiles) {
-      when(mockServiceProvider.sdlFiles()).thenReturn(sdlFiles);
+      this.sdlFiles = sdlFiles;
       return this;
     }
 
     public Builder domainTypes(Set<String> domainTypes) {
-      when(mockServiceProvider.domainTypes()).thenReturn(domainTypes);
+      this.domainTypes = domainTypes;
       return this;
     }
 
     public Builder serviceType(ServiceType serviceType) {
-      when(mockServiceProvider.getSeviceType()).thenReturn(serviceType);
+      this.serviceType = serviceType;
+      return this;
+    }
+
+    public Builder responseMap(Map<String, Map<String, Object>> responseMap) {
+      this.responseMap = responseMap;
       return this;
     }
 
     public Builder mockResponse(ServiceProviderMockResponse serviceProviderMockResponse) {
-      mockResponses.add(serviceProviderMockResponse);
+      String jsonString = TestHelper.getResourceAsString(serviceProviderMockResponse.getExpectResponse());
+      this.responseMap.put(serviceProviderMockResponse.getForExecutionInput().getQuery(),
+          jsonToMap(jsonString));
       return this;
     }
 
-    public ServiceProvider build() throws IOException {
-      for (ServiceProviderMockResponse serviceProviderMockResponse : this.mockResponses) {
-
-        Map<String, Object> data = loadJsonAsMap(serviceProviderMockResponse.getExpectResponse());
-
-        ExecutionInput executionInput = serviceProviderMockResponse.getForExecutionInput();
-
-        doReturn(CompletableFuture.completedFuture(data))
-            .when(mockServiceProvider)
-            .query(argThat(new ExecutionInputMatcher(executionInput)), any(GraphQLContext.class));
-      }
-
-      return this.mockServiceProvider;
+    public MockServiceProvider build() throws IOException {
+      return new MockServiceProvider(this);
     }
+
   }
 }

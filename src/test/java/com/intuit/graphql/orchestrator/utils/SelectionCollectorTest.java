@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +40,7 @@ public class SelectionCollectorTest {
       SelectionSet.newSelectionSet()
           .selection(SUB_FIELD1)
           .selection(SUB_FIELD2)
+          .selection(SUB_FIELD1)
           .selection(FragmentSpread.newFragmentSpread().name(TEST_FRAGMENT_NAME).build())
           .selection(
               InlineFragment.newInlineFragment()
@@ -65,21 +65,21 @@ public class SelectionCollectorTest {
 
   @Test
   public void canCollectSelectionsFromField() {
-    Set<String> collectedSelections = subjectUnderTest.collectFields(TEST_SELECTION_SET);
+    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(TEST_SELECTION_SET);
     assertThat(collectedSelections).hasSize(4);
     Collection<?> expectedSet = asList(SUB_FIELD1.getName(), SUB_FIELD2.getName(), SUB_FIELD3.getName(), SUB_FIELD4.getName());
-    assertThat(collectedSelections.containsAll(expectedSet)).isTrue();
+    assertThat(collectedSelections.keySet().containsAll(expectedSet)).isTrue();
   }
 
   @Test
   public void emptySelectionSetReturnsEmptySet() {
-    Set<String> collectedSelections = subjectUnderTest.collectFields(SelectionSet.newSelectionSet().build());
+    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(SelectionSet.newSelectionSet().build());
     assertThat(collectedSelections).isEmpty();
   }
 
   @Test
   public void nullInputReturnsEmptySet() {
-    Set<String> collectedSelections = subjectUnderTest.collectFields(null);
+    Map<String, Field> collectedSelections = subjectUnderTest.collectFields(null);
     assertThat(collectedSelections).isEmpty();
   }
 

@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +21,6 @@ import org.eclipse.xtext.resource.IResourceFactory;
 import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.resource.XtextResourceSet;
 import org.eclipse.xtext.util.CancelIndicator;
-import org.eclipse.xtext.util.Files;
 import org.eclipse.xtext.validation.CheckMode;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.eclipse.xtext.validation.Issue;
@@ -125,8 +123,8 @@ public class XtextResourceSetBuilder {
     IResourceValidator validator = GRAPHQL_INJECTOR.getInstance(IResourceValidator.class);
     // collect issues
     return graphqlResourceSet.getResources().stream()
-        .flatMap(resource -> validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl).stream()
-        ).collect(Collectors.toList());
+            .flatMap(resource -> validator.validate(resource, CheckMode.ALL, CancelIndicator.NullImpl).stream()
+            ).collect(Collectors.toList());
 
   }
 
@@ -141,8 +139,8 @@ public class XtextResourceSetBuilder {
 
   public static XtextResourceSet singletonSet(String fileName, String file) {
     return newBuilder()
-        .file(fileName, file)
-        .build();
+            .file(fileName, file)
+            .build();
   }
 
   private static String getFederationDirectives() {
@@ -159,4 +157,5 @@ public class XtextResourceSetBuilder {
 
     return directives;
   }
+
 }

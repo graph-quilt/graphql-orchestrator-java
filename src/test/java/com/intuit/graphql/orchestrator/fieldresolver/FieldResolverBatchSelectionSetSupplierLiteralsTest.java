@@ -1,11 +1,5 @@
 package com.intuit.graphql.orchestrator.fieldresolver;
 
-import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition;
-import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.when;
-
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.EnumValueDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -27,15 +21,22 @@ import graphql.language.ObjectValue;
 import graphql.language.SelectionSet;
 import graphql.language.StringValue;
 import graphql.schema.DataFetchingEnvironment;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition;
+import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FieldResolverBatchSelectionSetSupplierLiteralsTest {
@@ -93,6 +94,15 @@ public class FieldResolverBatchSelectionSetSupplierLiteralsTest {
         when(resolverDirectiveDefinitionMock.getArguments()).thenReturn(singletonList(
             new ResolverArgumentDefinition("petIdInputObject", "{ id : \"$petId\" }", objectType)
         ));
+
+        testFieldResolverContext = FieldResolverContext.builder()
+                .parentTypeDefinition(testFieldResolverContext.getParentTypeDefinition())
+                .fieldDefinition(fieldDefinitionWithResolver)
+                .requiresTypeNameInjection(true)
+                .serviceNamespace("TESTSVC")
+                .resolverDirectiveDefinition(resolverDirectiveDefinitionMock)
+                .requiredFields(testDFEDataSource.keySet())
+                .build();
 
         String[] resolverSelectedFields = new String[] {"petById"};
 

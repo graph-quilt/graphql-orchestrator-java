@@ -17,6 +17,7 @@ import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
 import graphql.language.NodeVisitorStub;
+import graphql.language.OperationDefinition;
 import graphql.language.SelectionSet;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
@@ -32,6 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -117,20 +119,26 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
   }
 
   @Override
+  public TraversalControl visitOperationDefinition(OperationDefinition node, TraverserContext<Node> context) {
+    context.setVar(GraphQLType.class, rootType);
+    return TraversalControl.CONTINUE;
+  }
+
+  @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
     context.setVar(GraphQLType.class, parentType);
     String parentTypeName = parentType.getName();
 
-    Set<String> selectedFields =  this.selectionCollector.collectFields(node);
+    Map<String, Field> selectedFields =  this.selectionCollector.collectFields(node);
 
     RequiredFieldsCollector fedRequiredFieldsCollector = RequiredFieldsCollector
         .builder()
         .excludeFields(selectedFields)
         .parentTypeName(parentTypeName)
         .serviceMetadata(this.serviceMetadata)
-        .fieldResolverContexts(getFieldsWithResolverDirective(selectedFields, parentTypeName))
-        .fieldsWithRequiresDirective(getFieldsWithRequiresDirective(selectedFields, parentTypeName))
+        .fieldResolverContexts(getFieldsWithResolverDirective(parentTypeName, selectedFields))
+        .fieldsWithRequiresDirective(getFieldsWithRequiresDirective(parentTypeName, selectedFields))
         .build();
 
     Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get();
@@ -149,27 +157,27 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
   }
 
   private List<FieldResolverContext> getFieldsWithResolverDirective(
-      Set<String> selectedFields, String parentTypename) {
-    return selectedFields.stream()
+      String parentTypename,  Map<String, Field> selectedFields) {
+    return selectedFields.values().stream()
         .map(
-            fieldName -> {
-              FieldCoordinates fieldCoordinates = coordinates(parentTypename, fieldName);
+            field -> {
+              FieldCoordinates fieldCoordinates = coordinates(parentTypename, field.getName());
               return serviceMetadata.getFieldResolverContext(fieldCoordinates);
             })
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
   }
 
-  private Set<String> getFieldsWithRequiresDirective(Set<String> selectedFields, String parentTypeName) {
-    if (CollectionUtils.isEmpty(selectedFields)) {
+  private Set<Field> getFieldsWithRequiresDirective(String parentTypename,  Map<String, Field> selectedFields) {
+    if (MapUtils.isEmpty(selectedFields)) {
       return Collections.emptySet();
     }
 
     FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
-    return selectedFields.stream()
-        .filter(fieldName -> isExternalField(parentTypeName, fieldName))
-        .filter(fieldName -> {
-          FieldCoordinates fieldCoordinates = coordinates(parentTypeName, fieldName);
+    return selectedFields.values().stream()
+        .filter(field -> isExternalField(parentTypename, field.getName()))
+        .filter(field -> {
+          FieldCoordinates fieldCoordinates = coordinates(parentTypename, field.getName());
           return federationMetadata.hasRequiresFieldSet(fieldCoordinates);
         })
         .collect(Collectors.toSet());

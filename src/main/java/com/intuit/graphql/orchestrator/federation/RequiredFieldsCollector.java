@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,9 +28,9 @@ public class RequiredFieldsCollector {
 
   @NonNull private final String parentTypeName;
   @NonNull private final List<FieldResolverContext> fieldResolverContexts;
-  @NonNull private final Set<String> fieldsWithRequiresDirective;
+  @NonNull private final Set<Field> fieldsWithRequiresDirective;
   @NonNull private final ServiceMetadata serviceMetadata;
-  @NonNull private final Set<String> excludeFields;
+  @NonNull private final Map<String, Field> excludeFields;
 
   public Set<Field> get() {
     Set<Field> output = new HashSet<>();
@@ -58,7 +59,7 @@ public class RequiredFieldsCollector {
   }
 
   private boolean notInExcludeList(Field field) {
-    return !excludeFields.contains(field.getName());
+    return !excludeFields.keySet().contains(field.getName());
   }
 
   private Set<Field> getForFederation() {
@@ -79,7 +80,7 @@ public class RequiredFieldsCollector {
       FederationMetadata federationMetadata = this.serviceMetadata.getFederationServiceMetadata();
       requiresFieldSet =
           fieldsWithRequiresDirective.stream()
-              .map(fieldName -> FieldCoordinates.coordinates(parentTypeName, fieldName))
+              .map(field -> FieldCoordinates.coordinates(parentTypeName, field.getName()))
               .filter(federationMetadata::hasRequiresFieldSet)
               .map(federationMetadata::getRequireFields)
               .flatMap(Collection::stream)

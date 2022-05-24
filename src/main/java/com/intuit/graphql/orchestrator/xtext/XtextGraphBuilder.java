@@ -26,12 +26,12 @@ public class XtextGraphBuilder {
     final Map<Operation, ObjectTypeDefinition> operationMap = new EnumMap<>(Operation.class);
     for (Operation operation : Operation.values()) {
       XtextUtils.findOperationType(operation, xtextResourceSet)
-          .ifPresent(operationType -> operationMap.put(operation, operationType));
+              .ifPresent(operationType -> operationMap.put(operation, operationType));
     }
 
     return XtextGraph.newBuilder().xtextResourceSet(xtextResourceSet)
-        .serviceProvider(serviceProvider)
-        .operationMap(operationMap).build();
+            .serviceProvider(serviceProvider)
+            .operationMap(operationMap).build();
   }
 
 }
