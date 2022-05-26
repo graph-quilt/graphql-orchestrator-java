@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import graphql.language.Document;
 import graphql.language.FragmentDefinition;
-import graphql.parser.Parser;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -54,8 +54,6 @@ public class VariableDefinitionFilterTest {
   private GraphQLSchema graphQLSchema;
 
   private VariableDefinitionFilter variableDefinitionFilter;
-
-  private Parser parser = new Parser();
 
   @Before
   public void setUp() {
@@ -173,7 +171,7 @@ public class VariableDefinitionFilterTest {
   @Test
   public void testNegativeCases() {
     final String negativeTestCaseQuery = "query { consumer { liabilities { totalDebt(arg: 1234) } } }";
-    Document document = new Parser().parseDocument(negativeTestCaseQuery);
+    Document document = parser.parseDocument(negativeTestCaseQuery);
     final Set<String> results = new VariableDefinitionFilter()
         .getVariableReferencesFromNode(graphQLSchema, graphQLSchema.getQueryType(), Collections.emptyMap(),
             Collections.emptyMap(), document);

@@ -33,6 +33,9 @@ import com.intuit.graphql.orchestrator.schema.SchemaParseException;
 import com.intuit.graphql.orchestrator.schema.transform.ExplicitTypeResolver;
 import graphql.Scalars;
 import graphql.introspection.Introspection.DirectiveLocation;
+import graphql.language.StringValue;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLEnumType;
@@ -74,10 +77,36 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private final Map<String, GraphQLType> graphQLObjectTypes;
   public final Map<String, GraphQLDirective> directiveDefinitions;
 
+  private static final GraphQLScalarType FIELD_SET_SCALAR;
+
   static {
     STANDARD_SCALAR_TYPES = ScalarInfo.GRAPHQL_SPECIFICATION_SCALARS.stream()
         .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity()));
 
+//    TODO REMOVE ONCE GRAPH-QL JAVA IS UPGRADED.....FIELD SET WILL ALREADY BE IN STANDARD SCALARS
+    FIELD_SET_SCALAR = GraphQLScalarType.newScalar()
+        .name("_FieldSet")
+        .description("A selection set")
+        .coercing(new Coercing<String, String>() {
+          public String serialize(Object input) {
+            return input.toString();
+          }
+
+          public String parseValue(Object input) {
+            return this.serialize(input);
+          }
+
+          public String parseLiteral(Object input) {
+            if (!(input instanceof StringValue)) {
+              throw new CoercingParseLiteralException("Expected AST type '_FieldSet' or 'StringValue'");
+            } else {
+              return ((StringValue)input).getValue();
+            }
+          }
+        })
+        .build();
+
+    STANDARD_SCALAR_TYPES.put("_FieldSet", FIELD_SET_SCALAR);
     STANDARD_SCALAR_TYPES.putAll(ExtendedScalarsSupport.GRAPHQL_EXTENDED_SCALARS.stream()
         .collect(Collectors.toMap(GraphQLScalarType::getName, Function.identity())));
   }

@@ -93,6 +93,9 @@ public class GraphQLServiceBatchLoaderTest {
 
     doReturn(CompletableFuture.completedFuture("TestFutureAuthData"))
         .when(mockBatchFieldAuthorization).getFutureAuthData();
+
+    doReturn(false).when(mockServiceProvider).isFederationProvider();
+    doReturn(mockServiceProvider).when(mockServiceMetadata).getServiceProvider();
   }
 
   @Test

@@ -19,9 +19,9 @@ public class XtextGraphBuilder {
 
   public static XtextGraph build(ServiceProvider serviceProvider) {
     XtextResourceSet xtextResourceSet = XtextResourceSetBuilder.newBuilder()
-            .files(serviceProvider.sdlFiles())
-            .isFederatedResourceSet(serviceProvider.isFederationProvider())
-            .build();
+        .files(serviceProvider.sdlFiles())
+        .isFederatedResourceSet(serviceProvider.isFederationProvider())
+        .build();
 
     final Map<Operation, ObjectTypeDefinition> operationMap = new EnumMap<>(Operation.class);
     for (Operation operation : Operation.values()) {

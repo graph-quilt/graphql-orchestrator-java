@@ -7,7 +7,10 @@ import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
@@ -56,19 +59,33 @@ public class XtextGraph implements ServiceMetadata {
    */
   private Map<String, ObjectTypeDefinition> objectTypeDefinitions;
 
+  private Map<String, TypeDefinition> valueTypesByName;
+  private final Map<String, TypeDefinition> entitiesByTypeName;
+  private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
+  private final List<EntityExtensionMetadata> entityExtensionMetadatas;
+  private final Map<String, FederationMetadata> federationMetadataByNamespace;
+
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
     xtextResourceSet = requireNonNull(builder.xtextResourceSet, "Resource Set cannot be null");
     //TODO: Research on all Providers having an XtextResource instead of a ResourceSet
     operationMap = builder.operationMap;
     codeRegistry = builder.codeRegistry;
-    directives = builder.directives;
+    for (DirectiveDefinition directiveDefinition : directives = builder.directives) {
+
+    }
+
     types = builder.types;
     typeMetadatas = builder.typeMetadatas;
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
     resolverArgumentFields = builder.resolverArgumentFields;
     fieldResolverContexts = builder.fieldResolverContexts;
+    valueTypesByName = builder.valueTypesByName;
+    entitiesByTypeName = builder.entities;
+    entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
+    entityExtensionMetadatas = builder.entityExtensionMetadatas;
+    federationMetadataByNamespace = builder.federationMetadataByNamespace;
   }
 
   /**
@@ -99,6 +116,11 @@ public class XtextGraph implements ServiceMetadata {
     builder.hasFieldResolverDefinition = copy.hasFieldResolverDefinition;
     builder.resolverArgumentFields = copy.resolverArgumentFields;
     builder.fieldResolverContexts = copy.fieldResolverContexts;
+    builder.valueTypesByName = copy.valueTypesByName;
+    builder.entities = copy.entitiesByTypeName;
+    builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
+    builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
+    builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
     return builder;
   }
 
@@ -145,6 +167,30 @@ public class XtextGraph implements ServiceMetadata {
     return typeMetadata.getFieldResolverContext(fieldCoordinates.getFieldName());
   }
 
+  @Override
+  public boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates) {
+    if (!this.serviceProvider.isFederationProvider()) {
+      return false;
+    }
+
+    FederationMetadata federationMetadata = this.federationMetadataByNamespace.get(serviceProvider.getNameSpace());
+    return federationMetadata.isFieldExternal(fieldCoordinates);
+  }
+
+  @Override
+  public boolean isFederationService() {
+    return this.serviceProvider.isFederationProvider();
+  }
+
+  @Override
+  public boolean isEntity(String typename) {
+    return isFederationService() && getFederationServiceMetadata().isEntity(typename);
+  }
+
+  public FederationMetadata getFederationServiceMetadata() {
+    return getFederationMetadataByNamespace().get(serviceProvider.getNameSpace());
+  }
+
   /**
    * Check if the given typeName exists in provider's schema.
    *
@@ -154,6 +200,11 @@ public class XtextGraph implements ServiceMetadata {
   @Override
   public boolean hasType(String typeName) {
     return types.containsKey(typeName);
+  }
+
+  @Override
+  public boolean shouldRemoveExternalFields() {
+    return hasFieldResolverDirective() || isFederationService();
   }
 
   public TypeDefinition getType(final NamedType namedType) {
@@ -176,6 +227,10 @@ public class XtextGraph implements ServiceMetadata {
     computeAndCacheCollections();
 
     return objectTypeDefinitions;
+  }
+
+  public Map<String, TypeDefinition> getEntitiesByTypeName() {
+    return entitiesByTypeName;
   }
 
   private void computeAndCacheCollections() {
@@ -229,6 +284,18 @@ public class XtextGraph implements ServiceMetadata {
     return builder.build();
   }
 
+  public Map<String, Map<String, TypeSystemDefinition>> getEntityExtensionsByNamespace() {
+    return this.entityExtensionsByNamespace;
+  }
+
+  public void addFederationMetadata(FederationMetadata federationMetadata) {
+    this.federationMetadataByNamespace.put(serviceProvider.getNameSpace(), federationMetadata);
+  }
+
+  public void addToEntityExtensionMetadatas(EntityExtensionMetadata entityExtensionMetadatas) {
+    this.entityExtensionMetadatas.add(entityExtensionMetadatas);
+  }
+
   /**
    * The type Builder.
    */
@@ -242,7 +309,12 @@ public class XtextGraph implements ServiceMetadata {
     private Set<DirectiveDefinition> directives = new HashSet<>();
     private Map<String, TypeDefinition> types = new HashMap<>();
     private Map<String, TypeMetadata> typeMetadatas = new HashMap<>();
+    private Map<String, TypeDefinition> valueTypesByName = new HashMap<>();
+    private Map<String, TypeDefinition> entities = new HashMap<>();
+    private Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
+    private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
+    private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -387,6 +459,36 @@ public class XtextGraph implements ServiceMetadata {
 
     public Builder clearFieldResolverContexts() {
       this.fieldResolverContexts.clear();
+      return this;
+    }
+
+    public Builder valueTypesByName(Map<String, TypeDefinition> valueTypes) {
+      requireNonNull(valueTypes);
+      this.valueTypesByName.putAll(valueTypes);
+      return this;
+    }
+
+    public Builder entitiesByTypeName(Map<String, TypeDefinition> entities) {
+      requireNonNull(entities);
+      this.entities.putAll(entities);
+      return this;
+    }
+
+    public Builder entityExtensionsByNamespace(Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace) {
+      requireNonNull(entityExtensionsByNamespace);
+      this.entityExtensionsByNamespace.putAll(entityExtensionsByNamespace);
+      return this;
+    }
+
+    public Builder federationMetadataByNamespace(Map<String, FederationMetadata> federationMetadataByNamespace) {
+      requireNonNull(federationMetadataByNamespace);
+      this.federationMetadataByNamespace.putAll(federationMetadataByNamespace);
+      return this;
+    }
+
+    public Builder entityExtensionMetadatas(List<EntityExtensionMetadata> entityExtensionMetadatas) {
+      requireNonNull(entityExtensionMetadatas);
+      this.entityExtensionMetadatas.addAll(entityExtensionMetadatas);
       return this;
     }
 

@@ -1,17 +1,22 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveTestHelper.aSchema;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveTestHelper.bSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
 import static graphql.schema.FieldCoordinates.coordinates;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.ServiceProvider;
-import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveTestHelper;
-import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveTestHelper.TestService;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
+import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
+import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper;
+import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.TestService;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.language.AstTransformer;
@@ -34,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class NoExternalReferenceSelectionSetModifierTest {
+public class DownstreamQueryModifierTest {
 
   @Mock
   private ServiceMetadata serviceMetadataMock;
@@ -44,17 +49,17 @@ public class NoExternalReferenceSelectionSetModifierTest {
   private SelectionSet selectionSet;
   private SelectionSet reverseSelectionSet;
 
-  private NoExternalReferenceSelectionSetModifier subjectUnderTest;
-
-  FieldResolverDirectiveTestHelper fieldResolverTestHelper;
+  private DownstreamQueryModifier subjectUnderTest;
 
   @Before
   public void setup() {
     ServiceProvider serviceA = new TestService("serviceA", aSchema, null);
     ServiceProvider serviceB = new TestService("serviceB", bSchema, null);
-    fieldResolverTestHelper = new FieldResolverDirectiveTestHelper(serviceA, serviceB);
+    DownstreamQueryModifierTestHelper fieldResolverTestHelper = new DownstreamQueryModifierTestHelper(
+        serviceA, serviceB);
     GraphQLSchema graphQLSchema = fieldResolverTestHelper.getGraphQLSchema();
-    GraphQLFieldsContainer aType = (GraphQLFieldsContainer) unwrapAll(graphQLSchema.getType("AObjectType"));
+    GraphQLFieldsContainer aType = (GraphQLFieldsContainer) unwrapAll(
+        graphQLSchema.getType("AObjectType"));
     af1 = Field.newField("af1").build();
     af2 = Field.newField("af2").build();
     b1 = Field.newField("b1").build();
@@ -67,8 +72,10 @@ public class NoExternalReferenceSelectionSetModifierTest {
     reverseSelectionSet = SelectionSet.newSelectionSet().selection(af2).selection(b5).selection(b4).selection(b3)
         .selection(b2).selection(b1).selection(af1).build();
 
+    when(serviceMetadataMock.isOwnedByEntityExtension(any())).thenReturn(false);
+
     subjectUnderTest =
-        new NoExternalReferenceSelectionSetModifier(
+        new DownstreamQueryModifier(
             aType, serviceMetadataMock, Collections.emptyMap());
   }
 
@@ -165,7 +172,39 @@ public class NoExternalReferenceSelectionSetModifierTest {
     assertThat(a1.getSelectionSet().getSelections()).hasSize(4);
   }
 
-  // visitSelectionSet() tests
+  @Test
+  public void visitSelectionSet_addRequiredFields() {
+    KeyDirectiveMetadata keyDirectiveDataMock = mock(KeyDirectiveMetadata.class);
+    when(keyDirectiveDataMock.getFieldSet()).thenReturn(ImmutableSet.of(Field.newField("id").build()));
+
+    EntityMetadata entityMetadataMock = mock(EntityMetadata.class);
+    when(entityMetadataMock.getKeyDirectives()).thenReturn(
+        Collections.singletonList(keyDirectiveDataMock));
+
+    FederationMetadata federationMetadataMock = mock(FederationMetadata.class);
+    when(federationMetadataMock.hasRequiresFieldSet(coordinates("AObjectType", "af1")))
+        .thenReturn(true);
+    when(federationMetadataMock.getRequireFields(coordinates("AObjectType", "af1")))
+        .thenReturn(ImmutableSet.of(Field.newField("reqdField").build()));
+    when(federationMetadataMock.getEntityMetadataByName("AObjectType")).thenReturn(entityMetadataMock);
+    when(serviceMetadataMock.getFederationServiceMetadata()).thenReturn(federationMetadataMock);
+    when(serviceMetadataMock.isEntity("AObjectType")).thenReturn(true);
+
+    // af1 is external, should be removed
+    FieldCoordinates testFieldCoordinate = coordinates("AObjectType", "af1");
+    when(serviceMetadataMock.isOwnedByEntityExtension(eq(testFieldCoordinate))).thenReturn(true);
+
+    // test '{ af1 }' and add id as key field and regdFields requiredField
+    selectionSet = SelectionSet.newSelectionSet().selection(af1).build();
+    Field a1 = Field.newField("a1").selectionSet(selectionSet).build();
+
+    AstTransformer astTransformer = new AstTransformer();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    List<Selection> selections = newA1.getSelectionSet().getSelections();
+    assertThat(selections).hasSize(2);
+  }
+
   @Test
   public void visitSelectionSet_reqFieldNotSelected_addRequiredFields() {
     FieldResolverContext fieldResolverContextMock = mock(FieldResolverContext.class);
@@ -190,7 +229,7 @@ public class NoExternalReferenceSelectionSetModifierTest {
     List<Selection> actualSelections = newA1.getSelectionSet().getSelections();
     assertThat(actualSelections).hasSize(2);
 
-     assertThat(toFieldNameSet(actualSelections)).contains("af1", "reqdField");
+    assertThat(toFieldNameSet(actualSelections)).contains("af1", "reqdField");
   }
 
   @Test
@@ -278,5 +317,6 @@ public class NoExternalReferenceSelectionSetModifierTest {
         .collect(Collectors.toList());
 
   }
+
 
 }

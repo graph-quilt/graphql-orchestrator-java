@@ -5,6 +5,7 @@ import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newBigIntType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newBooleanType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newByteType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newCharType;
+import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newFieldSetType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newFloatType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newIdType;
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.newIntType;
@@ -30,10 +31,11 @@ public class XtextScalarsTest {
     assertThat(newStringType()).isNotSameAs(newStringType());
     assertThat(newLongType()).isNotSameAs(newLongType());
     assertThat(newShortType()).isNotSameAs(newShortType());
+    assertThat(newFieldSetType()).isNotSameAs(newFieldSetType());
   }
 
   @Test
   public void testStandardScalarMap() {
-    assertThat(XtextScalars.STANDARD_SCALARS).hasSize(11);
+    assertThat(XtextScalars.STANDARD_SCALARS).hasSize(12);
   }
 }

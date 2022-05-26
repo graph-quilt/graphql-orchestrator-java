@@ -116,7 +116,7 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
     GraphQLObjectType rootType = graphQLSchema.getQueryType();
     Map<String, FragmentDefinition> fragmentsByName = dataFetchingEnvironment.getFragmentsByName();
     return (OperationDefinition) AST_TRANSFORMER.transform(operationDefinition,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(rootType), serviceMetadata, fragmentsByName));
+        new DownstreamQueryModifier((GraphQLFieldsContainer) unwrapAll(rootType), serviceMetadata, fragmentsByName));
   }
 
   private ServiceMetadata getServiceMetadata(DataFetchingEnvironment dataFetchingEnvironment) {

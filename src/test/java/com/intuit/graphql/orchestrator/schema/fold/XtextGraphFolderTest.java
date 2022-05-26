@@ -42,9 +42,23 @@ public class XtextGraphFolderTest {
   }
 
   @Test
+  public void testGoldenTypeSignatureConflictMissingNonNullFieldThrowsException() {
+    ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
+            "schema { query: Query } type Query { a: PageInfo } type PageInfo { foo: String! bar:String! }");
+
+    ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
+            "schema { query: Query } type Query { b: PageInfo } type PageInfo { foo: String! }");
+
+    SchemaStitcher schemaStitcher = SchemaStitcher.newBuilder()
+            .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build();
+
+    assertThatThrownBy(() -> schemaStitcher.stitchGraph()).isInstanceOf(TypeConflictException.class);
+  }
+
+  @Test
   public void testGoldenTypeSignatureConflictThrowsException() {
     ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
-            "schema { query: Query } type Query { a: PageInfo } type PageInfo { id: String }");
+            "schema { query: Query } type Query { a: PageInfo } type PageInfo { id: ID }");
 
     ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
             "schema { query: Query } type Query { b: PageInfo } type PageInfo { id: String! }");
@@ -61,7 +75,7 @@ public class XtextGraphFolderTest {
             "schema { query: Query } type Query { a: Node } interface Node { id: String! }");
 
     ServiceProvider serviceProvider2 = new GenericTestService("SomeService2",
-            "schema { query: Query } type Query { b: Node } interface Node { id: String }");
+            "schema { query: Query } type Query { b: Node } interface Node { id: ID }");
 
     SchemaStitcher schemaStitcher = SchemaStitcher.newBuilder()
             .services(Arrays.asList(new ServiceProvider[]{serviceProvider1, serviceProvider2})).build();

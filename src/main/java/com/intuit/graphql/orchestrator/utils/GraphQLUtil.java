@@ -10,6 +10,7 @@ import graphql.language.ListType;
 import graphql.language.NonNullType;
 import graphql.language.Type;
 import graphql.language.TypeName;
+import graphql.parser.Parser;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLNamedType;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
  * methods in graphql-java's own GraphQlTypeUtil class.
  */
 public class GraphQLUtil {
+
+  public static final Parser parser = new Parser();
 
   private static final String ERR_CREATE_TYPE_UNEXPECTED_TYPE = "Failed to create Type due to "
       + "unexpected GraphQL Type %s";

@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.xtext;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
+import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import lombok.Getter;
 
@@ -15,6 +16,7 @@ public class DataFetcherContext {
   private final String namespace;
   private final DataFetcherType dataFetcherType;
   private final FieldResolverContext fieldResolverContext;
+  private final EntityExtensionMetadata entityExtensionMetadata;
   private final ServiceType serviceType;
 
   private DataFetcherContext(final Builder builder) {
@@ -22,6 +24,7 @@ public class DataFetcherContext {
     dataFetcherType = builder.dataFetcherType;
     this.serviceType = builder.serviceType;
     this.fieldResolverContext = builder.fieldResolverContext;
+    this.entityExtensionMetadata = builder.entityExtensionMetadata;
   }
 
   public static Builder newBuilder() {
@@ -36,7 +39,7 @@ public class DataFetcherContext {
   }
 
   public enum DataFetcherType {
-    STATIC, SERVICE, PROPERTY, RESOLVER_ARGUMENT, RESOLVER_ON_FIELD_DEFINITION
+    STATIC, SERVICE, PROPERTY, RESOLVER_ARGUMENT, RESOLVER_ON_FIELD_DEFINITION, ENTITY_FETCHER;
   }
 
   public static final class Builder {
@@ -44,6 +47,7 @@ public class DataFetcherContext {
     private String namespace;
     private DataFetcherType dataFetcherType = DataFetcherType.PROPERTY;
     private FieldResolverContext fieldResolverContext;
+    private EntityExtensionMetadata entityExtensionMetadata;
     private ServiceType serviceType;
 
     private Builder() {
@@ -65,6 +69,11 @@ public class DataFetcherContext {
       return this;
     }
 
+    public Builder entityExtensionMetadata(EntityExtensionMetadata entityExtensionMetadata) {
+      this.entityExtensionMetadata = entityExtensionMetadata;
+      return this;
+    }
+
     public Builder serviceType(ServiceType serviceType){
       this.serviceType = serviceType;
       return this;
@@ -73,6 +82,5 @@ public class DataFetcherContext {
     public DataFetcherContext build() {
       return new DataFetcherContext(this);
     }
-
   }
 }
