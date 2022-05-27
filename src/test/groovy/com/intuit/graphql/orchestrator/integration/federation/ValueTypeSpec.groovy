@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.integration.federation
 
+import com.google.common.collect.ImmutableMap
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.TestHelper
 import com.intuit.graphql.orchestrator.TestServiceProvider
@@ -75,4 +76,48 @@ class ValueTypeSpec extends BaseIntegrationTestSpecification {
         objectType.getFieldDefinition("features") != null
     }
 
+    def "Federation shared value types do not conflict"(){
+        given:
+        def schema1 = """
+                    type Query {
+                        getProvider1Val: sharedValueType
+                    }
+                    type sharedValueType {
+                        id: ID!
+                        name: String
+                    }
+                """
+
+        def schema2 = """
+                    type Query {
+                        getProvider2Val: sharedValueType
+                    }
+                    type sharedValueType {
+                        id: ID!
+                        name: String
+                        test: String
+                    }
+                """
+
+        def valueProvider1 = TestServiceProvider.newBuilder()
+                .namespace("A")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("schema1", schema1))
+                .build()
+
+        def valueProvider2 = TestServiceProvider.newBuilder()
+                .namespace("B")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("schema2", schema2))
+                .build()
+
+        when:
+        specUnderTest = createGraphQLOrchestrator([valueProvider1, valueProvider2])
+
+        then:
+        final GraphQLObjectType queryType = specUnderTest?.runtimeGraph?.getOperation(Operation.QUERY)
+        queryType.getFieldDefinition("getProvider1Val").type.name == "sharedValueType"
+        queryType.getFieldDefinition("getProvider2Val").type.name == "sharedValueType"
+        //todo verify the new field in federation spec
+    }
 }
