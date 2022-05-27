@@ -1,13 +1,5 @@
 package com.intuit.graphql.orchestrator.stitching;
 
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
@@ -27,11 +19,12 @@ import com.intuit.graphql.orchestrator.schema.fold.XtextGraphFolder;
 import com.intuit.graphql.orchestrator.schema.transform.AllTypesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DirectivesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer;
-import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPostMerge;
+import com.intuit.graphql.orchestrator.schema.transform.RenameTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer;
@@ -50,6 +43,8 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
 import graphql.schema.StaticDataFetcher;
+import org.dataloader.BatchLoader;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -59,7 +54,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The type Xtext stitcher.
@@ -282,6 +284,7 @@ public class XtextStitcher implements Stitcher {
      */
     private List<Transformer<XtextGraph, XtextGraph>> defaultPreMergeTransformers() {
       return Arrays.asList(
+          new RenameTransformer(),
           new TypeExtensionTransformer(),
           new DomainTypesTransformer(),
           new AllTypesTransformer(),

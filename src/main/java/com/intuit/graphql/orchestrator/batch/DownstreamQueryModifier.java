@@ -1,12 +1,5 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
-import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static graphql.util.TreeTransformerUtil.changeNode;
-import static graphql.util.TreeTransformerUtil.deleteNode;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -26,14 +19,24 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static graphql.util.TreeTransformerUtil.changeNode;
+import static graphql.util.TreeTransformerUtil.deleteNode;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -64,8 +67,17 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
 
   @Override
   public TraversalControl visitField(Field node, TraverserContext<Node> context) {
-    if (context.visitedNodes().size() == 0) {
+    if (context.visitedNodes().isEmpty()) {
       context.setVar(GraphQLType.class, rootType);
+
+      if(!serviceMetadata.getOriginalFieldNamesByRenamedName().isEmpty()) {
+        String renamedKey =  getRenameKey(null, node.getName(), true);
+        String originalName = serviceMetadata.getOriginalFieldNamesByRenamedName().get(renamedKey);
+        if(originalName != null) {
+          return changeNode(context, convertGraphqlFieldWithOriginalName(node, originalName));
+        }
+      }
+
       return TraversalControl.CONTINUE;
     } else {
       GraphQLFieldsContainer parentType = context.getParentContext().getVar(GraphQLType.class);
@@ -77,14 +89,21 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
       // TODO consider the entire condition to be abstracted in
       //  serviceMetadata.isFieldExternal(fieldCoordinates).
       //  This requires a complete set of field coordinates that the service owns
-      if (hasResolverDirective(fieldDefinition)
-          || isExternalField(parentType.getName(), fieldName)) {
+      if (serviceMetadata.shouldRemoveExternalFields() && (hasResolverDirective(fieldDefinition)
+          || isExternalField(parentType.getName(), fieldName))) {
         return deleteNode(context);
       }
 
-      // if field node has selection set, store it's type to its node context
-      if (node.getSelectionSet() != null) {
+      String renameKey = getRenameKey(parentType.getName(), node.getName(), false);
+      String originalName = serviceMetadata.getOriginalFieldNamesByRenamedName().get(renameKey);
+
+      // if field node has selection set or needs to be renamed, store it's type to its node context
+      if (node.getSelectionSet() != null || originalName != null) {
         context.setVar(GraphQLType.class, fieldDefinition.getType());
+
+        if(originalName != null) {
+          return changeNode(context, convertGraphqlFieldWithOriginalName(node, originalName));
+        }
       }
       return TraversalControl.CONTINUE;
     }

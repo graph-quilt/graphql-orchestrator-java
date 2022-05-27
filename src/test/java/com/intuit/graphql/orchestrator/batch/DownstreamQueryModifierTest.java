@@ -1,15 +1,5 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
-
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
@@ -29,14 +19,25 @@ import graphql.language.TypeName;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLSchema;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DownstreamQueryModifierTest {
@@ -73,6 +74,7 @@ public class DownstreamQueryModifierTest {
         .selection(b2).selection(b1).selection(af1).build();
 
     when(serviceMetadataMock.isOwnedByEntityExtension(any())).thenReturn(false);
+    when(serviceMetadataMock.shouldRemoveExternalFields()).thenReturn(true);
 
     subjectUnderTest =
         new DownstreamQueryModifier(

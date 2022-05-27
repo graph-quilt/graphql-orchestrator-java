@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.xtext;
 
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
@@ -17,6 +15,9 @@ import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
 import graphql.schema.FieldCoordinates;
+import lombok.Getter;
+import org.eclipse.xtext.resource.XtextResourceSet;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -27,8 +28,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.Getter;
-import org.eclipse.xtext.resource.XtextResourceSet;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Runtime graph represents the runtime elements required to build the runtime graphql schema. It also contains
@@ -64,6 +65,9 @@ public class XtextGraph implements ServiceMetadata {
   private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
+  private final boolean containsRenamedFields;
+  private final Map<String, String> originalTypeNamesByRenamedName;
+  private final Map<String, String> originalFieldNamesByRenamedName;
 
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
@@ -86,6 +90,9 @@ public class XtextGraph implements ServiceMetadata {
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
+    containsRenamedFields = builder.containsRenamedFields;
+    originalTypeNamesByRenamedName = builder.originalTypeNamesByRenamedName;
+    originalFieldNamesByRenamedName = builder.originalFieldNamesByRenamedName;
   }
 
   /**
@@ -121,6 +128,9 @@ public class XtextGraph implements ServiceMetadata {
     builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
+    builder.containsRenamedFields = copy.containsRenamedFields;
+    builder.originalTypeNamesByRenamedName = copy.originalTypeNamesByRenamedName;
+    builder.originalFieldNamesByRenamedName = copy.originalFieldNamesByRenamedName;
     return builder;
   }
 
@@ -205,6 +215,23 @@ public class XtextGraph implements ServiceMetadata {
   @Override
   public boolean shouldRemoveExternalFields() {
     return hasFieldResolverDirective() || isFederationService();
+  }
+
+  @Override
+  public boolean shouldUpdateOperationsOrFields() {
+    return shouldRemoveExternalFields() || containsRenamedFields();
+  }
+
+  @Override
+  public boolean containsRenamedFields(){
+    return this.containsRenamedFields;
+  }
+
+  public Map<String, String> getOriginalTypeNamesByRenamedName() {
+    return this.originalTypeNamesByRenamedName;
+  }
+  public Map<String, String> getOriginalFieldNamesByRenamedName() {
+    return this.originalFieldNamesByRenamedName;
   }
 
   public TypeDefinition getType(final NamedType namedType) {
@@ -317,6 +344,9 @@ public class XtextGraph implements ServiceMetadata {
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
+    private boolean containsRenamedFields = false;
+    private Map<String, String> originalTypeNamesByRenamedName = new HashMap<>();
+    private Map<String, String> originalFieldNamesByRenamedName = new HashMap<>();
 
     private Builder() {
     }
@@ -489,6 +519,20 @@ public class XtextGraph implements ServiceMetadata {
     public Builder entityExtensionMetadatas(List<EntityExtensionMetadata> entityExtensionMetadatas) {
       requireNonNull(entityExtensionMetadatas);
       this.entityExtensionMetadatas.addAll(entityExtensionMetadatas);
+      return this;
+    }
+
+    public Builder containsRenamedFields(boolean containsRenamedFields) {
+      this.containsRenamedFields = containsRenamedFields;
+      return this;
+    }
+
+    public Builder originalTypeNamesByRenamedName(Map<String, String> originalTypeNamesByRenamedName) {
+      this.originalTypeNamesByRenamedName.putAll(originalTypeNamesByRenamedName);
+      return this;
+    }
+    public Builder originalFieldNamesByRenamedName(Map<String, String> originalFieldNamesByRenamedName) {
+      this.originalFieldNamesByRenamedName.putAll(originalFieldNamesByRenamedName);
       return this;
     }
 
