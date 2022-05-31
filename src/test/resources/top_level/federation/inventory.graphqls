@@ -10,6 +10,11 @@ type Store @key(fields: "id") {
     stock: [Product]
 }
 
+type Employee @key(fields: "id") @extends {
+    id: ID @external
+    favoriteItem: Product
+}
+
 type Product {
     name: String
 }
