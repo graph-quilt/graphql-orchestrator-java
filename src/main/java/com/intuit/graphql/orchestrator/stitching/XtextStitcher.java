@@ -108,7 +108,7 @@ public class XtextStitcher implements Stitcher {
     XtextGraph stitchedGraph = new XtextGraphFolder().fold(XtextGraph.emptyGraph(), xtextGraphMap.values());
 
     //Service Metadata
-    final Map<String, ServiceMetadata> serviceMetadataMap = xtextGraphMap.values().parallelStream()
+    final Map<String, ServiceMetadata> serviceMetadataMap = xtextGraphMap.values().stream()
         .map(this::buildServiceMetadata)
         .collect(Collectors.toMap(metadata -> metadata.getServiceProvider().getNameSpace(), Function.identity()));
 
