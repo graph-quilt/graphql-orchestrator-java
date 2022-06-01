@@ -1,0 +1,17 @@
+schema {
+    query: Query
+}
+
+interface IName {
+    name: String!
+}
+
+type Query {
+    a: MyTypeA
+}
+
+type MyTypeA implements IName {
+    name: String!
+    test: String
+    alpha: String
+}

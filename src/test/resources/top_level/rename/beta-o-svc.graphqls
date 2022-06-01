@@ -1,0 +1,14 @@
+directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+schema {
+    query: Query
+}
+
+type Query {
+    b: MyType1
+}
+
+type MyType1 @rename(to: "beta") {
+    test: String
+    beta: String
+}

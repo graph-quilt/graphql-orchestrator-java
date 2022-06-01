@@ -1,0 +1,12 @@
+schema {
+    query: Query
+}
+
+type Query {
+    a: MyType1
+}
+
+type MyType1 {
+    test: String
+    alpha: String
+}

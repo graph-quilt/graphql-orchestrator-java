@@ -1,0 +1,19 @@
+directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+schema {
+    query: Query
+}
+
+interface IName @rename(to: "ITheName") {
+    name: String!
+}
+
+type Query {
+    b: MyType
+}
+
+type MyType implements IName {
+    name: String!
+    test: String
+    beta: String
+}
