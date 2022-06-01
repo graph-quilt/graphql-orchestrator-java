@@ -44,11 +44,13 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
 
   @Override
   public XtextGraph transform(XtextGraph xtextGraph) {
-    xtextGraph.getEntityExtensionsByNamespace().keySet().stream()
-        .flatMap(namespace -> createEntityMergingContexts(namespace, xtextGraph))
-        .peek(this::validateBaseExtensionCompatibility)
-        .map(entityTypeMerger::mergeIntoBaseType)
-        .forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
+      List<TypeDefinition> baseEntityTypes = xtextGraph.getEntityExtensionsByNamespace().keySet().stream()
+              .flatMap(namespace -> createEntityMergingContexts(namespace, xtextGraph))
+              .peek(this::validateBaseExtensionCompatibility)
+              .map(entityTypeMerger::mergeIntoBaseType)
+              .collect(Collectors.toList());
+
+      baseEntityTypes.forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
 
       for (FederationMetadata.EntityExtensionMetadata entityExtensionMetadata : xtextGraph.getEntityExtensionMetadatas()) {
           Optional<FederationMetadata.EntityMetadata> optionalEntityMetadata = xtextGraph.getFederationMetadataByNamespace()
