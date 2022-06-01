@@ -84,7 +84,7 @@ public class FieldResolverTransformerPostMergeTest {
             + "} "
             + "directive @resolver(field: String) on ARGUMENT_DEFINITION";
     XtextGraph xtextGraph = createTestXtextGraph(schema);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     XtextGraph textGraphSpy = Mockito.spy(xtextGraph);
 

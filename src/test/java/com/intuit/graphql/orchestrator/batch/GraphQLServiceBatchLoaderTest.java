@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.PassthroughQueryModifier;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl;
 import graphql.GraphQLContext;
 import graphql.Scalars;
 import graphql.execution.ExecutionStepInfo;
@@ -75,7 +75,7 @@ public class GraphQLServiceBatchLoaderTest {
   public ServiceProvider mockServiceProvider;
 
   @Mock
-  public XtextGraph mockServiceMetadata;
+  public ServiceMetadataImpl mockServiceMetadata;
 
   @Mock
   public VariableDefinitionFilter mockVariableDefinitionFilter;
@@ -506,7 +506,7 @@ public class GraphQLServiceBatchLoaderTest {
     final MergedField mergedFieldWithArgument = newMergedField(
         newField("fieldWithArgument").arguments(
             singletonList(Argument.newArgument("SomeArgument",
-                    newVariableReference().name("TestVariableDefinition").build())
+                newVariableReference().name("TestVariableDefinition").build())
                 .build())).build()).build();
 
     final ExecutionStepInfo root = ExecutionStepInfo.newExecutionStepInfo()
@@ -778,7 +778,6 @@ public class GraphQLServiceBatchLoaderTest {
         .selection(FragmentSpread.newFragmentSpread("firstFrag").build())
         .selection(FragmentSpread.newFragmentSpread("secondFrag").build()).build()).build()).build();
 
-
     GraphQLSchema graphQLSchema = newSchema()
         .query(queryType).build();
 
@@ -803,7 +802,6 @@ public class GraphQLServiceBatchLoaderTest {
     Map<String, FragmentDefinition> m = new HashMap();
     m.put("firstFrag", fdb1);
     m.put("secondFrag", fdb2);
-
 
     DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
         .variables(ImmutableMap.of("1", "3"))

@@ -36,27 +36,27 @@ public class FieldResolverTransformerPreMergeTest {
             + "} "
             + "directive @resolver(field: String) on ARGUMENT_DEFINITION";
     XtextGraph xtextGraph = createTestXtextGraph(schema);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
     assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(0);
-    assertThat(transformedSource.hasFieldResolverDirective()).isFalse();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isFalse();
   }
 
   @Test
   public void transformWithFieldResolverSuccess() {
     // GIVEN
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_IS_OBJECT_TYPE);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isTrue();
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
@@ -68,13 +68,13 @@ public class FieldResolverTransformerPreMergeTest {
   public void transformWithFieldResolverParentNotNullSuccess() {
     // GIVEN
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_TYPE_IS_NOT_NULL);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isTrue();
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
@@ -86,13 +86,13 @@ public class FieldResolverTransformerPreMergeTest {
   public void transformWithFieldResolverParentWrappedInArraySuccess() {
     // GIVEN
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_TYPE_WRAPPED_IN_ARRAY);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isTrue();
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
@@ -104,13 +104,13 @@ public class FieldResolverTransformerPreMergeTest {
   public void transformWithFieldResolverParentNotNullWrappedInArraySuccess() {
     // GIVEN
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_NOT_NULL_WRAPPED_IN_ARRAY);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isTrue();
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(1);
 
     FieldResolverContext actualFieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
@@ -121,26 +121,26 @@ public class FieldResolverTransformerPreMergeTest {
   @Test
   public void transformWithTwoFieldResolversYieldsTwoFieldResolverContext() {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_WITH_TWO__FIELD_RESOLVERS);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isTrue();
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(2);
   }
 
   @Test
   public void transformTwoTypesWithFieldWithResolverYieldsTwoFieldResolverContexts() {
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_AND_C_WITH_WITH_FIELD_RESOLVER);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     // WHEN
     final XtextGraph transformedSource = transformer.transform(xtextGraph);
 
     // THEN
-    assertThat(transformedSource.hasFieldResolverDirective()).isTrue();
+    assertThat(transformedSource.isHasFieldResolverDefinition()).isTrue();
     assertThat(transformedSource.getFieldResolverContexts().size()).isEqualTo(2);
   }
 
@@ -148,7 +148,7 @@ public class FieldResolverTransformerPreMergeTest {
   public void transformWithFieldResolverParentIsAnInterfaceThrowsException() {
     // GIVEN
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_A_IS_INTERFACE);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     exceptionRule.expect(NotAValidLocationForFieldResolverDirective.class);
 
@@ -160,7 +160,7 @@ public class FieldResolverTransformerPreMergeTest {
   public void transformWithFieldDefinitionResolveHasArgumentThrowsException() {
     // GIVEN
     XtextGraph xtextGraph = createTestXtextGraph(SCHEMA_FIELD_WITH_RESOLVER_HAS_ARGUMENT);
-    assertThat(xtextGraph.hasFieldResolverDirective()).isFalse();
+    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
     exceptionRule.expect(ArgumentDefinitionNotAllowed.class);
 
