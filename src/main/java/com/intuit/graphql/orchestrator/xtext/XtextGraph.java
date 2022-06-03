@@ -69,6 +69,8 @@ public class XtextGraph implements ServiceMetadata {
   private final Map<String, String> originalTypeNamesByRenamedName;
   private final Map<String, String> originalFieldNamesByRenamedName;
 
+  private final Set<String> blacklistedTypes = new HashSet<>();
+
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
     xtextResourceSet = requireNonNull(builder.xtextResourceSet, "Resource Set cannot be null");

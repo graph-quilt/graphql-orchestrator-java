@@ -1,14 +1,5 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.federation.FieldSetUtils.toFieldSet;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
-
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -21,6 +12,8 @@ import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidat
 import com.intuit.graphql.orchestrator.federation.validators.RequireValidator;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import graphql.language.Field;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +22,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+import static com.intuit.graphql.orchestrator.federation.FieldSetUtils.toFieldSet;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_REQUIRES_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition;
 
 public class FederationTransformerPreMerge implements Transformer<XtextGraph, XtextGraph> {
     RequireValidator requireValidator = new RequireValidator();

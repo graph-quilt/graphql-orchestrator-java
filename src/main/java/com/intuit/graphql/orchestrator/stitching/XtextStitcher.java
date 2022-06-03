@@ -205,7 +205,7 @@ public class XtextStitcher implements Stitcher {
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
-      } else if (type == ENTITY_FETCHER) {
+      } else if (type == ENTITY_FETCHER && mergedGraph.getType(fieldContext.getParentType()) != null) {
         builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata())
         );
       }
@@ -221,7 +221,9 @@ public class XtextStitcher implements Stitcher {
    */
   private RuntimeGraph.Builder createRuntimeGraph(XtextGraph xtextGraph) {
 
-    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();
+    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder()
+            .graphqlBlackList(xtextGraph.getBlacklistedTypes())
+            .build();
 
     //fill operations
     final Map<Operation, GraphQLObjectType> operationMap = new EnumMap<>(Operation.class);
