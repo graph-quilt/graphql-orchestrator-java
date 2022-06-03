@@ -1,13 +1,5 @@
 package com.intuit.graphql.orchestrator.stitching;
 
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
@@ -52,6 +44,8 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
 import graphql.schema.StaticDataFetcher;
+import org.dataloader.BatchLoader;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -61,7 +55,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The type Xtext stitcher.
@@ -224,7 +225,7 @@ public class XtextStitcher implements Stitcher {
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
-      } else if (type == ENTITY_FETCHER) {
+      } else if (type == ENTITY_FETCHER && mergedGraph.getType(fieldContext.getParentType()) != null) {
         builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata())
         );
       }
@@ -240,8 +241,9 @@ public class XtextStitcher implements Stitcher {
    */
   private RuntimeGraph.Builder createRuntimeGraph(XtextGraph xtextGraph) {
 
-    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();
-
+    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder()
+            .graphqlBlackList(xtextGraph.getBlacklistedTypes())
+            .build();
     //fill operations
     final Map<Operation, GraphQLObjectType> operationMap = new EnumMap<>(Operation.class);
 

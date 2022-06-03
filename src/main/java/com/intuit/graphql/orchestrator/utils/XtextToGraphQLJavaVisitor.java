@@ -1,10 +1,6 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEPRECATED_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.buildDeprecationReason;
-import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
-import static java.util.Objects.requireNonNull;
-
+import com.google.common.collect.Sets;
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.Directive;
@@ -56,16 +52,26 @@ import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.idl.EchoingWiringFactory;
 import graphql.schema.idl.ScalarInfo;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEPRECATED_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.buildDeprecationReason;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectiveWithNameFromDefinition;
+import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
+import static java.util.Objects.requireNonNull;
 
 @Getter
 public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElement> {
@@ -76,6 +82,7 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private static final Map<String, GraphQLScalarType> STANDARD_SCALAR_TYPES;
   private final Map<String, GraphQLType> graphQLObjectTypes;
   public final Map<String, GraphQLDirective> directiveDefinitions;
+  public final HashSet<String> blacklistedTypes;
 
   private static final GraphQLScalarType FIELD_SET_SCALAR;
 
@@ -114,6 +121,8 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private XtextToGraphQLJavaVisitor(Builder builder) {
     graphQLObjectTypes = builder.graphQLObjectTypes;
     directiveDefinitions = builder.directiveDefinitions;
+    blacklistedTypes = Sets.newHashSet(builder.blacklistedTypes);
+
     createBuiltInDirectives();
   }
 
@@ -131,6 +140,9 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     if (Objects.nonNull(object.getNamedType())) {
       final GraphQLOutputType graphQLType = (GraphQLOutputType) doSwitch(object.getNamedType());
       builder.type(graphQLType);
+
+      //If the outputting reference is now removed/is inaccessible, return null so it can be filtered out
+      if(graphQLType == null) return null;
     }
 
     if (Objects.nonNull(object.getArgumentsDefinition())) {
@@ -158,7 +170,9 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
   @Override
   public GraphQLSchemaElement caseObjectType(ObjectType object) {
-    if (Objects.nonNull(object.getType())) {
+    //Need to check blacklist due to reference for namedType being different.
+    //When this changes, remove blacklist logic and switch to checking type definition for inaccessible directive
+    if (Objects.nonNull(object.getType()) && !blacklistedTypes.contains(object.getType().getName())) {
       return nonNullGraphQl(object, (GraphQLType) doSwitch(object.getType()));
     }
     return null;
@@ -187,9 +201,14 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     GraphQLObjectType.Builder builder = GraphQLObjectType.newObject().name(me);
     if (Objects.nonNull(object.getFieldDefinition())) {
       builder.fields(
-          object.getFieldDefinition().stream().map(this::doSwitch)
-              .map(GraphQLFieldDefinition.class::cast)
-              .collect(Collectors.toList())
+          object
+          .getFieldDefinition()
+          .stream()
+          .filter(fieldDefinition -> !getDirectiveWithNameFromDefinition(fieldDefinition, FEDERATION_INACCESSIBLE_DIRECTIVE).isPresent())
+          .map(this::doSwitch)
+          .filter(Objects::nonNull)
+          .map(GraphQLFieldDefinition.class::cast)
+          .collect(Collectors.toList())
       );
 
       if (Objects.nonNull(object.getImplementsInterfaces())) {
@@ -584,12 +603,18 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
     private Map<String, GraphQLType> graphQLObjectTypes = new HashMap<>();
     private Map<String, GraphQLDirective> directiveDefinitions = new HashMap<>();
+    private HashSet<String> blacklistedTypes = new HashSet<>();
 
     private Builder() {
     }
 
     public Builder graphqlObjectTypes(Map<String, GraphQLType> val) {
       graphQLObjectTypes.putAll(requireNonNull(val));
+      return this;
+    }
+
+    public Builder graphqlBlackList(Set<String> blacklistedTypes) {
+      this.blacklistedTypes.addAll(blacklistedTypes);
       return this;
     }
 

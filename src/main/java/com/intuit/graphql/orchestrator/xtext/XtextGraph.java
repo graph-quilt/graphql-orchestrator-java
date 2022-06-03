@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.xtext;
 
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
@@ -15,6 +13,9 @@ import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import lombok.Getter;
+import org.eclipse.xtext.resource.XtextResourceSet;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -24,8 +25,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.Getter;
-import org.eclipse.xtext.resource.XtextResourceSet;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Runtime graph represents the runtime elements required to build the runtime graphql schema. It also contains
@@ -61,6 +62,7 @@ public class XtextGraph {
   private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
+  private final Set<String> blacklistedTypes = new HashSet<>();
 
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
