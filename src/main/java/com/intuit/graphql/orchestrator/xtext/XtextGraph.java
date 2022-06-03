@@ -10,11 +10,9 @@ import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
 import com.intuit.graphql.orchestrator.schema.Operation;
-import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
-import graphql.schema.FieldCoordinates;
 import lombok.Getter;
 import org.eclipse.xtext.resource.XtextResourceSet;
 
@@ -25,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -36,7 +33,7 @@ import static java.util.Objects.requireNonNull;
  * batchloaders for optimization.
  */
 @Getter
-public class XtextGraph implements ServiceMetadata {
+public class XtextGraph {
 
   private final ServiceProvider serviceProvider;
   private final XtextResourceSet xtextResourceSet;
@@ -75,10 +72,7 @@ public class XtextGraph implements ServiceMetadata {
     //TODO: Research on all Providers having an XtextResource instead of a ResourceSet
     operationMap = builder.operationMap;
     codeRegistry = builder.codeRegistry;
-    for (DirectiveDefinition directiveDefinition : directives = builder.directives) {
-
-    }
-
+    directives = builder.directives;
     types = builder.types;
     typeMetadatas = builder.typeMetadatas;
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
@@ -135,9 +129,9 @@ public class XtextGraph implements ServiceMetadata {
   }
 
   /**
-   * Empty runtime graph.
+   * Empty Xtext graph.
    *
-   * @return the runtime graph
+   * @return the Xtext graph
    */
   public static XtextGraph emptyGraph() {
 
@@ -158,80 +152,12 @@ public class XtextGraph implements ServiceMetadata {
    *
    * @return true or false
    */
-  @Override
   public boolean requiresTypenameInjection() {
     return isHasInterfaceOrUnion();
   }
 
-  @Override
-  public boolean hasFieldResolverDirective() {
-    return hasFieldResolverDefinition;
-  }
-
-  @Override
-  public FieldResolverContext getFieldResolverContext(FieldCoordinates fieldCoordinates) {
-    TypeMetadata typeMetadata = this.typeMetadatas.get(fieldCoordinates.getTypeName());
-    if (Objects.isNull(typeMetadata)) {
-      return null;
-    }
-    return typeMetadata.getFieldResolverContext(fieldCoordinates.getFieldName());
-  }
-
-  @Override
-  public boolean isOwnedByEntityExtension(FieldCoordinates fieldCoordinates) {
-    if (!this.serviceProvider.isFederationProvider()) {
-      return false;
-    }
-
-    FederationMetadata federationMetadata = this.federationMetadataByNamespace.get(serviceProvider.getNameSpace());
-    return federationMetadata.isFieldExternal(fieldCoordinates);
-  }
-
-  @Override
-  public boolean isFederationService() {
-    return this.serviceProvider.isFederationProvider();
-  }
-
-  @Override
-  public boolean isEntity(String typename) {
-    return isFederationService() && getFederationServiceMetadata().isEntity(typename);
-  }
-
   public FederationMetadata getFederationServiceMetadata() {
     return getFederationMetadataByNamespace().get(serviceProvider.getNameSpace());
-  }
-
-  /**
-   * Check if the given typeName exists in provider's schema.
-   *
-   * @param typeName typeName to check
-   * @return true or false
-   */
-  @Override
-  public boolean hasType(String typeName) {
-    return types.containsKey(typeName);
-  }
-
-  @Override
-  public boolean shouldRemoveExternalFields() {
-    return hasFieldResolverDirective() || isFederationService();
-  }
-
-  @Override
-  public boolean shouldUpdateOperationsOrFields() {
-    return shouldRemoveExternalFields() || containsRenamedFields();
-  }
-
-  @Override
-  public boolean containsRenamedFields(){
-    return this.containsRenamedFields;
-  }
-
-  public Map<String, String> getOriginalTypeNamesByRenamedName() {
-    return this.originalTypeNamesByRenamedName;
-  }
-  public Map<String, String> getOriginalFieldNamesByRenamedName() {
-    return this.originalFieldNamesByRenamedName;
   }
 
   public TypeDefinition getType(final NamedType namedType) {
@@ -322,6 +248,7 @@ public class XtextGraph implements ServiceMetadata {
   public void addToEntityExtensionMetadatas(EntityExtensionMetadata entityExtensionMetadatas) {
     this.entityExtensionMetadatas.add(entityExtensionMetadatas);
   }
+
 
   /**
    * The type Builder.
@@ -504,7 +431,8 @@ public class XtextGraph implements ServiceMetadata {
       return this;
     }
 
-    public Builder entityExtensionsByNamespace(Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace) {
+    public Builder entityExtensionsByNamespace(
+        Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace) {
       requireNonNull(entityExtensionsByNamespace);
       this.entityExtensionsByNamespace.putAll(entityExtensionsByNamespace);
       return this;

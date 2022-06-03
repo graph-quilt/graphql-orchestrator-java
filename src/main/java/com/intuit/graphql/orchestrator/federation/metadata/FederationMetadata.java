@@ -1,22 +1,22 @@
 package com.intuit.graphql.orchestrator.federation.metadata;
 
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
-import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.language.Field;
 import graphql.schema.FieldCoordinates;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 /**
  * This class holds the metadata for the usage of federation specs in a given {@link
@@ -25,19 +25,23 @@ import lombok.NonNull;
 @Getter
 public class FederationMetadata {
 
-  private final ServiceMetadata serviceMetadata;
+  private final ServiceProvider serviceProvider;
 
-  /** entities owned by the service */
+  /**
+   * entities owned by the service
+   */
   private final Map<String, EntityMetadata> entitiesByTypename = new HashMap<>();
 
-  /** entities extended by the service */
+  /**
+   * entities extended by the service
+   */
   private final Map<String, EntityExtensionMetadata> extensionsByTypename = new HashMap<>();
 
   private final Map<FieldCoordinates, Set<Field>> requiresFieldSetByCoordinate = new HashMap<>();
 
-  public FederationMetadata(ServiceMetadata serviceMetadata) {
-    Objects.requireNonNull(serviceMetadata);
-    this.serviceMetadata = serviceMetadata;
+  public FederationMetadata(ServiceProvider serviceProvider) {
+    Objects.requireNonNull(serviceProvider);
+    this.serviceProvider = serviceProvider;
   }
 
   public boolean isFieldExternal(FieldCoordinates fieldCoordinates) {
@@ -72,10 +76,15 @@ public class FederationMetadata {
   @Builder
   @Getter
   public static class EntityMetadata {
-    @NonNull private final String typeName;
-    @NonNull private final List<KeyDirectiveMetadata> keyDirectives;
-    @NonNull private final Set<String> fields;
-    @NonNull private final FederationMetadata federationMetadata;
+
+    @NonNull
+    private final String typeName;
+    @NonNull
+    private final List<KeyDirectiveMetadata> keyDirectives;
+    @NonNull
+    private final Set<String> fields;
+    @NonNull
+    private final FederationMetadata federationMetadata;
 
     public static Set<String> getFieldsFrom(TypeDefinition entityDefinition) {
       Set<String> output = new HashSet<>(); // make sure HashSet is used
@@ -89,10 +98,15 @@ public class FederationMetadata {
   @Builder
   @Getter
   public static class EntityExtensionMetadata {
-    @NonNull private final String typeName;
-    @NonNull private final List<KeyDirectiveMetadata> keyDirectives;
-    @NonNull private final Map<String, Set<Field>> requiredFieldsByFieldName;
-    @NonNull private final FederationMetadata federationMetadata;
+
+    @NonNull
+    private final String typeName;
+    @NonNull
+    private final List<KeyDirectiveMetadata> keyDirectives;
+    @NonNull
+    private final Map<String, Set<Field>> requiredFieldsByFieldName;
+    @NonNull
+    private final FederationMetadata federationMetadata;
     // TODO @provides
 
     private EntityMetadata baseEntityMetadata;
@@ -112,13 +126,12 @@ public class FederationMetadata {
     }
 
     public ServiceProvider getServiceProvider() {
-      return this.federationMetadata.getServiceMetadata().getServiceProvider();
+      return this.federationMetadata.getServiceProvider();
     }
 
     public ServiceProvider getBaseServiceProvider() {
       return this.baseEntityMetadata
           .getFederationMetadata()
-          .getServiceMetadata()
           .getServiceProvider();
     }
 

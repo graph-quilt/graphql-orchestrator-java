@@ -38,7 +38,7 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
     @Override
     public XtextGraph transform(XtextGraph source) {
         if(source.getServiceProvider().isFederationProvider()) {
-            FederationMetadata federationMetadata = new FederationMetadata(source);
+            FederationMetadata federationMetadata = new FederationMetadata(source.getServiceProvider());
 
             source.getEntitiesByTypeName().values()
             .forEach(typeDefinition -> {

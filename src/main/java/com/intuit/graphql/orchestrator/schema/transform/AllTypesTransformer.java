@@ -2,9 +2,7 @@ package com.intuit.graphql.orchestrator.schema.transform;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForExtensionType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes;
@@ -25,16 +23,13 @@ import com.intuit.graphql.orchestrator.utils.DescriptionUtils;
 import com.intuit.graphql.orchestrator.utils.FederationUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.HashMap;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.commons.collections4.CollectionUtils;
 
 public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> {
-
 
 
   @Override
@@ -50,53 +45,58 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
             }));
     updateDescWithNamespace(types, source.getServiceProvider().getNameSpace());
 
-    if(source.isFederationService()) {
+    if (source.getServiceProvider().isFederationProvider()) {
       Map<String, TypeDefinition> baseEntities = getAllTypes(source.getXtextResourceSet())
-              .filter(typeDefinition -> definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
-              .filter(FederationUtils::isBaseType)
-              .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
+          .filter(typeDefinition -> definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+          .filter(FederationUtils::isBaseType)
+          .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-      Map<String, TypeSystemDefinition>  extensionEntities =  Streams.concat(
+      Map<String, TypeSystemDefinition> extensionEntities = Streams.concat(
           getTypeSystemDefinition(source.getXtextResourceSet())
-                  .filter(FederationUtils::isTypeSystemForBaseType)
-                  .filter(typeSystemDefinition -> definitionContainsDirective(typeSystemDefinition.getType(), FEDERATION_KEY_DIRECTIVE))
-                  .filter(typeSystemDefinition -> definitionContainsDirective(typeSystemDefinition.getType(), FEDERATION_EXTENDS_DIRECTIVE)),
+              .filter(FederationUtils::isTypeSystemForBaseType)
+              .filter(typeSystemDefinition -> definitionContainsDirective(typeSystemDefinition.getType(),
+                  FEDERATION_KEY_DIRECTIVE))
+              .filter(typeSystemDefinition -> definitionContainsDirective(typeSystemDefinition.getType(),
+                  FEDERATION_EXTENDS_DIRECTIVE)),
           getTypeSystemDefinition(source.getXtextResourceSet())
-                  .filter(FederationUtils::isTypeSystemForExtensionType)
-                  .filter(typeSystemDefinition -> typeSystemDefinition.getTypeExtension() instanceof ObjectTypeExtensionDefinition || typeSystemDefinition.getTypeExtension() instanceof InterfaceTypeExtensionDefinition)
-                  .filter(typeSystemDefinition -> definitionContainsDirective(typeSystemDefinition.getTypeExtension(), FEDERATION_KEY_DIRECTIVE))
+              .filter(FederationUtils::isTypeSystemForExtensionType)
+              .filter(typeSystemDefinition ->
+                  typeSystemDefinition.getTypeExtension() instanceof ObjectTypeExtensionDefinition
+                      || typeSystemDefinition.getTypeExtension() instanceof InterfaceTypeExtensionDefinition)
+              .filter(typeSystemDefinition -> definitionContainsDirective(typeSystemDefinition.getTypeExtension(),
+                  FEDERATION_KEY_DIRECTIVE))
       ).collect(Collectors.toMap(
-        (typeSystemDefinition -> isTypeSystemForBaseType(typeSystemDefinition) ? typeSystemDefinition.getType().getName() : typeSystemDefinition.getTypeExtension().getName()),
-        Function.identity())
+          (typeSystemDefinition -> isTypeSystemForBaseType(typeSystemDefinition) ? typeSystemDefinition.getType()
+              .getName() : typeSystemDefinition.getTypeExtension().getName()),
+          Function.identity())
       );
 
       HashMap<String, Map<String, TypeSystemDefinition>> extensionEntitiesByNamespace = new HashMap<>();
       extensionEntitiesByNamespace.put(source.getServiceProvider().getNameSpace(), extensionEntities);
 
       Map<String, TypeDefinition> valueTypes = types.values().stream()
-              .filter(typeDefinition -> !definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
-              .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
-
+          .filter(typeDefinition -> !definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE))
+          .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
       return source.transform(builder -> builder
-        .types(types)
-        .typeMetadatas(createTypeMetadatas(types))
-        .valueTypesByName(valueTypes)
-        .entitiesByTypeName(baseEntities)
-        .entityExtensionsByNamespace(extensionEntitiesByNamespace)
+          .types(types)
+          .typeMetadatas(createTypeMetadatas(types))
+          .valueTypesByName(valueTypes)
+          .entitiesByTypeName(baseEntities)
+          .entityExtensionsByNamespace(extensionEntitiesByNamespace)
       );
     }
 
     return source.transform(builder -> builder
-            .types(types)
-            .typeMetadatas(createTypeMetadatas(types))
+        .types(types)
+        .typeMetadatas(createTypeMetadatas(types))
     );
   }
 
   private Map<String, TypeMetadata> createTypeMetadatas(Map<String, TypeDefinition> types) {
     Map<String, TypeMetadata> output = new HashMap<>();
     types.forEach((typename, typeDefinition) ->
-            output.put(typename, new TypeMetadata(typeDefinition))
+        output.put(typename, new TypeMetadata(typeDefinition))
     );
     return output;
   }
@@ -119,7 +119,7 @@ public class AllTypesTransformer implements Transformer<XtextGraph, XtextGraph> 
 
   private void updateDescWithNamespace(Map<String, TypeDefinition> types, String namespace) {
     types.forEach((k, v) -> {
-      v.setDesc(DescriptionUtils.attachNamespace(namespace,v.getDesc()));
+      v.setDesc(DescriptionUtils.attachNamespace(namespace, v.getDesc()));
     });
   }
 }

@@ -11,7 +11,7 @@ class SchemaTestUtil extends Specification {
 
     static RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring().build()
 
-    static defaultOptions = SchemaGenerator.Options.defaultOptions().enforceSchemaDirectives(false)
+    static defaultOptions = SchemaGenerator.Options.defaultOptions()
 
     static SchemaParser schemaParser = new SchemaParser()
 

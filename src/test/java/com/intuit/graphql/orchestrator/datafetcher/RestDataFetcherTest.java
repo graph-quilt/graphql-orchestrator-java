@@ -10,7 +10,7 @@ import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.TestServiceProvider;
 import com.intuit.graphql.orchestrator.batch.QueryExecutor;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.MergedField;
@@ -85,7 +85,7 @@ public class RestDataFetcherTest {
 
     TestServiceProvider testServiceProvider = TestServiceProvider.newBuilder().queryFunction(queryExecutor)
         .serviceType(ServiceType.REST).build();
-    ServiceMetadata serviceMetadata = mock(XtextGraph.class);
+    ServiceMetadata serviceMetadata = mock(ServiceMetadataImpl.class);
     when(serviceMetadata.getServiceProvider()).thenReturn(testServiceProvider);
 
     RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata);

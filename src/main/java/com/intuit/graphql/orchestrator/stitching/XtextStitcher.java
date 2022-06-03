@@ -15,6 +15,8 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirecti
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentQueryBuilder;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl;
 import com.intuit.graphql.orchestrator.schema.fold.XtextGraphFolder;
 import com.intuit.graphql.orchestrator.schema.transform.AllTypesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DirectivesTransformer;
@@ -107,24 +109,30 @@ public class XtextStitcher implements Stitcher {
     //Stitch Graphs
     XtextGraph stitchedGraph = new XtextGraphFolder().fold(XtextGraph.emptyGraph(), xtextGraphMap.values());
 
+    //Service Metadata
+    final Map<String, ServiceMetadata> serviceMetadataMap = xtextGraphMap.values().stream()
+        .map(this::buildServiceMetadata)
+        .collect(Collectors.toMap(metadata -> metadata.getServiceProvider().getNameSpace(), Function.identity()));
+
     //Transform after merge
     XtextGraph stitchedTransformedGraph = transform(stitchedGraph, postMergeTransformers);
 
     //Executable RuntimeGraph with BatchLoaders and DataFetchers
-    final Map<String, BatchLoader> batchLoaders = getBatchLoaders(xtextGraphMap);
+    final Map<String, BatchLoader> batchLoaders = getBatchLoaders(serviceMetadataMap);
 
     stitchedTransformedGraph.getFieldResolverContexts().forEach(fieldResolverContext -> {
       FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
-              .builder()
-              .fieldResolverContext(fieldResolverContext)
-              .build();
+          .builder()
+          .fieldResolverContext(fieldResolverContext)
+          .build();
 
       String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldResolverContext);
       batchLoaders.put(batchLoaderKey, fieldResolverDataLoader);
 
     });
 
-    final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
+    final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph,
+        serviceMetadataMap);
 
     final RuntimeGraph.Builder runtimeGraphBuilder = createRuntimeGraph(stitchedTransformedGraph);
 
@@ -141,19 +149,21 @@ public class XtextStitcher implements Stitcher {
   /**
    * Creates a namespace vs batch loader map for corresponding data providers per graph
    *
-   * @param xtextGraphMap map of namespace vs xtext graph for all data providers
+   * @param serviceMetadataMap map of namespace vs xtext graph for all data providers
    * @return map of namespace vs batch loader
    */
-  private Map<String, BatchLoader> getBatchLoaders(Map<String, XtextGraph> xtextGraphMap) {
+  private Map<String, BatchLoader> getBatchLoaders(Map<String, ServiceMetadata> serviceMetadataMap) {
 
     HashMap<String, BatchLoader> batchLoaderMap = new HashMap<>();
-    xtextGraphMap.forEach((namespace, graph) -> {
-      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || graph.getServiceProvider().isFederationProvider()) {
+    serviceMetadataMap.forEach((namespace, serviceMetadata) -> {
+      if (serviceMetadata.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || serviceMetadata
+          .getServiceProvider()
+          .isFederationProvider()) {
         batchLoaderMap.put(namespace,
             GraphQLServiceBatchLoader
                 .newQueryExecutorBatchLoader()
-                .queryExecutor(graph.getServiceProvider())
-                .serviceMetadata(graph)
+                .queryExecutor(serviceMetadata.getServiceProvider())
+                .serviceMetadata(serviceMetadata)
                 .batchLoaderExecutionHooks(batchLoaderHooks)
                 .build());
       }
@@ -161,15 +171,28 @@ public class XtextStitcher implements Stitcher {
     return batchLoaderMap;
   }
 
+  private ServiceMetadata buildServiceMetadata(XtextGraph xtextGraph) {
+    return ServiceMetadataImpl.newBuilder()
+        .serviceProvider(xtextGraph.getServiceProvider())
+        .typeMetadataMap(xtextGraph.getTypeMetadatas())
+        .federationMetadata(xtextGraph.getFederationServiceMetadata())
+        .hasFieldResolverDefinition(xtextGraph.isHasFieldResolverDefinition())
+        .hasInterfaceOrUnion(xtextGraph.isHasInterfaceOrUnion())
+        .containsRenamedFields(xtextGraph.isContainsRenamedFields())
+        .originalFieldNamesByRenamedName(xtextGraph.getOriginalFieldNamesByRenamedName())
+        .originalTypeNamesByRenamedName(xtextGraph.getOriginalTypeNamesByRenamedName())
+        .build();
+  }
+
   /**
    * Builds GraphQL Code Registry for a xtext graph using field context and data fetcher context
    *
    * @param mergedGraph the post-merged and post-transformed graph
-   * @param graphsByNamespace the individual graphs that were used to build the merged graph
+   * @param serviceMetadataMap the individual graphs that were used to build the merged graph
    * @return GraphQL Code Registry Builder
    */
   private GraphQLCodeRegistry.Builder getCodeRegistry(XtextGraph mergedGraph,
-      Map<String, XtextGraph> graphsByNamespace) {
+      Map<String, ServiceMetadata> serviceMetadataMap) {
 
     GraphQLCodeRegistry.Builder builder = GraphQLCodeRegistry.newCodeRegistry();
 
@@ -180,7 +203,8 @@ public class XtextStitcher implements Stitcher {
       if (type == STATIC) {
         builder.dataFetcher(coordinates, new StaticDataFetcher(Collections.emptyMap()));
       } else if (type == SERVICE) {
-        final XtextGraph serviceMetadata = graphsByNamespace.get(dataFetcherContext.getNamespace());
+        final ServiceMetadata serviceMetadata = serviceMetadataMap.get(dataFetcherContext.getNamespace());
+
         builder.dataFetcher(coordinates,
             dataFetcherContext.getServiceType() == ServiceType.REST
                 ? new RestDataFetcher(serviceMetadata)

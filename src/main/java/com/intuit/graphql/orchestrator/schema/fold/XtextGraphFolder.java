@@ -69,18 +69,21 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
           merge(accumulator.getOperationType(op), current.getOperationType(op), current.getServiceProvider()));
     }
 
-    if(current.isFederationService()) {
+    if (current.getServiceProvider().isFederationProvider()) {
       current.getValueTypesByName().values()
-        .forEach(incomingSharedType -> {
-          TypeDefinition preexistingTypeDefinition = accumulator.getType(incomingSharedType.getName());
-          if(incomingSharedType instanceof EnumTypeDefinition) {
-            mergeSharedValueType((EnumTypeDefinition) preexistingTypeDefinition, (EnumTypeDefinition) incomingSharedType, current.getServiceProvider());
-          } else if(incomingSharedType instanceof ObjectTypeDefinition) {
-            mergeSharedValueType((ObjectTypeDefinition) preexistingTypeDefinition, (ObjectTypeDefinition) incomingSharedType, current.getServiceProvider());
-          } else if(incomingSharedType instanceof InterfaceTypeDefinition) {
-            mergeSharedValueType((InterfaceTypeDefinition) preexistingTypeDefinition, (InterfaceTypeDefinition) incomingSharedType, current.getServiceProvider());
-          }
-        });
+          .forEach(incomingSharedType -> {
+            TypeDefinition preexistingTypeDefinition = accumulator.getType(incomingSharedType.getName());
+            if (incomingSharedType instanceof EnumTypeDefinition) {
+              mergeSharedValueType((EnumTypeDefinition) preexistingTypeDefinition,
+                  (EnumTypeDefinition) incomingSharedType, current.getServiceProvider());
+            } else if (incomingSharedType instanceof ObjectTypeDefinition) {
+              mergeSharedValueType((ObjectTypeDefinition) preexistingTypeDefinition,
+                  (ObjectTypeDefinition) incomingSharedType, current.getServiceProvider());
+            } else if (incomingSharedType instanceof InterfaceTypeDefinition) {
+              mergeSharedValueType((InterfaceTypeDefinition) preexistingTypeDefinition,
+                  (InterfaceTypeDefinition) incomingSharedType, current.getServiceProvider());
+            }
+          });
     }
 
     resolveTypeConflicts(accumulator.getTypes(), current.getTypes(), current);
@@ -118,7 +121,8 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       TypeDefinition existingType = existing.get(typeName);
       if (Objects.nonNull(existingType) && !nestedTypes.containsKey(existingType.getName())) {
         TypeDefinition conflictingType = current.get(typeName);
-        XtextTypeConflictResolver.INSTANCE.resolve(conflictingType, existingType, currentGraph.getServiceProvider().isFederationProvider());
+        XtextTypeConflictResolver.INSTANCE
+            .resolve(conflictingType, existingType, currentGraph.getServiceProvider().isFederationProvider());
       }
     }
   }
@@ -170,7 +174,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
    * @return merged object
    */
   private TypeDefinition mergeSharedValueType(EnumTypeDefinition current, EnumTypeDefinition newComer,
-                                     ServiceProvider newComerServiceProvider) {
+      ServiceProvider newComerServiceProvider) {
     //nothing to merge
     if (current == null || !newComerServiceProvider.isFederationProvider()) {
       return current;
@@ -194,15 +198,15 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
   }
 
   private TypeDefinition mergeSharedValueType(ObjectTypeDefinition current, ObjectTypeDefinition newComer,
-                                              ServiceProvider newComerServiceProvider) {
+      ServiceProvider newComerServiceProvider) {
     if (current == null || !newComerServiceProvider.isFederationProvider()) {
       return current;
     }
 
     newComer.getFieldDefinition().forEach(newField -> {
       Optional<FieldDefinition> currentField = current.getFieldDefinition().stream()
-              .filter(fieldName -> newField.getName().equals(fieldName.getName()))
-              .findFirst();
+          .filter(fieldName -> newField.getName().equals(fieldName.getName()))
+          .findFirst();
 
       if (!currentField.isPresent()) {
         addNewFieldToObject(current, newField, newComerServiceProvider);
@@ -217,15 +221,15 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
   }
 
   private TypeDefinition mergeSharedValueType(InterfaceTypeDefinition current, InterfaceTypeDefinition newComer,
-                                              ServiceProvider newComerServiceProvider) {
+      ServiceProvider newComerServiceProvider) {
     if (current == null || !newComerServiceProvider.isFederationProvider()) {
       return current;
     }
 
     newComer.getFieldDefinition().forEach(newField -> {
       Optional<FieldDefinition> currentField = current.getFieldDefinition().stream()
-              .filter(fieldName -> newField.getName().equals(fieldName.getName()))
-              .findFirst();
+          .filter(fieldName -> newField.getName().equals(fieldName.getName()))
+          .findFirst();
 
       if (!currentField.isPresent()) {
         addNewFieldToObject(current, newField, newComerServiceProvider);
@@ -281,13 +285,13 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
 
 
   private void addNewFieldToObject(EnumTypeDefinition enumTypeDefinition, EnumValueDefinition valueDefinition,
-                                         ServiceProvider serviceProvider) {
+      ServiceProvider serviceProvider) {
     addFieldContextToRegistry(enumTypeDefinition.getName(), valueDefinition.getEnumValue(), serviceProvider);
     enumTypeDefinition.getEnumValueDefinition().add(EcoreUtil.copy(valueDefinition));
   }
 
   private void addNewFieldToObject(InterfaceTypeDefinition interfaceTypeDefinition, FieldDefinition fieldDefinition,
-                                         ServiceProvider serviceProvider) {
+      ServiceProvider serviceProvider) {
     addFieldContextToRegistry(interfaceTypeDefinition.getName(), fieldDefinition.getName(), serviceProvider);
     interfaceTypeDefinition.getFieldDefinition().add(EcoreUtil.copy(fieldDefinition));
   }
@@ -297,7 +301,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
     final FieldContext fieldContext = new FieldContext(parentName, definitionName);
 
     accCodeRegistry.put(fieldContext, DataFetcherContext.newBuilder().namespace(serviceProvider.getNameSpace())
-            .serviceType(serviceProvider.getSeviceType()).build());
+        .serviceType(serviceProvider.getSeviceType()).build());
   }
 
   /**
