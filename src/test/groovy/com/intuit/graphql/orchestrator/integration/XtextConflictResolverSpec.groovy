@@ -100,14 +100,69 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         queryType.getFieldDefinition("foo").type == queryType.getFieldDefinition("bar").type
     }
 
+    def alphaObjectSchema = """
+            schema {
+                query: Query
+            }
+
+            type Query {
+                a: MyType1
+            }
+
+            type MyType1 {
+                test: String
+                alpha: String
+            }
+        """
+
+    def alphaObjectResponse = """
+            {
+              "data": {
+                "a": {
+                  "test": "1..2..3",
+                  "alpha": "Alpha"
+                }
+              }
+            }
+        """
+
+    def betaObjectSchema = """
+            directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+            schema {
+                query: Query
+            }
+
+            type Query {
+                b: MyType1
+            }
+
+            type MyType1 @rename(to: "beta") {
+                test: String
+                beta: String
+            }
+        """
+
+    def betaObjectResponse = """
+            {
+              "data": {
+                "b": {
+                  "test": "One..Two..Three",
+                  "beta": "Beta"
+                }
+              }
+            }
+        """
+
     def "Query Service A"() {
         given:
-        SimpleMockServiceProvider serviceA = createMockService("SVC_A",
-            "top_level/rename/alpha-o-svc.graphqls",
-            "top_level/rename/mock-responses/get-alpha-o.json")
-        SimpleMockServiceProvider serviceB = createMockService("SVC_B",
-            "top_level/rename/beta-o-svc.graphqls",
-            "top_level/rename/mock-responses/get-beta-o.json")
+
+
+        SimpleMockServiceProvider serviceA = createMockService(
+            "SVC_A", alphaObjectSchema, alphaObjectResponse)
+
+        SimpleMockServiceProvider serviceB = createMockService(
+            "SVC_B", betaObjectSchema, betaObjectResponse)
 
         specUnderTest = createGraphQLOrchestrator([serviceA, serviceB])
 
@@ -139,12 +194,12 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
 
     def "Query Service B With Renamed Object"() {
         given:
-        SimpleMockServiceProvider serviceA = createMockService("SVC_A",
-            "top_level/rename/alpha-o-svc.graphqls",
-            "top_level/rename/mock-responses/get-alpha-o.json")
-        SimpleMockServiceProvider serviceB = createMockService("SVC_B",
-            "top_level/rename/beta-o-svc.graphqls",
-            "top_level/rename/mock-responses/get-beta-o.json")
+
+        SimpleMockServiceProvider serviceA = createMockService(
+            "SVC_A", alphaObjectSchema, alphaObjectResponse)
+
+        SimpleMockServiceProvider serviceB = createMockService(
+            "SVC_B", betaObjectSchema, betaObjectResponse)
 
         specUnderTest = createGraphQLOrchestrator([serviceA, serviceB])
 
@@ -173,14 +228,68 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         data.b?.beta instanceof String && data.b?.beta == "Beta"
     }
 
+    def alphaFieldSchema = """
+            schema {
+                query: Query
+            }
+
+            type Query {
+                a: MyTypeA
+            }
+
+            type MyTypeA {
+                test: String
+                alpha: String
+            }
+        """
+
+    def alphaFieldResponse = """
+            {
+              "data": {
+                "a": {
+                  "test": "1..2..3",
+                  "alpha": "Alpha"
+                }
+              }
+            }
+        """
+
+    def betaFieldSchema = """
+            directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+            schema {
+                query: Query
+            }
+
+            type Query {
+                b: MyTypeB @rename(to: "bb")
+            }
+
+            type MyTypeB {
+                test: String
+                beta: String
+            }
+        """
+
+    def betaFieldResponse = """
+            {
+              "data": {
+                "bb": {
+                  "test": "One..Two..Three",
+                  "beta": "Beta"
+                }
+              }
+            }
+        """
+
     def "Query Service A With Field"() {
         given:
-        SimpleMockServiceProvider serviceA = createMockService("SVC_A",
-            "top_level/rename/alpha-f-svc.graphqls",
-            "top_level/rename/mock-responses/get-alpha-f.json")
-        SimpleMockServiceProvider serviceB = createMockService("SVC_B",
-            "top_level/rename/beta-f-svc.graphqls",
-            "top_level/rename/mock-responses/get-beta-f.json")
+
+        SimpleMockServiceProvider serviceA = createMockService(
+            "SVC_A", alphaFieldSchema, alphaFieldResponse)
+
+        SimpleMockServiceProvider serviceB = createMockService(
+            "SVC_B", betaFieldSchema, betaFieldResponse)
 
         specUnderTest = createGraphQLOrchestrator([serviceA, serviceB])
 
@@ -212,12 +321,12 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
 
     def "Query Service B With Renamed Field"() {
         given:
-        SimpleMockServiceProvider serviceA = createMockService("SVC_A",
-            "top_level/rename/alpha-f-svc.graphqls",
-            "top_level/rename/mock-responses/get-alpha-f.json")
-        SimpleMockServiceProvider serviceB = createMockService("SVC_B",
-            "top_level/rename/beta-f-svc.graphqls",
-            "top_level/rename/mock-responses/get-beta-f.json")
+
+        SimpleMockServiceProvider serviceA = createMockService(
+            "SVC_A", alphaFieldSchema, alphaFieldResponse)
+
+        SimpleMockServiceProvider serviceB = createMockService(
+            "SVC_B", betaFieldSchema, betaFieldResponse)
 
         specUnderTest = createGraphQLOrchestrator([serviceA, serviceB])
 
@@ -247,14 +356,81 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         data.bb?.beta instanceof String && data.bb?.beta == "Beta"
     }
 
+    def alphaInterfaceSchema = """
+            schema {
+                query: Query
+            }
+
+            interface IName {
+                name: String!
+            }
+
+            type Query {
+                a: MyTypeA
+            }
+
+            type MyTypeA implements IName {
+                name: String!
+                test: String
+                alpha: String
+            }
+        """
+
+    def alphaInterfaceResponse = """
+            {
+              "data": {
+                "a": {
+                  "name": "A A",
+                  "test": "1..2..3",
+                  "alpha": "Alpha"
+                }
+              }
+            }
+        """
+
+    def betaInterfaceSchema = """
+            directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+            schema {
+                query: Query
+            }
+
+            interface IName @rename(to: "ITheName") {
+                name: String!
+            }
+
+            type Query {
+                b: MyType
+            }
+
+            type MyType implements IName {
+                name: String!
+                test: String
+                beta: String
+            }
+        """
+
+    def betaInterfaceRepsonse = """
+            {
+              "data": {
+                "b": {
+                  "name": "B B",
+                  "test": "One..Two..Three",
+                  "beta": "Beta"
+                }
+              }
+            }
+        """
+
     def "Query Service I With Interface"() {
         given:
-        SimpleMockServiceProvider serviceA = createMockService("SVC_A",
-                "top_level/rename/alpha-i-svc.graphqls",
-                "top_level/rename/mock-responses/get-alpha-i.json")
-        SimpleMockServiceProvider serviceB = createMockService("SVC_B",
-                "top_level/rename/beta-i-svc.graphqls",
-                "top_level/rename/mock-responses/get-beta-i.json")
+
+        SimpleMockServiceProvider serviceA = createMockService(
+            "SVC_A", alphaInterfaceSchema, alphaInterfaceResponse)
+
+
+        SimpleMockServiceProvider serviceB = createMockService(
+            "SVC_B", betaInterfaceSchema, betaInterfaceRepsonse )
 
         specUnderTest = createGraphQLOrchestrator([serviceA, serviceB])
 
@@ -286,12 +462,12 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
 
     def "Query Service B With Renamed Interface"() {
         given:
-        SimpleMockServiceProvider serviceA = createMockService("SVC_A",
-            "top_level/rename/alpha-i-svc.graphqls",
-            "top_level/rename/mock-responses/get-alpha-i.json")
-        SimpleMockServiceProvider serviceB = createMockService("SVC_B",
-            "top_level/rename/beta-i-svc.graphqls",
-            "top_level/rename/mock-responses/get-beta-i.json")
+
+        SimpleMockServiceProvider serviceA = createMockService(
+            "SVC_A", alphaInterfaceSchema, alphaInterfaceResponse)
+
+        SimpleMockServiceProvider serviceB = createMockService(
+            "SVC_B", betaInterfaceSchema, betaInterfaceRepsonse)
 
         specUnderTest = createGraphQLOrchestrator([serviceA, serviceB])
 
@@ -321,12 +497,12 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         data.b?.beta instanceof String && data.b?.beta == "Beta"
     }
 
-    SimpleMockServiceProvider createMockService(String namespace, String schemaFile, String responseFile) {
+    SimpleMockServiceProvider createMockService(String namespace, String schema, String response) {
         return (SimpleMockServiceProvider)SimpleMockServiceProvider.builder()
             .namespace(namespace)
-            .sdlFiles(TestHelper.getFileMapFromList(schemaFile))
-            .mockResponse(jsonToMap(TestHelper.getResourceAsString(responseFile)))
-            .build()
+            .sdlFiles(Collections.singletonMap("schema.graphqls", schema))
+            .mockResponse(jsonToMap(response))
+            .build();
     }
 
 }
