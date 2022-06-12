@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 @AllArgsConstructor
@@ -54,8 +55,15 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     for (int i = 0; i < CollectionUtils.size(dataFetchingEnvironments); i++) {
       DataFetchingEnvironment dataFetchingEnvironment = dataFetchingEnvironments.get(i);
 
-      Object pathData = getDataFromBatchResult(dataFetcherResult.getData(), i);
-      List<GraphQLError> pathErrors = getErrorsFromBatchResult(dataFetcherResult.getErrors(), dataFetchingEnvironment, i);
+      Object pathData = null;
+      if (MapUtils.isNotEmpty(dataFetcherResult.getData())) {
+        pathData = getDataFromBatchResult(dataFetcherResult.getData(), i);
+      }
+
+      List<GraphQLError> pathErrors = Collections.emptyList();
+      if (CollectionUtils.isNotEmpty(dataFetcherResult.getErrors())) {
+        pathErrors = getErrorsFromBatchResult(dataFetcherResult.getErrors(), dataFetchingEnvironment, i);
+      }
 
       dataFetcherResults.add(DataFetcherResult.newResult()
           .data(pathData)
@@ -72,7 +80,11 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     Map<String, Object> tempMap = batchData;
     for (int i = 0; i < lastIndex; i++) {
       tempMap = (Map<String, Object>) tempMap.get(resolverSelectedFields[i]);
+      if (MapUtils.isEmpty(tempMap)) {
+        return null;
+      }
     }
+
     String alias = createAlias(resolverSelectedFields[lastIndex], aliasCounter);
     return tempMap.get(alias);
   }
