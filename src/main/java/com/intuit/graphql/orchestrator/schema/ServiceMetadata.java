@@ -2,10 +2,9 @@ package com.intuit.graphql.orchestrator.schema;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.schema.FieldCoordinates;
-
-import java.util.Map;
 
 public interface ServiceMetadata {
 
@@ -39,12 +38,7 @@ public interface ServiceMetadata {
 
   FederationMetadata getFederationServiceMetadata();
 
-  boolean shouldRemoveExternalFields();
+  boolean shouldModifyDownStreamQuery();
 
-  boolean shouldUpdateOperationsOrFields();
-
-  boolean containsRenamedFields();
-
-  Map<String, String> getOriginalTypeNamesByRenamedName();
-  Map<String, String> getOriginalFieldNamesByRenamedName();
+  RenamedMetadata getRenamedMetadata();
 }

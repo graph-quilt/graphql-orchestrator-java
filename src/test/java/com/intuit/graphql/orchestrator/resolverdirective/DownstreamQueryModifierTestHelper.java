@@ -12,6 +12,11 @@ import graphql.language.OperationDefinition;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLSchema;
+import lombok.Getter;
+import org.dataloader.BatchLoader;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -19,15 +24,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import org.dataloader.BatchLoader;
-import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderRegistry;
 
 @Getter
 public class DownstreamQueryModifierTestHelper {
 
-  public static final String aSchema = "type Query { a1 : [AObjectType] a2 : String } "
+  public static final String aSchema = "type Query { a1 : [AObjectType] a2 : String getA3: String @rename(to: \"renamedAf3\")} "
       + "type AObjectType { af1 : String af2 : String } "
       + "extend type AObjectType { "
       + "    id : String"
@@ -39,12 +40,18 @@ public class DownstreamQueryModifierTestHelper {
       + "    b5 : BEnumType @resolver(field: \"b5\" arguments: [{name : \"id\", value: \"$af1\"}]) "
       + "    b6 : String "
       + "} "
+      + "extend type AObjectType { "
+      + " id2: String @rename(to: \"renamedId1\") "
+      + " resolvedC: renamedCType @resolver(field: \"resolvedC\" arguments: [{name : \"id\", value: \"$renamedId1\"}])"
+      + "} "
+      + "type renamedCType "
       + "type BObjectType "
       + "interface BInterfaceType "
       + "union BUnionType "
       + "enum BEnumType "
       + "directive @resolver(field: String, arguments: [ResolverArgument!]) on FIELD_DEFINITION "
-      + "input ResolverArgument { name : String! value : String! }\n";
+      + "input ResolverArgument { name : String! value : String! } "
+      + "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE \n";
 
   public static final String bSchema = "type Query { "
       + "    b1 (id : String) : BObjectType "
@@ -60,6 +67,14 @@ public class DownstreamQueryModifierTestHelper {
       + "union BUnionType = B1 | B2 "
       + "enum BEnumType { ONE, TWO }";
 
+  public static final String cSchema = "type Query { "
+      + "   c1(id: String): CObjectType @rename(to: \"resolvedC\") "
+      + "} "
+      + "type CObjectType @rename(to: \"renamedCType\") { "
+      + "   id: String @rename(to: \"renamedId2\") "
+      + "} "
+      + "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE ";
+
   private GraphQLSchema graphQLSchema;
   private RuntimeGraph runtimeGraph;
   private DataLoaderRegistry dataLoaderRegistry;
@@ -67,12 +82,16 @@ public class DownstreamQueryModifierTestHelper {
   private ServiceProvider testServiceA;
   private ServiceProvider testServiceB;
 
-  public DownstreamQueryModifierTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB) {
+  public DownstreamQueryModifierTestHelper(ServiceProvider testServiceA, ServiceProvider testServiceB, ServiceProvider testServiceC) {
     Objects.requireNonNull(testServiceA);
     Objects.requireNonNull(testServiceB);
     this.testServiceA = testServiceA;
     this.testServiceB = testServiceB;
-    this.runtimeGraph = SchemaStitcher.newBuilder().service(testServiceA).service(testServiceB).build()
+    this.runtimeGraph = SchemaStitcher.newBuilder()
+            .service(testServiceC)
+            .service(testServiceB)
+            .service(testServiceA)
+            .build()
         .stitchGraph();
     this.graphQLSchema = runtimeGraph.getExecutableSchema();
     this.dataLoaderRegistry = createDataLoaderRegistry();

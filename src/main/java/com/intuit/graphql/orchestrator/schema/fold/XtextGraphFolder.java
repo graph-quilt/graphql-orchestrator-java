@@ -102,6 +102,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       builder.entitiesByTypeName(current.getEntitiesByTypeName());
       builder.entityExtensionsByNamespace(current.getEntityExtensionsByNamespace());
       builder.federationMetadataByNamespace(current.getFederationMetadataByNamespace());
+      builder.renamedMetadataByNamespace(current.getRenamedMetadataByNamespace());
     });
   }
 

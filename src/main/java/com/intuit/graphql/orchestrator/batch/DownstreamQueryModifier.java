@@ -69,10 +69,9 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
   public TraversalControl visitField(Field node, TraverserContext<Node> context) {
     if (context.visitedNodes().isEmpty()) {
       context.setVar(GraphQLType.class, rootType);
-
-      if(!serviceMetadata.getOriginalFieldNamesByRenamedName().isEmpty()) {
+      if(!serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().isEmpty()) {
         String renamedKey =  getRenameKey(null, node.getName(), true);
-        String originalName = serviceMetadata.getOriginalFieldNamesByRenamedName().get(renamedKey);
+        String originalName = serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().get(renamedKey);
         if(originalName != null) {
           return changeNode(context, convertGraphqlFieldWithOriginalName(node, originalName));
         }
@@ -89,13 +88,13 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
       // TODO consider the entire condition to be abstracted in
       //  serviceMetadata.isFieldExternal(fieldCoordinates).
       //  This requires a complete set of field coordinates that the service owns
-      if (serviceMetadata.shouldRemoveExternalFields() && (hasResolverDirective(fieldDefinition)
+      if (serviceMetadata.shouldModifyDownStreamQuery() && (hasResolverDirective(fieldDefinition)
           || isExternalField(parentType.getName(), fieldName))) {
         return deleteNode(context);
       }
 
       String renameKey = getRenameKey(parentType.getName(), node.getName(), false);
-      String originalName = serviceMetadata.getOriginalFieldNamesByRenamedName().get(renameKey);
+      String originalName = serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().get(renameKey);
 
       // if field node has selection set or needs to be renamed, store it's type to its node context
       if (node.getSelectionSet() != null || originalName != null) {

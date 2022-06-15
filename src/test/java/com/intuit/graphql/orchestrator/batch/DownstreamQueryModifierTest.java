@@ -5,9 +5,10 @@ import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper;
 import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.TestService;
-import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.language.AstTransformer;
 import graphql.language.Field;
@@ -18,6 +19,7 @@ import graphql.language.SelectionSet;
 import graphql.language.TypeName;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
 import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.cSchema;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
 import static graphql.schema.FieldCoordinates.coordinates;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,12 +46,17 @@ import static org.powermock.api.mockito.PowerMockito.when;
 public class DownstreamQueryModifierTest {
 
   @Mock
-  private ServiceMetadata serviceMetadataMock;
+  private ServiceMetadataImpl serviceMetadataMock;
 
   private Field af1, af2;
   private Field b1, b2, b3, b4, b5;
+
+  //renamed fields
+  private Field renamedAf3, renamedId1, resolvedC, renamedId2;
   private SelectionSet selectionSet;
   private SelectionSet reverseSelectionSet;
+  private SelectionSet renamedFieldSelectionSet;
+  private SelectionSet renamedResolverSelectionSet;
 
   private DownstreamQueryModifier subjectUnderTest;
 
@@ -56,11 +64,13 @@ public class DownstreamQueryModifierTest {
   public void setup() {
     ServiceProvider serviceA = new TestService("serviceA", aSchema, null);
     ServiceProvider serviceB = new TestService("serviceB", bSchema, null);
-    DownstreamQueryModifierTestHelper fieldResolverTestHelper = new DownstreamQueryModifierTestHelper(
-        serviceA, serviceB);
+    ServiceProvider serviceC = new TestService("serviceC", cSchema, null);
+
+    DownstreamQueryModifierTestHelper fieldResolverTestHelper = new DownstreamQueryModifierTestHelper(serviceA, serviceB, serviceC);
     GraphQLSchema graphQLSchema = fieldResolverTestHelper.getGraphQLSchema();
     GraphQLFieldsContainer aType = (GraphQLFieldsContainer) unwrapAll(
         graphQLSchema.getType("AObjectType"));
+    GraphQLScalarType a3Type = (GraphQLScalarType) unwrapAll(graphQLSchema.getType("String"));
     af1 = Field.newField("af1").build();
     af2 = Field.newField("af2").build();
     b1 = Field.newField("b1").build();
@@ -68,13 +78,27 @@ public class DownstreamQueryModifierTest {
     b3 = Field.newField("b3").build();
     b4 = Field.newField("b4").build();
     b5 = Field.newField("b5").build();
+    renamedAf3 = Field.newField("renamedAf3").build();
+    renamedId1  = Field.newField("renamedId1").build();
+    resolvedC = Field.newField("resolvedC").build();
+    renamedId2 = Field.newField("renamedId2").build();
     selectionSet = SelectionSet.newSelectionSet().selection(af1).selection(af2)
         .selection(b1).selection(b2).selection(b3).selection(b4).selection(b5).build();
     reverseSelectionSet = SelectionSet.newSelectionSet().selection(af2).selection(b5).selection(b4).selection(b3)
         .selection(b2).selection(b1).selection(af1).build();
+    renamedFieldSelectionSet = SelectionSet.newSelectionSet().selection(renamedId1).build();
+    renamedResolverSelectionSet = SelectionSet.newSelectionSet().selection(resolvedC).build();
 
+    RenamedMetadata renameMetadata = new RenamedMetadata(null);
+    renameMetadata.getOriginalFieldNamesByRenamedName().put("renamedAf3", "getA3");
+    renameMetadata.getOriginalFieldNamesByRenamedName().put("resolvedC", "c1");
+    renameMetadata.getOriginalTypeNamesByRenamedName().put("renamedCType", "CObjectType");
+    renameMetadata.getOriginalFieldNamesByRenamedName().put("AObjectType-renamedId1", "id2");
+    renameMetadata.getOriginalFieldNamesByRenamedName().put("renamedCType-renamedId2", "id");
+
+    when(serviceMetadataMock.getRenamedMetadata()).thenReturn(renameMetadata);
     when(serviceMetadataMock.isOwnedByEntityExtension(any())).thenReturn(false);
-    when(serviceMetadataMock.shouldRemoveExternalFields()).thenReturn(true);
+    when(serviceMetadataMock.shouldModifyDownStreamQuery()).thenReturn(true);
 
     subjectUnderTest =
         new DownstreamQueryModifier(
@@ -232,6 +256,52 @@ public class DownstreamQueryModifierTest {
     assertThat(actualSelections).hasSize(2);
 
     assertThat(toFieldNameSet(actualSelections)).contains("af1", "reqdField");
+  }
+
+  @Test
+  public void canRenameQueryFields() {
+    AstTransformer astTransformer = new AstTransformer();
+
+    // test 'renamedAf3' should be sent as a3
+    Field newAf3 = (Field) astTransformer.transform(renamedAf3, subjectUnderTest);
+
+    // expect modified field to be 'a3: renamedAf3'
+    assertThat(newAf3.getName()).isEqualTo("getA3");
+    assertThat(newAf3.getAlias()).isEqualTo("renamedAf3");
+  }
+
+  @Test
+  public void canRenameTypeFields() {
+    AstTransformer astTransformer = new AstTransformer();
+
+    // test 'renamedAf3' should be sent as a3
+
+    // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
+    Field a1 = Field.newField("a1").selectionSet(renamedFieldSelectionSet).build();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    // expect modified field to be 'a3: renamedAf3'
+    assertThat(newA1.getName()).isEqualTo("a1");
+    assertThat(newA1.getSelectionSet().getSelections().size()).isEqualTo(1);
+    Field selection = (Field) newA1.getSelectionSet().getSelections().get(0);
+    assertThat(selection.getName()).isEqualTo("id2");
+    assertThat(selection.getAlias()).isEqualTo("renamedId1");
+  }
+
+  @Test
+  public void canRemoveFieldsFromRenamedResolvers() {
+    AstTransformer astTransformer = new AstTransformer();
+
+    // test 'renamedAf3' should be sent as a3
+
+    // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
+    Field a1 = Field.newField("a1").selectionSet(renamedResolverSelectionSet).build();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    // expect modified field to be 'a3: renamedAf3'
+    assertThat(newA1.getName()).isEqualTo("a1");
+    assertThat(a1.getSelectionSet().getSelections().size()).isEqualTo(1);
+    assertThat(newA1.getSelectionSet().getSelections().size()).isEqualTo(0);
   }
 
   @Test

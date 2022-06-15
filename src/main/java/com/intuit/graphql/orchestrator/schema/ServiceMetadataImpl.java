@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.schema;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.schema.FieldCoordinates;
 import lombok.Getter;
@@ -18,11 +19,9 @@ public class ServiceMetadataImpl implements ServiceMetadata {
   private final Map<String, TypeMetadata> typeMetadataMap;
   private final ServiceProvider serviceProvider;
   private final FederationMetadata federationMetadata;
+  private final RenamedMetadata renamedMetadata;
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
-  private final boolean containsRenamedFields;
-  private final Map<String, String> originalTypeNamesByRenamedName;
-  private final Map<String, String> originalFieldNamesByRenamedName;
 
   private ServiceMetadataImpl(Builder builder) {
     typeMetadataMap = builder.typeMetadataMap;
@@ -30,9 +29,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     federationMetadata = builder.federationMetadata;
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
-    containsRenamedFields = builder.containsRenamedFields;
-    originalTypeNamesByRenamedName = builder.originalTypeNamesByRenamedName;
-    originalFieldNamesByRenamedName = builder.originalFieldNamesByRenamedName;
+    renamedMetadata = builder.renamedMetadata;
   }
 
   public static Builder newBuilder() {
@@ -46,9 +43,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     builder.federationMetadata = copy.getFederationMetadata();
     builder.hasInterfaceOrUnion = copy.isHasInterfaceOrUnion();
     builder.hasFieldResolverDefinition = copy.isHasFieldResolverDefinition();
-    builder.containsRenamedFields = copy.containsRenamedFields();
-    builder.originalTypeNamesByRenamedName = copy.getOriginalTypeNamesByRenamedName();
-    builder.originalFieldNamesByRenamedName = copy.getOriginalFieldNamesByRenamedName();
+    builder.renamedMetadata = copy.getRenamedMetadata();
     return builder;
   }
 
@@ -73,10 +68,9 @@ public class ServiceMetadataImpl implements ServiceMetadata {
   }
 
   @Override
-  public boolean shouldRemoveExternalFields() {
-    return this.hasFieldResolverDirective() || this.isFederationService();
+  public boolean shouldModifyDownStreamQuery() {
+    return this.hasFieldResolverDirective() || this.isFederationService() || this.renamedMetadata.containsRenamedFields();
   }
-
 
   @Override
   public ServiceProvider getServiceProvider() {
@@ -107,34 +101,19 @@ public class ServiceMetadataImpl implements ServiceMetadata {
   }
 
   @Override
-  public boolean shouldUpdateOperationsOrFields() {
-    return shouldRemoveExternalFields() || containsRenamedFields();
+  public RenamedMetadata getRenamedMetadata() {
+    return this.renamedMetadata;
   }
-
-  @Override
-  public boolean containsRenamedFields(){
-    return this.containsRenamedFields;
-  }
-
-  public Map<String, String> getOriginalTypeNamesByRenamedName() {
-    return this.originalTypeNamesByRenamedName;
-  }
-  public Map<String, String> getOriginalFieldNamesByRenamedName() {
-    return this.originalFieldNamesByRenamedName;
-  }
-
 
   public static final class Builder {
 
     private Map<String, TypeMetadata> typeMetadataMap = new HashMap<>();
     private ServiceProvider serviceProvider;
     private FederationMetadata federationMetadata;
+    private RenamedMetadata renamedMetadata;
     private boolean hasInterfaceOrUnion;
     private boolean hasFieldResolverDefinition;
     private boolean containsRenamedFields;
-    private Map<String, String> originalTypeNamesByRenamedName = new HashMap<>();
-    private Map<String, String> originalFieldNamesByRenamedName = new HashMap<>();
-
 
     private Builder() {
     }
@@ -153,6 +132,10 @@ public class ServiceMetadataImpl implements ServiceMetadata {
       federationMetadata = val;
       return this;
     }
+    public Builder renamedMetadata(RenamedMetadata val){
+      this.renamedMetadata = val;
+      return this;
+    }
 
     public Builder hasInterfaceOrUnion(boolean val) {
       hasInterfaceOrUnion = val;
@@ -166,14 +149,6 @@ public class ServiceMetadataImpl implements ServiceMetadata {
 
     public Builder containsRenamedFields(boolean val){
       this.containsRenamedFields = val;
-      return this;
-    }
-    public Builder originalTypeNamesByRenamedName(Map<String, String> val){
-      this.originalTypeNamesByRenamedName = val;
-      return this;
-    }
-    public Builder originalFieldNamesByRenamedName(Map<String, String> val){
-      this.originalFieldNamesByRenamedName = val;
       return this;
     }
 

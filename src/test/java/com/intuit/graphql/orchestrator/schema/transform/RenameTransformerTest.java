@@ -15,11 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RenameTransformerTest {
 
   @Test
-  public void testDomainTypesGetRenamed() {
-    /* TEST SCOPE: ObjectTypeDefinition, InterfaceTypeDefinition, UnionTypeDefinition, EnumTypeDefinition,
-     * InputObjectTypeDefinition
-     */
-
+  public void testRenamedFieldsGetRenamed() {
     String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
           + "schema { query: Query } "
           + "type Query { a: MyType1 @rename(to: \"renamedA\") } "
@@ -35,6 +31,44 @@ public class RenameTransformerTest {
     ObjectTypeDefinition query = xtextGraph.getOperationMap().get(Operation.QUERY);
 
     assertThat(domainGraphTypes.getTypes().containsKey("MyType1")).isTrue();
+    assertThat(query.getFieldDefinition().get(0).getName()).isEqualTo("renamedA");
+  }
+  @Test
+  public void testRenamedTypesGetRenamed() {
+    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+            + "schema { query: Query } "
+            + "type Query { a: MyType1 } "
+            + "type MyType1 @rename(to: \"RenamedType\") { test: String }";
+
+    XtextGraph xtextGraph = XtextGraphBuilder
+            .build(TestServiceProvider.newBuilder().namespace("SVC1")
+                    .sdlFiles(ImmutableMap.of("schema.graphqls", schema)).build());
+
+    XtextGraph domainGraph = new RenameTransformer().transform(xtextGraph);
+    XtextGraph domainGraphTypes = new AllTypesTransformer().transform(domainGraph);
+
+    ObjectTypeDefinition query = xtextGraph.getOperationMap().get(Operation.QUERY);
+
+    assertThat(domainGraphTypes.getTypes().containsKey("RenamedType")).isTrue();
+  }
+
+  @Test
+  public void testRenamedTypeAndFieldGetRenamed() {
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+            + "schema { query: Query } "
+            + "type Query { a: MyType1 @rename(to: \"renamedA\") } "
+            + "type MyType1 @rename(to: \"RenamedType\") { test: String }";
+
+    XtextGraph xtextGraph = XtextGraphBuilder
+            .build(TestServiceProvider.newBuilder().namespace("SVC1")
+                    .sdlFiles(ImmutableMap.of("schema.graphqls", schema)).build());
+
+    XtextGraph domainGraph = new RenameTransformer().transform(xtextGraph);
+    XtextGraph domainGraphTypes = new AllTypesTransformer().transform(domainGraph);
+
+    ObjectTypeDefinition query = xtextGraph.getOperationMap().get(Operation.QUERY);
+
+    assertThat(domainGraphTypes.getTypes().containsKey("RenamedType")).isTrue();
     assertThat(query.getFieldDefinition().get(0).getName()).isEqualTo("renamedA");
   }
 }

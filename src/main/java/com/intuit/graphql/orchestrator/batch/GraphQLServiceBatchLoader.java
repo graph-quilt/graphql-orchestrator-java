@@ -116,7 +116,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
-            .map(field -> (serviceMetadata.shouldUpdateOperationsOrFields())
+            .map(field -> (serviceMetadata.shouldModifyDownStreamQuery())
                         ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(), key.getFragmentsByName())
                         : field)
             .forEach(selectionSetBuilder::selection);
