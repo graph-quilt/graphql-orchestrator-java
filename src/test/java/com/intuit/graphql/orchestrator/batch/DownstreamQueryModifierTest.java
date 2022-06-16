@@ -52,7 +52,7 @@ public class DownstreamQueryModifierTest {
   private Field b1, b2, b3, b4, b5;
 
   //renamed fields
-  private Field renamedAf3, renamedId1, resolvedC, renamedId2;
+  private Field renamedAf3, renamedId1, resolvedC;
   private SelectionSet selectionSet;
   private SelectionSet reverseSelectionSet;
   private SelectionSet renamedFieldSelectionSet;
@@ -81,7 +81,6 @@ public class DownstreamQueryModifierTest {
     renamedAf3 = Field.newField("renamedAf3").build();
     renamedId1  = Field.newField("renamedId1").build();
     resolvedC = Field.newField("resolvedC").build();
-    renamedId2 = Field.newField("renamedId2").build();
     selectionSet = SelectionSet.newSelectionSet().selection(af1).selection(af2)
         .selection(b1).selection(b2).selection(b3).selection(b4).selection(b5).build();
     reverseSelectionSet = SelectionSet.newSelectionSet().selection(af2).selection(b5).selection(b4).selection(b3)
@@ -274,8 +273,6 @@ public class DownstreamQueryModifierTest {
   public void canRenameTypeFields() {
     AstTransformer astTransformer = new AstTransformer();
 
-    // test 'renamedAf3' should be sent as a3
-
     // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
     Field a1 = Field.newField("a1").selectionSet(renamedFieldSelectionSet).build();
     Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
@@ -286,6 +283,24 @@ public class DownstreamQueryModifierTest {
     Field selection = (Field) newA1.getSelectionSet().getSelections().get(0);
     assertThat(selection.getName()).isEqualTo("id2");
     assertThat(selection.getAlias()).isEqualTo("renamedId1");
+  }
+
+  @Test
+  public void validateUserInputtedAliasOverridesRename() {
+    AstTransformer astTransformer = new AstTransformer();
+
+    // a1 { renamedId1 } should be sent as a1 { id2: customAlias }
+    Field aliasField = Field.newField("renamedId1").alias("customAlias").build();
+    SelectionSet aliasSelectionSet = SelectionSet.newSelectionSet().selection(aliasField).build();
+
+    Field a1 = Field.newField("a1", aliasSelectionSet).build();
+    Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest);
+
+    assertThat(newA1.getName()).isEqualTo("a1");
+    assertThat(newA1.getSelectionSet().getSelections().size()).isEqualTo(1);
+    Field selection = (Field) newA1.getSelectionSet().getSelections().get(0);
+    assertThat(selection.getName()).isEqualTo("id2");
+    assertThat(selection.getAlias()).isEqualTo("customAlias");
   }
 
   @Test

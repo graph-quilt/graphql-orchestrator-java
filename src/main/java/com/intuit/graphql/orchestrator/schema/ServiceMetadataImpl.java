@@ -113,7 +113,6 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     private RenamedMetadata renamedMetadata;
     private boolean hasInterfaceOrUnion;
     private boolean hasFieldResolverDefinition;
-    private boolean containsRenamedFields;
 
     private Builder() {
     }
@@ -144,11 +143,6 @@ public class ServiceMetadataImpl implements ServiceMetadata {
 
     public Builder hasFieldResolverDefinition(boolean val) {
       hasFieldResolverDefinition = val;
-      return this;
-    }
-
-    public Builder containsRenamedFields(boolean val){
-      this.containsRenamedFields = val;
       return this;
     }
 

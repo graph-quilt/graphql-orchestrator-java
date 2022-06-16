@@ -11,7 +11,7 @@ public class RenameDirectiveUtil {
     private RenameDirectiveUtil(){}
 
     public static Field convertGraphqlFieldWithOriginalName(Field renamedField, String originalName) {
-        String alias = renamedField.getName();
+        String alias = (StringUtils.isNotEmpty(renamedField.getAlias())) ? renamedField.getAlias() : renamedField.getName();
 
         return renamedField.transform( builder ->
                 builder.alias(alias).name(originalName)

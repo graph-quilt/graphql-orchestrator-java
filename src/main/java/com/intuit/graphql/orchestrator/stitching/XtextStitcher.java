@@ -178,7 +178,6 @@ public class XtextStitcher implements Stitcher {
         .federationMetadata(xtextGraph.getFederationServiceMetadata())
         .hasFieldResolverDefinition(xtextGraph.isHasFieldResolverDefinition())
         .hasInterfaceOrUnion(xtextGraph.isHasInterfaceOrUnion())
-        .containsRenamedFields(xtextGraph.isContainsRenamedFields())
         .renamedMetadata(xtextGraph.getRenamedMetadata())
         .build();
   }

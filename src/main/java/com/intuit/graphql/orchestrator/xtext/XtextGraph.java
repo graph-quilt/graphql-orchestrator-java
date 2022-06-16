@@ -64,7 +64,6 @@ public class XtextGraph {
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
   private final Map<String, RenamedMetadata> renamedMetadataByNamespace;
-  private final boolean containsRenamedFields;
 
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
@@ -85,7 +84,6 @@ public class XtextGraph {
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
     renamedMetadataByNamespace = builder.renamedMetadataByNamespace;
-    containsRenamedFields = builder.containsRenamedFields;
   }
 
   /**
@@ -122,7 +120,6 @@ public class XtextGraph {
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
     builder.renamedMetadataByNamespace = copy.renamedMetadataByNamespace;
-    builder.containsRenamedFields = copy.containsRenamedFields;
     return builder;
   }
 
@@ -278,7 +275,6 @@ public class XtextGraph {
     private Map<String, RenamedMetadata> renamedMetadataByNamespace = new HashMap<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
-    private boolean containsRenamedFields = false;
 
     private Builder() {
     }
@@ -452,11 +448,6 @@ public class XtextGraph {
     public Builder entityExtensionMetadatas(List<EntityExtensionMetadata> entityExtensionMetadatas) {
       requireNonNull(entityExtensionMetadatas);
       this.entityExtensionMetadatas.addAll(entityExtensionMetadatas);
-      return this;
-    }
-
-    public Builder containsRenamedFields(boolean containsRenamedFields) {
-      this.containsRenamedFields = containsRenamedFields;
       return this;
     }
 
