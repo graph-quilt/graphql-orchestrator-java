@@ -11,7 +11,7 @@ import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentListTypeNotSupported;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 
 /**
  * This class helps break up {@link ResolverArgumentDirectiveValidator} and provides the ability to get the leaf
@@ -34,7 +34,7 @@ public class ResolverDirectiveTypeResolver {
    * @throws ResolverArgumentPrematureLeafType exception is thrown when a terminal type (Scalar or Enum) is encountered,
    * but it is not the leaf TypeDefinition
    */
-  public TypeDefinition resolveField(final String field, final XtextGraph source, final String argumentName,
+  public TypeDefinition resolveField(final String field, final UnifiedXtextGraph source, final String argumentName,
       final FieldContext rootContext)
       throws ResolverArgumentFieldRootObjectDoesNotExist, ResolverArgumentListTypeNotSupported, ResolverArgumentPrematureLeafType {
     final String[] subFields = field.split("\\.");

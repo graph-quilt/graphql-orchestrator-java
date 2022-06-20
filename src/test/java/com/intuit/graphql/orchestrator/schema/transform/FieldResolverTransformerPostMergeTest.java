@@ -5,9 +5,7 @@ import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildField
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildInterfaceTypeDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition;
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildUnionTypeDefinition;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.RESOLVER_DIRECTIVE_DEFINITION;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.createTestXtextGraph;
-import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.getTypeFromFieldDefinitions;
+import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMergeTestHelper.*;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +29,8 @@ import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
+
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -52,7 +51,7 @@ public class FieldResolverTransformerPostMergeTest {
   private static UnionTypeDefinition externalUnionTypeDefinition;
   private static EnumTypeDefinition externalEnumTypeDefinition;
 
-  private final Transformer<XtextGraph, XtextGraph> transformer = new FieldResolverTransformerPostMerge();
+  private final Transformer<UnifiedXtextGraph, UnifiedXtextGraph> transformer = new FieldResolverTransformerPostMerge();
 
   @Rule
   public ExpectedException exceptionRule = ExpectedException.none();
@@ -83,18 +82,19 @@ public class FieldResolverTransformerPostMergeTest {
             + "   fieldWithArgumentResolver(arg: Int @resolver(field: \"a.b.c\")): Int "
             + "} "
             + "directive @resolver(field: String) on ARGUMENT_DEFINITION";
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    assertThat(xtextGraph.isHasFieldResolverDefinition()).isFalse();
 
-    XtextGraph textGraphSpy = Mockito.spy(xtextGraph);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    assertThat(unifiedXtextGraph.isHasFieldResolverDefinition()).isFalse();
+
+    UnifiedXtextGraph unifiedXtextGraphSpy = Mockito.spy(unifiedXtextGraph);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(textGraphSpy);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraphSpy);
 
     // THEN
-    verify(textGraphSpy, never()).getType(any(NamedType.class));
+    verify(unifiedXtextGraphSpy, never()).getType(any(NamedType.class));
 
-    assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(0);
+    assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(2);
   }
 
   @Test
@@ -113,14 +113,14 @@ public class FieldResolverTransformerPostMergeTest {
             + "} \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    XtextGraph textGraphSpy = Mockito.spy(xtextGraph);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    UnifiedXtextGraph unifiedXtextGraphSpy = Mockito.spy(unifiedXtextGraph);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(textGraphSpy);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraphSpy);
 
     // THEN
-    verify(textGraphSpy, never()).getType(any(NamedType.class));
+    verify(unifiedXtextGraphSpy, never()).getType(any(NamedType.class));
 
     FieldResolverContext fieldResolverContext = transformedSource.getFieldResolverContexts().get(0);
     assertThat(fieldResolverContext.getTargetFieldContext().getFieldName()).isEqualTo("b1");
@@ -130,7 +130,7 @@ public class FieldResolverTransformerPostMergeTest {
     PrimitiveType targetFieldArgumentType = (PrimitiveType) resolverDirectiveDefinition.getArguments().get(0).getNamedType();
     assertThat(targetFieldArgumentType.getType()).isEqualTo("String");
 
-    assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(1);
+    assertThat(transformedSource.getCodeRegistry().size()).isEqualTo(3);
 
     TypeMetadata typeMetadata = transformedSource.getTypeMetadatas().get("AObjectType");
     assertThat(typeMetadata.getFieldResolverContext("a")).isNotNull();
@@ -153,10 +153,10 @@ public class FieldResolverTransformerPostMergeTest {
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -164,7 +164,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -202,10 +202,10 @@ public class FieldResolverTransformerPostMergeTest {
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -213,7 +213,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -250,10 +250,11 @@ public class FieldResolverTransformerPostMergeTest {
             + "} "
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
+
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -261,7 +262,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -299,10 +300,10 @@ public class FieldResolverTransformerPostMergeTest {
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -310,7 +311,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -348,10 +349,10 @@ public class FieldResolverTransformerPostMergeTest {
             + "interface BInterfaceType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_INTERFACE_TYPENAME, externalInterfaceTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_INTERFACE_TYPENAME, externalInterfaceTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(
@@ -360,7 +361,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalInterfaceTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
@@ -399,10 +400,10 @@ public class FieldResolverTransformerPostMergeTest {
             + "union BUnionType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_UNION_TYPENAME, externalUnionTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_UNION_TYPENAME, externalUnionTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(
@@ -411,7 +412,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalUnionTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
@@ -449,10 +450,11 @@ public class FieldResolverTransformerPostMergeTest {
             + "} "
             + "enum BEnumType { } \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
+
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(
@@ -461,7 +463,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalEnumTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(
@@ -499,7 +501,7 @@ public class FieldResolverTransformerPostMergeTest {
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
 
     String expectedMessage = "External type not found.  serviceName=TEST_SVC, parentTypeName=AObjectType, "
         + "fieldName=a, placeHolderTypeDescription=[name:BObjectType, type:ObjectTypeDefinition, description:null";
@@ -507,7 +509,7 @@ public class FieldResolverTransformerPostMergeTest {
     exceptionRule.expectMessage(expectedMessage);
 
     // WHEN..THEN
-    transformer.transform(xtextGraph);
+    transformer.transform(unifiedXtextGraph);
   }
 
   @Test
@@ -531,10 +533,10 @@ public class FieldResolverTransformerPostMergeTest {
         + "parentTypeName=AObjectType, fieldName=a";
     exceptionRule.expectMessage(expectedMessage);
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(
@@ -543,7 +545,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalEnumTypeDefinition);
 
     // WHEN
-    transformer.transform(xtextGraph);
+    transformer.transform(unifiedXtextGraph);
   }
 
   @Test
@@ -566,10 +568,10 @@ public class FieldResolverTransformerPostMergeTest {
     String expectedMessage = "Invalid resolver argument value: ResolverArgumentDefinition(name=id, value={invalid object})";
     exceptionRule.expectMessage(expectedMessage);
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_ENUM_TYPENAME, externalEnumTypeDefinition);
 
-    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) xtextGraph.getType(
+    ObjectTypeDefinition extendedType = (ObjectTypeDefinition) unifiedXtextGraph.getType(
         EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition = getTypeFromFieldDefinitions(
@@ -578,7 +580,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalEnumTypeDefinition);
 
     // WHEN
-    transformer.transform(xtextGraph);
+    transformer.transform(unifiedXtextGraph);
   }
 
   @Test
@@ -599,11 +601,11 @@ public class FieldResolverTransformerPostMergeTest {
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put(EXTERNAL_OBJECT_TYPENAME, externalObjectTypeDefinition);
 
     ObjectTypeDefinition extendedType =
-        (ObjectTypeDefinition) xtextGraph.getType(EXTENDED_OBJECT_TYPENAME);
+        (ObjectTypeDefinition) unifiedXtextGraph.getType(EXTENDED_OBJECT_TYPENAME);
 
     TypeDefinition placeHolderTypeDefinition =
         getTypeFromFieldDefinitions(EXTERNAL_OBJECT_TYPENAME, extendedType);
@@ -617,7 +619,7 @@ public class FieldResolverTransformerPostMergeTest {
     exceptionRule.expectMessage(expectedMessage);
 
     // WHEN..THEN throws error
-    transformer.transform(xtextGraph);
+    transformer.transform(unifiedXtextGraph);
   }
 
   @Test
@@ -638,11 +640,11 @@ public class FieldResolverTransformerPostMergeTest {
             + "type BObjectType \n"
             + RESOLVER_DIRECTIVE_DEFINITION;
 
-    XtextGraph xtextGraph = createTestXtextGraph(schema);
-    xtextGraph.getTypes().put("BObjectType", externalObjectTypeDefinition);
+    UnifiedXtextGraph unifiedXtextGraph = createTestUnifiedXtextGraph(schema);
+    unifiedXtextGraph.getTypes().put("BObjectType", externalObjectTypeDefinition);
 
     ObjectTypeDefinition extendedType =
-        (ObjectTypeDefinition) xtextGraph.getType("AObjectType");
+        (ObjectTypeDefinition) unifiedXtextGraph.getType("AObjectType");
 
     TypeDefinition placeHolderTypeDefinition =
         getTypeFromFieldDefinitions("BObjectType", extendedType);
@@ -650,7 +652,7 @@ public class FieldResolverTransformerPostMergeTest {
     assertThat(placeHolderTypeDefinition).isNotSameAs(externalObjectTypeDefinition);
 
     // WHEN
-    XtextGraph transformedSource = transformer.transform(xtextGraph);
+    UnifiedXtextGraph transformedSource = transformer.transform(unifiedXtextGraph);
 
     // THEN
     TypeDefinition replacementTypeDefinition = getTypeFromFieldDefinitions(

@@ -25,7 +25,7 @@ import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl;
-import com.intuit.graphql.orchestrator.schema.fold.XtextGraphFolder;
+import com.intuit.graphql.orchestrator.schema.fold.UnifiedXtextGraphFolder;
 import com.intuit.graphql.orchestrator.schema.transform.AllTypesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DirectivesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer;
@@ -41,6 +41,7 @@ import com.intuit.graphql.orchestrator.schema.transform.UnionAndInterfaceTransfo
 import com.intuit.graphql.orchestrator.utils.XtextToGraphQLJavaVisitor;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder;
 import graphql.execution.DataFetcherResult;
 import graphql.language.OperationDefinition;
@@ -71,7 +72,7 @@ public class XtextStitcher implements Stitcher {
   private static final ResolverArgumentQueryBuilder queryBuilder = new ResolverArgumentQueryBuilder();
 
   private final List<Transformer<XtextGraph, XtextGraph>> preMergeTransformers;
-  private final List<Transformer<XtextGraph, XtextGraph>> postMergeTransformers;
+  private final List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> postMergeTransformers;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> batchLoaderHooks;
 
   private XtextStitcher(final Builder builder) {
@@ -105,7 +106,7 @@ public class XtextStitcher implements Stitcher {
             }));
 
     //Stitch Graphs
-    XtextGraph stitchedGraph = new XtextGraphFolder().fold(XtextGraph.emptyGraph(), xtextGraphMap.values());
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder().fold(UnifiedXtextGraph.emptyGraph(), xtextGraphMap.values());
 
     //Service Metadata
     final Map<String, ServiceMetadata> serviceMetadataMap = xtextGraphMap.values().stream()
@@ -113,7 +114,7 @@ public class XtextStitcher implements Stitcher {
         .collect(Collectors.toMap(metadata -> metadata.getServiceProvider().getNameSpace(), Function.identity()));
 
     //Transform after merge
-    XtextGraph stitchedTransformedGraph = transform(stitchedGraph, postMergeTransformers);
+    UnifiedXtextGraph stitchedTransformedGraph = transform(stitchedGraph, postMergeTransformers);
 
     //Executable RuntimeGraph with BatchLoaders and DataFetchers
     final Map<String, BatchLoader> batchLoaders = getBatchLoaders(serviceMetadataMap);
@@ -180,14 +181,14 @@ public class XtextStitcher implements Stitcher {
   }
 
   /**
-   * Builds GraphQL Code Registry for a xtext graph using field context and data fetcher context
+   * Builds GraphQL Code Registry for a unified xtext graph using field context and data fetcher context
    *
    * @param mergedGraph the post-merged and post-transformed graph
    * @param serviceMetadataMap the individual graphs that were used to build the merged graph
    * @return GraphQL Code Registry Builder
    */
-  private GraphQLCodeRegistry.Builder getCodeRegistry(XtextGraph mergedGraph,
-      Map<String, ServiceMetadata> serviceMetadataMap) {
+  private GraphQLCodeRegistry.Builder getCodeRegistry(UnifiedXtextGraph mergedGraph,
+                                                      Map<String, ServiceMetadata> serviceMetadataMap) {
 
     GraphQLCodeRegistry.Builder builder = GraphQLCodeRegistry.newCodeRegistry();
 
@@ -235,67 +236,67 @@ public class XtextStitcher implements Stitcher {
   /**
    * Creates a {@link RuntimeGraph} from an {@link XtextGraph} by converting xtext AST to GraphQL Java AST
    *
-   * @param xtextGraph xtext graph
+   * @param UnifiedXtextGraph unified xtext graph
    * @return RuntimeGraph Builder
    */
-  private RuntimeGraph.Builder createRuntimeGraph(XtextGraph xtextGraph) {
+  private RuntimeGraph.Builder createRuntimeGraph(UnifiedXtextGraph unifiedXtextGraph) {
 
     XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();
 
     //fill operations
     final Map<Operation, GraphQLObjectType> operationMap = new EnumMap<>(Operation.class);
 
-    xtextGraph.getOperationMap()
+    unifiedXtextGraph.getOperationMap()
         .forEach((operation, objectTypeDefinition) ->
             operationMap.put(operation, (GraphQLObjectType) visitor.doSwitch(objectTypeDefinition)));
 
     return RuntimeGraph.newBuilder()
         .operationMap(operationMap)
         .objectTypes(visitor.getGraphQLObjectTypes())
-        .additionalTypes(getAdditionalTypes(xtextGraph, visitor.getGraphQLObjectTypes()))
-        .additionalDirectives(getAdditionalDirectives(xtextGraph, visitor.getDirectiveDefinitions()));
+        .additionalTypes(getAdditionalTypes(unifiedXtextGraph, visitor.getGraphQLObjectTypes()))
+        .additionalDirectives(getAdditionalDirectives(unifiedXtextGraph, visitor.getDirectiveDefinitions()));
   }
 
   /**
    * Collects additional types (not referenced from schema top level) by filtering visited types from all types in
    * schema.
    *
-   * @param xtextGraph the xtext graph
+   * @param UnifiedXtextGraph the unified xtext graph
    * @param visited types referenced from schema top level
    * @return map of type names to additional types
    */
-  private Map<String, GraphQLType> getAdditionalTypes(XtextGraph xtextGraph, Map<String, GraphQLType> visited) {
+  private Map<String, GraphQLType> getAdditionalTypes(UnifiedXtextGraph unifiedXtextGraph, Map<String, GraphQLType> visited) {
 
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().graphqlObjectTypes(visited).build();
 
-    return xtextGraph.getTypes().values().stream()
-        .filter(type -> !xtextGraph.isOperationType(type))
+    return unifiedXtextGraph.getTypes().values().stream()
+        .filter(type -> !unifiedXtextGraph.isOperationType(type))
         .filter(type -> !(visited.containsKey(type.getName())))
         .collect(Collectors.toMap(type -> type.getName(), type -> (GraphQLType) localVisitor.doSwitch(type)));
   }
 
-  private Set<GraphQLDirective> getAdditionalDirectives(XtextGraph xtextGraph, Map<String, GraphQLDirective> visited) {
+  private Set<GraphQLDirective> getAdditionalDirectives(UnifiedXtextGraph unifiedXtextGraph, Map<String, GraphQLDirective> visited) {
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().directiveDefinitions(visited)
         .build();
 
-    return xtextGraph.getDirectives().stream()
+    return unifiedXtextGraph.getDirectives().stream()
         .map(localVisitor::doSwitch)
         .map(GraphQLDirective.class::cast)
         .collect(Collectors.toSet());
   }
 
-  private XtextGraph transform(XtextGraph xtextGraph, List<Transformer<XtextGraph, XtextGraph>> transformers) {
+  private <T> T transform(T graph, List<Transformer<T, T>> transformers) {
 
-    for (Transformer<XtextGraph, XtextGraph> transformer : transformers) {
-      xtextGraph = transformer.transform(xtextGraph);
+    for (Transformer<T, T> transformer : transformers) {
+      graph = transformer.transform(graph);
     }
-    return xtextGraph;
+    return graph;
   }
 
   public static final class Builder {
 
     private List<Transformer<XtextGraph, XtextGraph>> preMergeTransformers = defaultPreMergeTransformers();
-    private List<Transformer<XtextGraph, XtextGraph>> postMergeTransformers = defaultPostMergeTransformers();
+    private List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> postMergeTransformers = defaultPostMergeTransformers();
     private BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> batchLoaderHooks = BatchLoaderExecutionHooks.DEFAULT_HOOKS;
 
     /**
@@ -316,7 +317,7 @@ public class XtextStitcher implements Stitcher {
     /**
      * Provides the default post-merge transformers that operate on the stitched and merged graph.
      */
-    private List<Transformer<XtextGraph, XtextGraph>> defaultPostMergeTransformers() {
+    private List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> defaultPostMergeTransformers() {
       return Arrays.asList(
           new ResolverArgumentTransformer(),
           new FieldResolverTransformerPostMerge(),
@@ -333,7 +334,7 @@ public class XtextStitcher implements Stitcher {
       return this;
     }
 
-    public Builder postMergeTransformers(final List<Transformer<XtextGraph, XtextGraph>> val) {
+    public Builder postMergeTransformers(final List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> val) {
       postMergeTransformers = requireNonNull(val);
       return this;
     }

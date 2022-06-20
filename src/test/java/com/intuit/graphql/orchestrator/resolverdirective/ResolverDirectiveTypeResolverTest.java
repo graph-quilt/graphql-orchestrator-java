@@ -12,7 +12,7 @@ import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentListTypeNotSupported;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
 import java.util.Map;
 import java.util.function.Function;
@@ -26,7 +26,7 @@ public class ResolverDirectiveTypeResolverTest {
 
   private ResolverDirectiveTypeResolver resolver;
 
-  public XtextGraph source;
+  public UnifiedXtextGraph source;
 
   @Before
   public void setUp() {
@@ -43,10 +43,9 @@ public class ResolverDirectiveTypeResolverTest {
     final Map<String, TypeDefinition> types = Stream.concat(getAllTypes(schemaResource), STANDARD_SCALARS.stream())
         .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-    source = XtextGraph.newBuilder()
+    source = UnifiedXtextGraph.newBuilder()
         .query(queryOperation)
         .types(types)
-        .xtextResourceSet(schemaResource)
         .build();
 
   }

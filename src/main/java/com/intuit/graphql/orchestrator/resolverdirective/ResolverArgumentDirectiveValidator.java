@@ -11,7 +11,7 @@ import com.intuit.graphql.graphQL.InputValueDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import graphql.VisibleForTesting;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,7 @@ public class ResolverArgumentDirectiveValidator {
    * @param definitionFieldContext FieldContext of the TypeDefinition the fieldDefinition exists (for Exception
    *                               Building)
    */
-  public void validateField(FieldDefinition fieldDefinition, XtextGraph source,
+  public void validateField(FieldDefinition fieldDefinition, UnifiedXtextGraph source,
       FieldContext definitionFieldContext)
       throws ResolverArgumentLeafTypeNotSame, ResolverArgumentTypeMismatch, ResolverArgumentFieldNotInSchema {
     for (final InputValueDefinition inputValueDefinition : fieldDefinition.getArgumentsDefinition()
@@ -81,7 +81,7 @@ public class ResolverArgumentDirectiveValidator {
         .create(argumentName, rootContext, parentContext, inputType.getName(), typeInSchema.getName());
   }
 
-  private void validateArgumentInputType(final XtextGraph source, final String argumentName,
+  private void validateArgumentInputType(final UnifiedXtextGraph source, final String argumentName,
       final TypeDefinition argumentInputType, final TypeDefinition typeInSchema, FieldContext rootContext,
       FieldContext parentContext) {
 
