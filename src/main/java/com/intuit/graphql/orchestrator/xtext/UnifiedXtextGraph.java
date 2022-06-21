@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.xtext;
 import com.intuit.graphql.graphQL.*;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
@@ -46,6 +47,7 @@ public class UnifiedXtextGraph {
   private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
+  private final Map<String, RenamedMetadata> renamedMetadataByNamespace;
 
   UnifiedXtextGraph(Builder builder) {
     //TODO: Research on all Providers having an XtextResource instead of a ResourceSet
@@ -63,6 +65,7 @@ public class UnifiedXtextGraph {
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
+    renamedMetadataByNamespace = builder.renamedMetadataByNamespace;
   }
 
     /**
@@ -96,6 +99,7 @@ public class UnifiedXtextGraph {
     builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
+    builder.renamedMetadataByNamespace = copy.renamedMetadataByNamespace;
     return builder;
   }
 
@@ -228,6 +232,8 @@ public class UnifiedXtextGraph {
     private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
+    private Map<String, RenamedMetadata> renamedMetadataByNamespace = new HashMap<>();
+
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -379,6 +385,12 @@ public class UnifiedXtextGraph {
     public Builder entityExtensionMetadatas(List<EntityExtensionMetadata> entityExtensionMetadatas) {
       requireNonNull(entityExtensionMetadatas);
       this.entityExtensionMetadatas.addAll(entityExtensionMetadatas);
+      return this;
+    }
+
+    public Builder renamedMetadataByNamespace(Map<String, RenamedMetadata> renamedMetadataByNamespace) {
+      requireNonNull(renamedMetadataByNamespace);
+      this.renamedMetadataByNamespace.putAll(renamedMetadataByNamespace);
       return this;
     }
 

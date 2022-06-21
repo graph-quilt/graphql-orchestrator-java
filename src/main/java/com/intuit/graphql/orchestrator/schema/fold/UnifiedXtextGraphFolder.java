@@ -103,6 +103,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
           builder.entitiesByTypeName(current.getEntitiesByTypeName());
           builder.entityExtensionsByNamespace(current.getEntityExtensionsByNamespace());
           builder.federationMetadataByNamespace(current.getFederationMetadataByNamespace());
+          builder.renamedMetadataByNamespace(current.getRenamedMetadataByNamespace());
         });
   }
 
