@@ -1,21 +1,22 @@
 package com.intuit.graphql.orchestrator.federation.metadata;
 
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import graphql.language.Field;
 import graphql.schema.FieldCoordinates;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 /**
  * This class holds the metadata for the usage of federation specs in a given {@link

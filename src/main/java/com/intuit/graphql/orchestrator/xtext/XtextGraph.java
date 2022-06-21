@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.xtext;
 
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.DirectiveDefinition;
 import com.intuit.graphql.graphQL.NamedType;
@@ -11,10 +9,14 @@ import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityExtensionMetadata;
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.TypeMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import lombok.Getter;
+import org.eclipse.xtext.resource.XtextResourceSet;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -24,8 +26,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.Getter;
-import org.eclipse.xtext.resource.XtextResourceSet;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Runtime graph represents the runtime elements required to build the runtime graphql schema. It also contains
@@ -61,6 +63,7 @@ public class XtextGraph {
   private final Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace;
   private final List<EntityExtensionMetadata> entityExtensionMetadatas;
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
+  private final Map<String, RenamedMetadata> renamedMetadataByNamespace;
 
   private XtextGraph(Builder builder) {
     serviceProvider = builder.serviceProvider;
@@ -80,6 +83,7 @@ public class XtextGraph {
     entityExtensionsByNamespace = builder.entityExtensionsByNamespace;
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
+    renamedMetadataByNamespace = builder.renamedMetadataByNamespace;
   }
 
   /**
@@ -115,6 +119,7 @@ public class XtextGraph {
     builder.entityExtensionsByNamespace = copy.entityExtensionsByNamespace;
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
+    builder.renamedMetadataByNamespace = copy.renamedMetadataByNamespace;
     return builder;
   }
 
@@ -150,6 +155,9 @@ public class XtextGraph {
     return getFederationMetadataByNamespace().get(serviceProvider.getNameSpace());
   }
 
+  public RenamedMetadata getRenamedMetadata() {
+    return getRenamedMetadataByNamespace().get(serviceProvider.getNameSpace());
+  }
 
   public TypeDefinition getType(final NamedType namedType) {
     return types.get(XtextTypeUtils.typeName(namedType));
@@ -240,6 +248,10 @@ public class XtextGraph {
     this.entityExtensionMetadatas.add(entityExtensionMetadatas);
   }
 
+  public void addRenamedMetadata(RenamedMetadata renamedMetadata) {
+    this.renamedMetadataByNamespace.put(serviceProvider.getNameSpace(), renamedMetadata);
+  }
+
 
   /**
    * The type Builder.
@@ -260,6 +272,7 @@ public class XtextGraph {
     private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
+    private Map<String, RenamedMetadata> renamedMetadataByNamespace = new HashMap<>();
     private boolean hasInterfaceOrUnion = false;
     private boolean hasFieldResolverDefinition = false;
 
@@ -435,6 +448,12 @@ public class XtextGraph {
     public Builder entityExtensionMetadatas(List<EntityExtensionMetadata> entityExtensionMetadatas) {
       requireNonNull(entityExtensionMetadatas);
       this.entityExtensionMetadatas.addAll(entityExtensionMetadatas);
+      return this;
+    }
+
+    public Builder renamedMetadataByNamespace(Map<String, RenamedMetadata> renamedMetadataByNamespace) {
+      requireNonNull(renamedMetadataByNamespace);
+      this.renamedMetadataByNamespace.putAll(renamedMetadataByNamespace);
       return this;
     }
 

@@ -1,15 +1,17 @@
 package com.intuit.graphql.orchestrator.schema;
 
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.schema.FieldCoordinates;
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import lombok.Getter;
+
+import static java.util.Objects.requireNonNull;
 
 @Getter
 public class ServiceMetadataImpl implements ServiceMetadata {
@@ -17,6 +19,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
   private final Map<String, TypeMetadata> typeMetadataMap;
   private final ServiceProvider serviceProvider;
   private final FederationMetadata federationMetadata;
+  private final RenamedMetadata renamedMetadata;
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
 
@@ -26,6 +29,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     federationMetadata = builder.federationMetadata;
     hasInterfaceOrUnion = builder.hasInterfaceOrUnion;
     hasFieldResolverDefinition = builder.hasFieldResolverDefinition;
+    renamedMetadata = builder.renamedMetadata;
   }
 
   public static Builder newBuilder() {
@@ -39,6 +43,7 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     builder.federationMetadata = copy.getFederationMetadata();
     builder.hasInterfaceOrUnion = copy.isHasInterfaceOrUnion();
     builder.hasFieldResolverDefinition = copy.isHasFieldResolverDefinition();
+    builder.renamedMetadata = copy.getRenamedMetadata();
     return builder;
   }
 
@@ -63,10 +68,9 @@ public class ServiceMetadataImpl implements ServiceMetadata {
   }
 
   @Override
-  public boolean shouldRemoveExternalFields() {
-    return this.hasFieldResolverDirective() || this.isFederationService();
+  public boolean shouldModifyDownStreamQuery() {
+    return this.hasFieldResolverDirective() || this.isFederationService() || this.renamedMetadata.containsRenamedFields();
   }
-
 
   @Override
   public ServiceProvider getServiceProvider() {
@@ -96,12 +100,17 @@ public class ServiceMetadataImpl implements ServiceMetadata {
     return federationMetadata;
   }
 
+  @Override
+  public RenamedMetadata getRenamedMetadata() {
+    return this.renamedMetadata;
+  }
 
   public static final class Builder {
 
     private Map<String, TypeMetadata> typeMetadataMap = new HashMap<>();
     private ServiceProvider serviceProvider;
     private FederationMetadata federationMetadata;
+    private RenamedMetadata renamedMetadata;
     private boolean hasInterfaceOrUnion;
     private boolean hasFieldResolverDefinition;
 
@@ -120,6 +129,10 @@ public class ServiceMetadataImpl implements ServiceMetadata {
 
     public Builder federationMetadata(FederationMetadata val) {
       federationMetadata = val;
+      return this;
+    }
+    public Builder renamedMetadata(RenamedMetadata val){
+      this.renamedMetadata = val;
       return this;
     }
 

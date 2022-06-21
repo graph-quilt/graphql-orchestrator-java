@@ -1,11 +1,5 @@
 package com.intuit.graphql.orchestrator.schema.fold;
 
-import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligibility;
-import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.STATIC_DATAFETCHER_CONTEXT;
-import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectType;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
-
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.EnumValueDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -25,6 +19,9 @@ import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.util.EcoreUtil;
+
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -33,8 +30,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.util.EcoreUtil;
+
+import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligibility;
+import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.STATIC_DATAFETCHER_CONTEXT;
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 
 public class XtextGraphFolder implements Foldable<XtextGraph> {
 
@@ -101,6 +102,7 @@ public class XtextGraphFolder implements Foldable<XtextGraph> {
       builder.entitiesByTypeName(current.getEntitiesByTypeName());
       builder.entityExtensionsByNamespace(current.getEntityExtensionsByNamespace());
       builder.federationMetadataByNamespace(current.getFederationMetadataByNamespace());
+      builder.renamedMetadataByNamespace(current.getRenamedMetadataByNamespace());
     });
   }
 
