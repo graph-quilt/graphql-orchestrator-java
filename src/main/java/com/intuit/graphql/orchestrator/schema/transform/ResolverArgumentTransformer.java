@@ -10,7 +10,7 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirecti
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import graphql.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.Optional;
  * argument directives on any field, this class will validate the inputs to the resolver argument directive, then
  * transform the graph (if the validation checks pass).
  */
-public class ResolverArgumentTransformer implements Transformer<XtextGraph, XtextGraph> {
+public class ResolverArgumentTransformer implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
 
   @VisibleForTesting
   ResolverArgumentDirectiveValidator validator = new ResolverArgumentDirectiveValidator();
@@ -40,7 +40,7 @@ public class ResolverArgumentTransformer implements Transformer<XtextGraph, Xtex
   }
 
   @Override
-  public XtextGraph transform(final XtextGraph source) {
+  public UnifiedXtextGraph transform(final UnifiedXtextGraph source) {
 
     for (final ObjectTypeDefinition objectTypeDefinition : source.objectTypeDefinitionsByName().values()) {
       for (final FieldDefinition fieldDefinition : objectTypeDefinition.getFieldDefinition()) {
@@ -56,7 +56,7 @@ public class ResolverArgumentTransformer implements Transformer<XtextGraph, Xtex
     return source;
   }
 
-  private void transformGraph(XtextGraph source, FieldContext fieldContext, FieldDefinition fieldDefinition) {
+  private void transformGraph(UnifiedXtextGraph source, FieldContext fieldContext, FieldDefinition fieldDefinition) {
 
     ArgumentsDefinition argumentsDefinition = createArgumentsDefinition();
 

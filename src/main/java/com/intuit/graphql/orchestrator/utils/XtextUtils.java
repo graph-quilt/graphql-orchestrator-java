@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
+  public static final String RENAME_DIRECTIVE = "rename";
 
   private XtextUtils() {
   }

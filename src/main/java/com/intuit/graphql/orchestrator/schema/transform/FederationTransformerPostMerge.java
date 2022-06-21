@@ -16,7 +16,7 @@ import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidat
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
@@ -41,29 +41,29 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeE
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static java.lang.String.format;
 
-public class FederationTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
+public class FederationTransformerPostMerge implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
 
   private static final EntityTypeMerger entityTypeMerger = new EntityTypeMerger();
   private final ExternalValidator externalValidator = new ExternalValidator();
   private final KeyDirectiveValidator keyDirectiveValidator = new KeyDirectiveValidator();
 
   @Override
-  public XtextGraph transform(XtextGraph xtextGraph) {
-      List<TypeDefinition> baseEntityTypes = xtextGraph.getEntityExtensionsByNamespace().keySet().stream()
-              .flatMap(namespace -> createEntityMergingContexts(namespace, xtextGraph))
+  public UnifiedXtextGraph transform(UnifiedXtextGraph unifiedXtextGraph) {
+      List<TypeDefinition> baseEntityTypes = unifiedXtextGraph.getEntityExtensionsByNamespace().keySet().stream()
+              .flatMap(namespace -> createEntityMergingContexts(namespace, unifiedXtextGraph))
               .peek(this::validateBaseExtensionCompatibility)
               .map(entityTypeMerger::mergeIntoBaseType)
               .collect(Collectors.toList());
 
       //prune inaccessible info from entity types
-      pruneInaccessibleInfo(xtextGraph, baseEntityTypes);
+      pruneInaccessibleInfo(unifiedXtextGraph, baseEntityTypes);
       baseEntityTypes.forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
 
       //prune inaccessible info from value types
-      pruneInaccessibleInfo(xtextGraph, xtextGraph.getValueTypesByName().values());
+      pruneInaccessibleInfo(unifiedXtextGraph, unifiedXtextGraph.getValueTypesByName().values());
 
-      for (FederationMetadata.EntityExtensionMetadata entityExtensionMetadata : xtextGraph.getEntityExtensionMetadatas()) {
-          Optional<FederationMetadata.EntityMetadata> optionalEntityMetadata = xtextGraph.getFederationMetadataByNamespace()
+      for (FederationMetadata.EntityExtensionMetadata entityExtensionMetadata : unifiedXtextGraph.getEntityExtensionMetadatas()) {
+          Optional<FederationMetadata.EntityMetadata> optionalEntityMetadata = unifiedXtextGraph.getFederationMetadataByNamespace()
                   .values()
                   .stream()
                   .flatMap(federationMetadata -> federationMetadata.getEntitiesByTypename().values().stream())
@@ -78,16 +78,16 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
                       .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
                       .entityExtensionMetadata(entityExtensionMetadata)
                       .build();
-              addToCodeRegistry(fieldContext, dataFetcherContext, xtextGraph);
+              addToCodeRegistry(fieldContext, dataFetcherContext, unifiedXtextGraph);
           });
       }
 
-    return xtextGraph;
+      return unifiedXtextGraph;
   }
 
   private Stream<EntityMergingContext> createEntityMergingContexts(
-      String serviceNamespace, XtextGraph xtextGraph) {
-    return xtextGraph.getEntityExtensionsByNamespace().get(serviceNamespace).values().stream()
+      String serviceNamespace, UnifiedXtextGraph unifiedXtextGraph) {
+    return unifiedXtextGraph.getEntityExtensionsByNamespace().get(serviceNamespace).values().stream()
         .map(
             entityTypeExtension -> {
                 String entityTypename = null;
@@ -97,7 +97,7 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
                   entityTypename = entityTypeExtension.getTypeExtension().getName();
                 }
 
-                TypeDefinition entityBaseType = getBaseEntity(xtextGraph, entityTypename, serviceNamespace);
+                TypeDefinition entityBaseType = getBaseEntity(unifiedXtextGraph, entityTypename, serviceNamespace);
 
                 return EntityMergingContext.builder()
                   .typename(entityTypename)
@@ -108,15 +108,15 @@ public class FederationTransformerPostMerge implements Transformer<XtextGraph, X
             });
   }
 
-  private TypeDefinition getBaseEntity(XtextGraph xtextGraph, String entityTypename, String serviceNamespace) {
-        TypeDefinition entityBaseType = xtextGraph.getEntitiesByTypeName().get(entityTypename);
+  private TypeDefinition getBaseEntity(UnifiedXtextGraph unifiedXtextGraph, String entityTypename, String serviceNamespace) {
+        TypeDefinition entityBaseType = unifiedXtextGraph.getEntitiesByTypeName().get(entityTypename);
         if (Objects.isNull(entityBaseType)) {
             throw new BaseTypeNotFoundException(entityTypename, serviceNamespace);
         }
         return entityBaseType;
     }
 
-  private void pruneInaccessibleInfo(XtextGraph xtextGraph, Collection<TypeDefinition> definitions) {
+  private void pruneInaccessibleInfo(UnifiedXtextGraph xtextGraph, Collection<TypeDefinition> definitions) {
     definitions.forEach(typeDefinition -> {
         if(definitionContainsDirective(typeDefinition, FEDERATION_INACCESSIBLE_DIRECTIVE)) {
             xtextGraph.getTypes().remove(typeDefinition.getName());

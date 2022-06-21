@@ -6,6 +6,8 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.TestServiceProvider;
+import com.intuit.graphql.orchestrator.schema.fold.UnifiedXtextGraphFolder;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder;
 import com.intuit.graphql.utils.XtextTypeUtils;
@@ -30,11 +32,11 @@ public class FieldResolverTransformerPostMergeTestHelper {
         .orElseThrow(() -> new IllegalStateException("Unexpected to get type from ObjectTypeDefinition"));
   }
 
-  public static XtextGraph createTestXtextGraph(String schema) {
+  public static UnifiedXtextGraph createTestUnifiedXtextGraph(String schema) {
     ServiceProvider serviceProvider = TestServiceProvider.newBuilder()
-      .namespace("TEST_SVC")
-      .sdlFiles(ImmutableMap.of("main/graphql/schema.graphqls", schema))
-      .build();
+        .namespace("TEST_SVC")
+        .sdlFiles(ImmutableMap.of("main/graphql/schema.graphqls", schema))
+        .build();
 
     XtextGraph xtextGraph = XtextGraphBuilder.build(serviceProvider);
     List<Transformer<XtextGraph, XtextGraph>> transformers = Arrays.asList(
@@ -47,9 +49,12 @@ public class FieldResolverTransformerPostMergeTestHelper {
     );
 
     for (Transformer<XtextGraph, XtextGraph> transformer : transformers) {
-      xtextGraph = transformer.transform(xtextGraph);
+        xtextGraph = transformer.transform(xtextGraph);
     }
-  return xtextGraph;
 
+    UnifiedXtextGraph unifiedXtextGraph = new UnifiedXtextGraphFolder().fold(
+        UnifiedXtextGraph.emptyGraph(), Arrays.asList(xtextGraph));
+
+    return unifiedXtextGraph;
   }
 }
