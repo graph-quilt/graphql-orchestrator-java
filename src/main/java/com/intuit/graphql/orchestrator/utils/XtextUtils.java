@@ -15,6 +15,11 @@ import com.intuit.graphql.graphQL.Value;
 import com.intuit.graphql.graphQL.ValueWithVariable;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.xtext.EcoreUtil2;
+import org.eclipse.xtext.resource.XtextResourceSet;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,18 +28,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import lombok.NonNull;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
-import org.eclipse.xtext.EcoreUtil2;
-import org.eclipse.xtext.resource.XtextResourceSet;
-
 /**
  * The Xtext utils to get information from the XText AST.
  */
 public class XtextUtils {
 
   public static final String XTEXT_TYPE_FORMAT = "[name:%s, type:%s, description:%s]";
+  public static final String RENAME_DIRECTIVE = "rename";
 
   private XtextUtils() {
   }
@@ -257,18 +257,33 @@ public class XtextUtils {
   }
 
   public static boolean definitionContainsDirective(TypeDefinition definition, String directiveName) {
-    return definition.getDirectives().stream()
-            .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
+    return getDirectiveWithNameFromDefinition(definition, directiveName).isPresent();
   }
 
   public static boolean definitionContainsDirective(TypeExtensionDefinition definition, String directiveName) {
-    return definition.getDirectives().stream()
-            .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
+    return getDirectiveWithNameFromDefinition(definition, directiveName).isPresent();
   }
 
   public static boolean definitionContainsDirective(FieldDefinition definition, String directiveName) {
+    return getDirectiveWithNameFromDefinition(definition, directiveName).isPresent();
+  }
+
+  public static Optional<Directive> getDirectiveWithNameFromDefinition(TypeDefinition definition, String directiveName) {
     return definition.getDirectives().stream()
-            .anyMatch(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()));
+            .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+            .findFirst();
+  }
+
+  public static Optional<Directive> getDirectiveWithNameFromDefinition(TypeExtensionDefinition definition, String directiveName) {
+    return definition.getDirectives().stream()
+            .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+            .findFirst();
+  }
+
+  public static Optional<Directive> getDirectiveWithNameFromDefinition(FieldDefinition definition, String directiveName) {
+    return definition.getDirectives().stream()
+            .filter(directive -> StringUtils.equals(directiveName, directive.getDefinition().getName()))
+            .findFirst();
   }
 
   public static List<Directive> getDirectivesWithNameFromDefinition(FieldDefinition definition, String directiveName) {
