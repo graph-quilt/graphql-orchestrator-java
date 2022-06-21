@@ -38,7 +38,7 @@ public class RenameTransformerTest {
   }
   @Test
   public void testRenamedTypesGetRenamed() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 @rename(to: \"RenamedType\") { test: String }";
@@ -77,7 +77,7 @@ public class RenameTransformerTest {
 
   @Test
   public void testExceptionCaughtFromRenamingExtension() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 { test: String } "
@@ -103,7 +103,7 @@ public class RenameTransformerTest {
 
   @Test
   public void testExceptionCaughtFromRenamingFederationExtension() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 @extends @rename(to: \"RenamedType\") { test: String } ";
@@ -127,7 +127,7 @@ public class RenameTransformerTest {
 
   @Test
   public void testExceptionCaughtFromBlankRename() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 @rename(to: \" \") { test: String } ";
@@ -151,7 +151,7 @@ public class RenameTransformerTest {
 
   @Test
   public void testExceptionCaughtFromRenameWithWhitespace() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 @rename(to: \"Test Rename\") { test: String } ";
@@ -175,7 +175,7 @@ public class RenameTransformerTest {
 
   @Test
   public void testExceptionCaughtFromRenameWithNonAlphanumericChars() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 @rename(to: \"Test Rename!2ef24$\") { test: String } ";
@@ -198,7 +198,7 @@ public class RenameTransformerTest {
   }
   @Test
   public void testExceptionCaughtFromMultiOfSameTypeRenames() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 b: MyType2} "
             + "type MyType1 @rename(to: \"Multi\") { test: String } "
@@ -223,7 +223,7 @@ public class RenameTransformerTest {
 
   @Test
   public void testExceptionCaughtFromMultiOfSameFieldRenames() {
-    String schema = "directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
+    String schema = "directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE "
             + "schema { query: Query } "
             + "type Query { a: MyType1 } "
             + "type MyType1 { test: String @rename(to: \"Multi\") test2: String @rename(to: \"Multi\") } ";

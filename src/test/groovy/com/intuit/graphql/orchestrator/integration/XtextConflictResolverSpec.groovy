@@ -1,8 +1,6 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.google.common.collect.ImmutableMap
-import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.TestHelper
 import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.schema.Operation
 import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
@@ -12,7 +10,6 @@ import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
 import static com.intuit.graphql.orchestrator.testhelpers.JsonTestUtils.jsonToMap
-
 
 class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
 
@@ -127,7 +124,7 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         """
 
     def betaObjectSchema = """
-            directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+            directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
 
             schema {
                 query: Query
@@ -255,7 +252,7 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         """
 
     def betaFieldSchema = """
-            directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+            directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
 
             schema {
                 query: Query
@@ -389,7 +386,7 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         """
 
     def betaInterfaceSchema = """
-            directive @rename(from: String to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
+            directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
 
             schema {
                 query: Query
