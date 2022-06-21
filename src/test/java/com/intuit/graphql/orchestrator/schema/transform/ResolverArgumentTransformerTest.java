@@ -15,7 +15,7 @@ import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirecti
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,7 +28,7 @@ import org.mockito.Mock;
 
 public class ResolverArgumentTransformerTest {
 
-  private XtextGraph source;
+  private UnifiedXtextGraph source;
 
   private ResolverArgumentTransformer transformer;
 
@@ -43,7 +43,7 @@ public class ResolverArgumentTransformerTest {
 
     //assume all validations pass unless otherwise stated.
     doNothing().when(validator)
-        .validateField(any(FieldDefinition.class), any(XtextGraph.class), any(FieldContext.class));
+        .validateField(any(FieldDefinition.class), any(UnifiedXtextGraph.class), any(FieldContext.class));
 
     String schema = "type Query { field(arg: Int @resolver(field: \"a.b.c\")): Int } directive @resolver(field: String) on ARGUMENT_DEFINITION";
 
@@ -58,10 +58,9 @@ public class ResolverArgumentTransformerTest {
         .namespace("test_namespace")
         .build();
 
-    source = XtextGraph.newBuilder()
+    source = UnifiedXtextGraph.newBuilder()
         .query(queryType)
         .types(types)
-        .xtextResourceSet(set)
         .dataFetcherContext(new FieldContext("Query", "field"), originalDataFetcherContext)
         .build();
 
@@ -71,7 +70,7 @@ public class ResolverArgumentTransformerTest {
 
   @Test
   public void resolverArgumentTransformsGraph() {
-    final XtextGraph transformedSource = transformer.transform(source);
+    final UnifiedXtextGraph transformedSource = transformer.transform(source);
 
     assertThat(transformedSource.getResolverArgumentFields()).hasSize(1);
 

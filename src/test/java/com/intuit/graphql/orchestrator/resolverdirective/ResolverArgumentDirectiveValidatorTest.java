@@ -19,7 +19,7 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
 import java.util.Map;
 import java.util.function.Function;
@@ -35,7 +35,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Mock
   public ResolverDirectiveTypeResolver resolver;
 
-  private XtextGraph source;
+  private UnifiedXtextGraph source;
 
   private ResolverArgumentDirectiveValidator validator;
 
@@ -62,10 +62,9 @@ public class ResolverArgumentDirectiveValidatorTest {
     Map<String, TypeDefinition> types = Stream.concat(getAllTypes(set), STANDARD_SCALARS.stream())
         .collect(Collectors.toMap(TypeDefinition::getName, Function.identity()));
 
-    source = XtextGraph.newBuilder()
+    source = UnifiedXtextGraph.newBuilder()
         .query(query)
         .types(types)
-        .xtextResourceSet(set)
         .build();
 
     validator = new ResolverArgumentDirectiveValidator();
@@ -78,7 +77,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Test
   public void validationPassesOnScalars() {
     doReturn(newIntType()).when(resolver)
-        .resolveField(eq("a.b.c"), any(XtextGraph.class), anyString(), any(FieldContext.class));
+        .resolveField(eq("a.b.c"), any(UnifiedXtextGraph.class), anyString(), any(FieldContext.class));
     String resolverSchema = "type Query { other_a(arg: Int @resolver(field: \"a.b.c\")): Int } directive @resolver(field: String) on ARGUMENT_DEFINITION";
 
     final XtextResourceSet set = XtextResourceSetBuilder.singletonSet("schema", resolverSchema);
@@ -91,7 +90,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Test
   public void validationPassesOnEnums() {
     doReturn(enumType).when(resolver)
-        .resolveField(eq("a.b.schema_enum"), any(XtextGraph.class), anyString(), any(FieldContext.class));
+        .resolveField(eq("a.b.schema_enum"), any(UnifiedXtextGraph.class), anyString(), any(FieldContext.class));
 
     String resolverSchema = "type Query { other_a(arg: SchemaEnum @resolver(field: \"a.b.schema_enum\")): Int } "
         + "enum SchemaEnum { a b c } "
@@ -107,7 +106,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Test
   public void validationPassesOnObjects() {
     doReturn(typeA).when(resolver)
-        .resolveField(eq("a"), any(XtextGraph.class), anyString(), any(FieldContext.class));
+        .resolveField(eq("a"), any(UnifiedXtextGraph.class), anyString(), any(FieldContext.class));
 
     String resolverSchema = "type Query { other_a(arg: AInput @resolver(field: \"a\")): Int } "
         + "input AInput { b: BInput } "
@@ -124,7 +123,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Test(expected = ResolverArgumentFieldNotInSchema.class)
   public void fieldDoesNotExistInSchema() {
     doReturn(typeA).when(resolver)
-        .resolveField(eq("a"), any(XtextGraph.class), anyString(), any(FieldContext.class));
+        .resolveField(eq("a"), any(UnifiedXtextGraph.class), anyString(), any(FieldContext.class));
 
     String resolverSchema = "type Query { other_a(arg: AInputWrong @resolver(field: \"a\")): Int } "
         + "input AInputWrong { does_not_exist: Int } "
@@ -140,7 +139,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Test(expected = ResolverArgumentLeafTypeNotSame.class)
   public void notSameLeafName() {
     doReturn(newStringType()).when(resolver)
-        .resolveField(eq("a.b.c"), any(XtextGraph.class), anyString(), any(FieldContext.class));
+        .resolveField(eq("a.b.c"), any(UnifiedXtextGraph.class), anyString(), any(FieldContext.class));
 
     String resolverSchema = "type Query { other_a(arg: Int @resolver(field: \"a.b.c\")): Int } "
         + "directive @resolver(field: String) on ARGUMENT_DEFINITION";
@@ -155,7 +154,7 @@ public class ResolverArgumentDirectiveValidatorTest {
   @Test(expected = ResolverArgumentTypeMismatch.class)
   public void typeMismatch() {
     doReturn(newStringType()).when(resolver)
-        .resolveField(eq("a"), any(XtextGraph.class), anyString(), any(FieldContext.class));
+        .resolveField(eq("a"), any(UnifiedXtextGraph.class), anyString(), any(FieldContext.class));
 
     String resolverSchema = "type Query { other_a(arg: AInput @resolver(field: \"a\")): Int } "
         + "input AInput { b: Int } "

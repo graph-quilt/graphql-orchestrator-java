@@ -9,13 +9,12 @@ import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.TestServiceProvider;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.SchemaTransformationException;
-import com.intuit.graphql.orchestrator.schema.fold.XtextGraphFolder;
+import com.intuit.graphql.orchestrator.schema.fold.UnifiedXtextGraphFolder;
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer.AdapterDirectiveVisitor;
-import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
+import com.intuit.graphql.orchestrator.testhelpers.UnifiedXtextGraphBuilder;
+import com.intuit.graphql.orchestrator.xtext.*;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
-import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
-import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder;
+
 import java.util.Arrays;
 import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
@@ -46,10 +45,10 @@ public class GraphqlAdapterTransformerTest {
         .build(TestServiceProvider.newBuilder().namespace("SVC_bb").serviceType(ServiceType.REST)
             .sdlFiles(ImmutableMap.of("schema.graphqls", schema2)).build());
 
-    XtextGraph stitchedGraph = new XtextGraphFolder()
-        .fold(XtextGraph.emptyGraph(), Arrays.asList(xtextGraph, xtextGraph2));
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder()
+        .fold(UnifiedXtextGraph.emptyGraph(), Arrays.asList(xtextGraph, xtextGraph2));
 
-    XtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
+    UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
 
     ObjectTypeDefinition query = adapterGraph.getOperationMap().get(Operation.QUERY);
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")).getDataFetcherType()).isEqualTo(
@@ -91,10 +90,10 @@ public class GraphqlAdapterTransformerTest {
         .build(TestServiceProvider.newBuilder().namespace("SVC_bb").serviceType(ServiceType.REST)
             .sdlFiles(ImmutableMap.of("schema.graphqls", schema2)).build());
 
-    XtextGraph stitchedGraph = new XtextGraphFolder()
-        .fold(XtextGraph.emptyGraph(), Arrays.asList(xtextGraph, xtextGraph2));
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder()
+        .fold(UnifiedXtextGraph.emptyGraph(), Arrays.asList(xtextGraph, xtextGraph2));
 
-    XtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
+    UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
 
     ObjectTypeDefinition query = adapterGraph.getOperationMap().get(Operation.QUERY);
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")).getDataFetcherType()).isEqualTo(
@@ -129,9 +128,9 @@ public class GraphqlAdapterTransformerTest {
 
     xtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
 
-    XtextGraph stitchedGraph = new XtextGraphFolder()
-        .fold(XtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
-    XtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder()
+        .fold(UnifiedXtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
+    UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
 
     ObjectTypeDefinition query = adapterGraph.getOperationMap().get(Operation.QUERY);
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")).getDataFetcherType()).isEqualTo(
@@ -174,9 +173,9 @@ public class GraphqlAdapterTransformerTest {
 
     xtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
 
-    XtextGraph stitchedGraph = new XtextGraphFolder()
-        .fold(XtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
-    XtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder()
+        .fold(UnifiedXtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
+    UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
 
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a"))).isNotNull();
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")).getNamespace()).isEqualTo("SVC1");
@@ -204,9 +203,9 @@ public class GraphqlAdapterTransformerTest {
 
     xtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
 
-    XtextGraph stitchedGraph = new XtextGraphFolder()
-        .fold(XtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
-    XtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder()
+        .fold(UnifiedXtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
+    UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
 
     ObjectTypeDefinition query = adapterGraph.getOperationMap().get(Operation.QUERY);
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a"))).isNull();
@@ -226,13 +225,13 @@ public class GraphqlAdapterTransformerTest {
         .namespace("SVC1")
         .serviceType(ServiceType.REST).build();
 
-    XtextGraph xtextGraph = XtextGraphBuilder
+    UnifiedXtextGraph unifiedXtextGraph = UnifiedXtextGraphBuilder
         .build(TestServiceProvider.newBuilder().namespace("SVC1").serviceType(ServiceType.REST)
             .sdlFiles(ImmutableMap.of("schema.graphqls", schema)).build());
 
-    xtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
+    unifiedXtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
 
-    assertThatThrownBy(() -> new GraphQLAdapterTransformer().transform(xtextGraph)).isInstanceOf(
+    assertThatThrownBy(() -> new GraphQLAdapterTransformer().transform(unifiedXtextGraph)).isInstanceOf(
         SchemaTransformationException.class)
         .hasMessage(String.format(GraphQLAdapterTransformer.FIELD_NULL_ERROR, "foo"));
 
@@ -258,15 +257,14 @@ public class GraphqlAdapterTransformerTest {
 
     xtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
 
-    XtextGraph stitchedGraph = new XtextGraphFolder()
-        .fold(XtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
-    XtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder()
+        .fold(UnifiedXtextGraph.emptyGraph(), Collections.singletonList(xtextGraph));
+    UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph);
 
     assertThat(adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")).getNamespace()).isEqualTo(
         "SVC1");
 
     assertThat(adapterGraph.getCodeRegistry().size()).isEqualTo(1);
-
   }
 
   @Test
@@ -283,14 +281,13 @@ public class GraphqlAdapterTransformerTest {
         .namespace("SVC1")
         .serviceType(ServiceType.REST).build();
 
-    XtextGraph xtextGraph = XtextGraphBuilder
+    UnifiedXtextGraph unifiedXtextGraph = UnifiedXtextGraphBuilder
         .build(TestServiceProvider.newBuilder().namespace("SVC1").serviceType(ServiceType.REST)
             .sdlFiles(ImmutableMap.of("schema.graphqls", schema)).build());
 
-    xtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
+    unifiedXtextGraph.transform(builder -> builder.codeRegistry(ImmutableMap.of(fieldContext, dataFetcherContext)));
 
-    assertThatThrownBy(() -> new GraphQLAdapterTransformer().transform(xtextGraph)).isInstanceOf(
+    assertThatThrownBy(() -> new GraphQLAdapterTransformer().transform(unifiedXtextGraph)).isInstanceOf(
         SchemaTransformationException.class).hasMessage(AdapterDirectiveVisitor.ERROR_MSG);
-
   }
 }

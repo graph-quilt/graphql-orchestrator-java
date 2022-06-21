@@ -28,7 +28,7 @@ import com.intuit.graphql.graphQL.impl.ArgumentImpl;
 import com.intuit.graphql.orchestrator.federation.exceptions.ExternalFieldNotFoundInBaseException;
 import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public class FederationTransformerPostMergeTest {
   private final FieldDefinition EXTENSION_FIELD_DEFINITION = buildFieldDefinition("testField1", singletonList(EXTERNAL_DIRECTIVE));
 
   @Mock
-  private XtextGraph xtextGraphMock;
+  private UnifiedXtextGraph unifiedXtextGraphMock;
 
   private final FederationTransformerPostMerge subjectUnderTest = new FederationTransformerPostMerge();
 
@@ -70,16 +70,16 @@ public class FederationTransformerPostMergeTest {
 
     entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition));
 
-    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(entitiesByTypeName);
-    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
+    when(unifiedXtextGraphMock.getEntitiesByTypeName()).thenReturn(entitiesByTypeName);
+    when(unifiedXtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
   }
 
   @Test
   public void transform_success() {
-    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
-    assertThat(actual).isSameAs(xtextGraphMock);
-    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
-    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+    UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock);
+    assertThat(actual).isSameAs(unifiedXtextGraphMock);
+    verify(unifiedXtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(unifiedXtextGraphMock, times(2)).getEntityExtensionsByNamespace();
   }
 
   @Test
@@ -106,13 +106,13 @@ public class FederationTransformerPostMergeTest {
     extDefinitionsByName.put("EntityType", typeSystemDefinition);
     extensionsByNamespace.put("testNamespace", extDefinitionsByName);
 
-    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
-    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
+    when(unifiedXtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
+    when(unifiedXtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
 
-    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
-    assertThat(actual).isSameAs(xtextGraphMock);
-    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
-    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+    UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock);
+    assertThat(actual).isSameAs(unifiedXtextGraphMock);
+    verify(unifiedXtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(unifiedXtextGraphMock, times(2)).getEntityExtensionsByNamespace();
   }
 
   @Test
@@ -140,13 +140,13 @@ public class FederationTransformerPostMergeTest {
     extDefinitionsByName.put("EntityType", typeSystemDefinition);
     extensionsByNamespace.put("testNamespace", extDefinitionsByName);
 
-    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
-    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
+    when(unifiedXtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
+    when(unifiedXtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
 
-    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
-    assertThat(actual).isSameAs(xtextGraphMock);
-    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
-    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+    UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock);
+    assertThat(actual).isSameAs(unifiedXtextGraphMock);
+    verify(unifiedXtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(unifiedXtextGraphMock, times(2)).getEntityExtensionsByNamespace();
   }
 
   @Test(expected = TypeConflictException.class)
@@ -173,13 +173,13 @@ public class FederationTransformerPostMergeTest {
     extDefinitionsByName.put("EntityType", typeSystemDefinition);
     extensionsByNamespace.put("testNamespace", extDefinitionsByName);
 
-    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
-    when(xtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
+    when(unifiedXtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(extensionsByNamespace);
+    when(unifiedXtextGraphMock.getEntitiesByTypeName()).thenReturn(baseDefinitionsByName);
 
-    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
-    assertThat(actual).isSameAs(xtextGraphMock);
-    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
-    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+    UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock);
+    assertThat(actual).isSameAs(unifiedXtextGraphMock);
+    verify(unifiedXtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(unifiedXtextGraphMock, times(2)).getEntityExtensionsByNamespace();
   }
 
   @Test(expected = SharedOwnershipException.class)
@@ -192,12 +192,12 @@ public class FederationTransformerPostMergeTest {
     typeSystemDefinition.setType(objectTypeExtension);
     entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition));
 
-    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
+    when(unifiedXtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
 
-    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
-    assertThat(actual).isSameAs(xtextGraphMock);
-    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
-    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+    UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock);
+    assertThat(actual).isSameAs(unifiedXtextGraphMock);
+    verify(unifiedXtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(unifiedXtextGraphMock, times(2)).getEntityExtensionsByNamespace();
   }
 
   @Test(expected = ExternalFieldNotFoundInBaseException.class)
@@ -210,12 +210,12 @@ public class FederationTransformerPostMergeTest {
 
     typeSystemDefinition.setType(objectTypeExtension);
     entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition));
-    when(xtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
+    when(unifiedXtextGraphMock.getEntityExtensionsByNamespace()).thenReturn(entityExtensionsByNamespace);
 
-    XtextGraph actual = subjectUnderTest.transform(xtextGraphMock);
-    assertThat(actual).isSameAs(xtextGraphMock);
-    verify(xtextGraphMock, times(1)).getEntitiesByTypeName();
-    verify(xtextGraphMock, times(2)).getEntityExtensionsByNamespace();
+    UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock);
+    assertThat(actual).isSameAs(unifiedXtextGraphMock);
+    verify(unifiedXtextGraphMock, times(1)).getEntitiesByTypeName();
+    verify(unifiedXtextGraphMock, times(2)).getEntityExtensionsByNamespace();
   }
 
   private Directive createMockKeyDirectory(String fieldSet) {

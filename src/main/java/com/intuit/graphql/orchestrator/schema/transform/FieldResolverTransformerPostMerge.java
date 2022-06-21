@@ -29,7 +29,7 @@ import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,21 +40,21 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph, XtextGraph> {
+public class FieldResolverTransformerPostMerge implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
 
   @Override
-  public XtextGraph transform(XtextGraph sourceXtextGraph) {
-    if (CollectionUtils.isNotEmpty(sourceXtextGraph.getFieldResolverContexts())) {
-      List<FieldResolverContext> fieldResolverContexts = sourceXtextGraph.getFieldResolverContexts()
+  public UnifiedXtextGraph transform(UnifiedXtextGraph sourceUnifiedXtextGraph) {
+    if (CollectionUtils.isNotEmpty(sourceUnifiedXtextGraph.getFieldResolverContexts())) {
+      List<FieldResolverContext> fieldResolverContexts = sourceUnifiedXtextGraph.getFieldResolverContexts()
               .stream()
               .peek(FieldResolverValidator::validateRequiredFields)
-              .peek(fieldResolverContext -> validateTargetTypeExists(fieldResolverContext,sourceXtextGraph))
-              .peek(fieldResolverContext -> validateFieldResolverType(fieldResolverContext,sourceXtextGraph))
-              .peek(fieldResolverContext -> replacePlaceholderTypeWithActual(fieldResolverContext, sourceXtextGraph))
-              .map(fieldResolverContext -> updateWithTargetFieldData(fieldResolverContext, sourceXtextGraph))
-              .peek(fieldResolverContext -> addToParentTypeMetadata(fieldResolverContext, sourceXtextGraph))
+              .peek(fieldResolverContext -> validateTargetTypeExists(fieldResolverContext,sourceUnifiedXtextGraph))
+              .peek(fieldResolverContext -> validateFieldResolverType(fieldResolverContext,sourceUnifiedXtextGraph))
+              .peek(fieldResolverContext -> replacePlaceholderTypeWithActual(fieldResolverContext, sourceUnifiedXtextGraph))
+              .map(fieldResolverContext -> updateWithTargetFieldData(fieldResolverContext, sourceUnifiedXtextGraph))
+              .peek(fieldResolverContext -> addToParentTypeMetadata(fieldResolverContext, sourceUnifiedXtextGraph))
               .collect(Collectors.toList());
-      XtextGraph newXtextGraph = sourceXtextGraph.transform(builder -> builder
+      UnifiedXtextGraph newUnifiedXtextGraph = sourceUnifiedXtextGraph.transform(builder -> builder
               .clearFieldResolverContexts()
               .fieldResolverContexts(fieldResolverContexts)
       );
@@ -62,25 +62,25 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
               .forEach(fieldResolverContext -> {
                 FieldContext fieldContext = new FieldContext(fieldResolverContext.getParentTypename(), fieldResolverContext.getFieldName());
                 DataFetcherContext dataFetcherContext = createDataFetcherContext(fieldResolverContext);
-                addToCodeRegistry(fieldContext, dataFetcherContext, newXtextGraph);
+                addToCodeRegistry(fieldContext, dataFetcherContext, newUnifiedXtextGraph);
               });
 
-      return newXtextGraph;
+      return newUnifiedXtextGraph;
     }
-    return sourceXtextGraph;
+    return sourceUnifiedXtextGraph;
   }
 
-  private void addToParentTypeMetadata(FieldResolverContext fieldResolverContext, XtextGraph xtextGraph) {
-    Map<String, TypeMetadata> typeMetadatas = xtextGraph.getTypeMetadatas();
+  private void addToParentTypeMetadata(FieldResolverContext fieldResolverContext, UnifiedXtextGraph unifiedXtextGraph) {
+    Map<String, TypeMetadata> typeMetadatas = unifiedXtextGraph.getTypeMetadatas();
     TypeMetadata parentTypeMetadata = typeMetadatas.get(fieldResolverContext.getParentTypename());
     parentTypeMetadata.addFieldResolverContext(fieldResolverContext);
   }
 
-  private void validateTargetTypeExists(FieldResolverContext fieldResolverContext, XtextGraph sourceXtextGraph) {
+  private void validateTargetTypeExists(FieldResolverContext fieldResolverContext, UnifiedXtextGraph unifiedXtextGraph) {
     FieldDefinition fieldDefinition = fieldResolverContext.getFieldDefinition();
     NamedType fieldType = fieldDefinition.getNamedType();
     if (!XtextTypeUtils.isPrimitiveType(fieldType)) {
-      TypeDefinition actualTypeDefinition = sourceXtextGraph.getType(fieldType);
+      TypeDefinition actualTypeDefinition = unifiedXtextGraph.getType(fieldType);
       if (Objects.isNull(actualTypeDefinition)) {
         String serviceName = fieldResolverContext.getServiceNamespace();
         String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
@@ -92,7 +92,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     }
   }
 
-  private void validateFieldResolverType(FieldResolverContext fieldResolverContext, XtextGraph sourceXtextGraph) {
+  private void validateFieldResolverType(FieldResolverContext fieldResolverContext, UnifiedXtextGraph sourceXtextGraph) {
     final ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
     final FieldDefinition targetFieldDefinition = getFieldDefinitionByFQN(resolverDirectiveDefinition.getField(), sourceXtextGraph);
     NamedType fieldResolverType = fieldResolverContext.getFieldDefinition().getNamedType();
@@ -104,7 +104,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     }
   }
 
-  private FieldResolverContext updateWithTargetFieldData(final FieldResolverContext fieldResolverContext, final XtextGraph sourceXtextGraph) {
+  private FieldResolverContext updateWithTargetFieldData(final FieldResolverContext fieldResolverContext, final UnifiedXtextGraph sourceXtextGraph) {
 
     final ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
 
@@ -176,7 +176,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
   }
 
   private void replacePlaceholderTypeWithActual(FieldResolverContext fieldResolverContext,
-                                                XtextGraph sourceXtextGraph) {
+                                                UnifiedXtextGraph sourceXtextGraph) {
 
     FieldDefinition fieldDefinition = fieldResolverContext.getFieldDefinition();
     NamedType fieldType = fieldDefinition.getNamedType();
@@ -198,7 +198,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
     // else primitive, no type replacement needed
   }
 
-  private FieldDefinition getFieldDefinitionByFQN(final String queryFieldFQN, XtextGraph xtextGraph) {
+  private FieldDefinition getFieldDefinitionByFQN(final String queryFieldFQN, UnifiedXtextGraph unifiedXtextGraph) {
 
     String queryFieldFQNNoQuery = StringUtils.removeStart(queryFieldFQN ,FQN_KEYWORD_QUERY + FQN_FIELD_SEPARATOR); // remove if exists
 
@@ -210,7 +210,7 @@ public class FieldResolverTransformerPostMerge implements Transformer<XtextGraph
 
     FieldDefinition fieldDefinition = null;
 
-    TypeDefinition currentParentType = xtextGraph.getOperationMap().get(Operation.QUERY);
+    TypeDefinition currentParentType = unifiedXtextGraph.getOperationMap().get(Operation.QUERY);
     for (int i = 0; i < queryFieldFQNTokens.length; i++) {
       String fieldName = queryFieldFQNTokens[i];
       List<FieldDefinition> fieldDefinitionList = getFieldDefinitions(currentParentType);

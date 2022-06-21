@@ -24,7 +24,7 @@ import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
@@ -50,8 +50,8 @@ public class XtextStitcherTest {
     final ObjectTypeDefinition testType = XtextUtils.getObjectType("TestType", testSchema);
     final FieldDefinition testField = testType.getFieldDefinition().get(0);
 
-    Transformer<XtextGraph, XtextGraph> transformer = source -> {
-      //final XtextGraph graphWithResolver = XtextGraph.emptyGraph();
+    Transformer<UnifiedXtextGraph, UnifiedXtextGraph> transformer = source -> {
+      //final UnifiedXtextGraph graphWithResolver = UnifiedXtextGraph.emptyGraph();
       source.getCodeRegistry().put(testFieldContext, DataFetcherContext.newBuilder()
           .namespace("test_namespace")
           .dataFetcherType(RESOLVER_ARGUMENT)
