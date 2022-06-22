@@ -77,14 +77,15 @@ class BaseIntegrationTestSpecification extends Specification {
     }
 
     static ExecutionInput createExecutionInput(String graphqlQuery) {
-        ExecutionInput.newExecutionInput()
-                .query(graphqlQuery)
-                .variables(Collections.emptyMap())
-                .build()
+        createExecutionInput(graphqlQuery, Collections.emptyMap())
     }
 
     ExecutionInput getCapturedDownstreamExecutionInput() {
         return testService.getExecutionInputArgumentCaptor().getValue()
+    }
+
+    ExecutionInput getCapturedDownstreamExecutionInput(SimpleMockServiceProvider simpleMockServiceProvider) {
+        return simpleMockServiceProvider.getExecutionInputArgumentCaptor().getValue()
     }
 
     Object toDocument(String query) {

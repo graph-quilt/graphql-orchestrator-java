@@ -41,7 +41,11 @@ class DirectivesOnVariableDefinitionSpec extends BaseIntegrationTestSpecificatio
             }
         '''
 
-        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
+        def variables = [
+                stringVar: "StringVarValue"
+        ]
+
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery, variables)
 
         when:
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
