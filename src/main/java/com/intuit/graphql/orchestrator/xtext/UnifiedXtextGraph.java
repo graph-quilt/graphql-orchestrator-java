@@ -30,6 +30,7 @@ public class UnifiedXtextGraph {
   private final Map<String, TypeDefinition> types;
   private final Map<String, TypeMetadata> typeMetadatas;
   private final List<FieldResolverContext> fieldResolverContexts;
+  private final List<FieldContext> entityFetcherContexts;
 
   private final boolean hasInterfaceOrUnion;
   private final boolean hasFieldResolverDefinition;
@@ -66,6 +67,7 @@ public class UnifiedXtextGraph {
     entityExtensionMetadatas = builder.entityExtensionMetadatas;
     federationMetadataByNamespace = builder.federationMetadataByNamespace;
     renamedMetadataByNamespace = builder.renamedMetadataByNamespace;
+    entityFetcherContexts = builder.entityFetcherContexts;
   }
 
     /**
@@ -100,6 +102,7 @@ public class UnifiedXtextGraph {
     builder.entityExtensionMetadatas = copy.entityExtensionMetadatas;
     builder.federationMetadataByNamespace = copy.federationMetadataByNamespace;
     builder.renamedMetadataByNamespace = copy.renamedMetadataByNamespace;
+    builder.entityFetcherContexts = copy.entityFetcherContexts;
     return builder;
   }
 
@@ -231,6 +234,7 @@ public class UnifiedXtextGraph {
     private Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>();
     private List<EntityExtensionMetadata> entityExtensionMetadatas = new ArrayList<>();
     private List<FieldResolverContext> fieldResolverContexts = new ArrayList<>();
+    private List<FieldContext> entityFetcherContexts = new ArrayList<>();
     private Map<String, FederationMetadata> federationMetadataByNamespace = new HashMap<>();
     private Map<String, RenamedMetadata> renamedMetadataByNamespace = new HashMap<>();
 
@@ -349,6 +353,12 @@ public class UnifiedXtextGraph {
 
     public Builder fieldResolverContexts(List<FieldResolverContext> fieldResolverContexts) {
       this.fieldResolverContexts.addAll(fieldResolverContexts);
+      return this;
+    }
+
+
+    public Builder entityFetcherContexts(List<FieldContext> fieldContexts) {
+      this.entityFetcherContexts.addAll(fieldContexts);
       return this;
     }
 
