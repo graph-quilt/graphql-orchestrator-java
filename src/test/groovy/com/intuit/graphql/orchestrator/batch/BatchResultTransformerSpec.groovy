@@ -1,16 +1,17 @@
 package com.intuit.graphql.orchestrator.batch
 
-import static graphql.execution.MergedField.newMergedField;
-import static graphql.language.Field.newField;
+import spock.lang.Specification
 
-import graphql.GraphQLError;
-import graphql.GraphqlErrorBuilder;
-import graphql.execution.DataFetcherResult;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.DataFetchingEnvironmentImpl;
-import helpers.BaseIntegrationTestSpecification
+import static graphql.execution.MergedField.newMergedField
+import static graphql.language.Field.newField
 
-class BatchResultTransformerSpec extends BaseIntegrationTestSpecification {
+import graphql.GraphQLError
+import graphql.GraphqlErrorBuilder
+import graphql.execution.DataFetcherResult
+import graphql.schema.DataFetchingEnvironment
+import graphql.schema.DataFetchingEnvironmentImpl
+
+class BatchResultTransformerSpec extends Specification {
 
     private Map<String, Object> batchResults
     private List<DataFetchingEnvironment> environments

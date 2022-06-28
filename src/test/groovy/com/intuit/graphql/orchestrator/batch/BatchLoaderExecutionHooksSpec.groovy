@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator.batch
 
-import graphql.ExecutionInput;
-import graphql.GraphQLContext;
-import helpers.BaseIntegrationTestSpecification
+import graphql.ExecutionInput
+import graphql.GraphQLContext
+import spock.lang.Specification
 
-class BatchLoaderExecutionHooksSpec extends BaseIntegrationTestSpecification {
+class BatchLoaderExecutionHooksSpec extends Specification {
 
     void testDefaultMethods() {
         given:
