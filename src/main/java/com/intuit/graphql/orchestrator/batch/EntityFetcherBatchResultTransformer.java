@@ -4,6 +4,8 @@ import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetchingEnvironment;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -43,19 +45,15 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
         }
 
         List<DataFetcherResult<Object>> dataFetcherResults = new ArrayList<>();
-        List<Map<String, Object>> _entities = (dataFetcherResult.getData().isEmpty()) ? Collections.emptyList() : (List<Map<String, Object>>) dataFetcherResult.getData().get(_ENTITIES_FIELD_NAME);
-        if(!_entities.isEmpty()) {
+        List<Map<String, Object>> _entities = (MapUtils.isEmpty(dataFetcherResult.getData())) ? Collections.emptyList() : (List<Map<String, Object>>) dataFetcherResult.getData().get(_ENTITIES_FIELD_NAME);
+        if(CollectionUtils.isNotEmpty(_entities)) {
             _entities.forEach(entityResult -> {
-                if(entityResult != null) {
-                    List<GraphQLError> errors = (dataFetcherResult.hasErrors()) ? Collections.emptyList() : dataFetcherResult.getErrors();
+                Object fieldData = (entityResult != null) ? entityResult.get(this.extFieldName) : null;
 
-
-                    dataFetcherResults.add(DataFetcherResult.newResult()
-                            .data(entityResult.get(this.extFieldName))
-                            .errors(errors)
-                            .build()
-                    );
-                }
+                dataFetcherResults.add(DataFetcherResult.newResult()
+                        .data(fieldData)
+                        .build()
+                );
             });
         } else {
             throw EntityFetchingException.builder()

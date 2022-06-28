@@ -81,6 +81,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                     .serviceNameSpace(metadata.getServiceProvider().getNameSpace())
                     .fieldName(fieldName)
                     .parentTypeName(metadata.getTypeName())
+                    .additionalInfo("No Key Directive Found")
                     .build();
         }
 
@@ -96,7 +97,6 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
     }
 
     private InlineFragment createEntityRequestInlineFragment(DataFetchingEnvironment dfe) {
-        String entityTypeName = this.entityTypeName;
         Field originalField = dfe.getField();
 
         SelectionSet fieldSelectionSet = dfe.getField().getSelectionSet();
@@ -107,7 +107,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         }
 
         InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
-        inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(entityTypeName).build());
+        inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(this.entityTypeName).build());
         inlineFragmentBuilder.selectionSet(
                 SelectionSet.newSelectionSet()
                         .selection(
