@@ -6,9 +6,9 @@ import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.schema.SchemaTransformationException
 import com.intuit.graphql.orchestrator.xtext.XtextGraph
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class AllTypesTransformerSpec extends BaseIntegrationTestSpecification {
+class AllTypesTransformerSpec extends Specification {
 
     void "test Operation Types Are Filtered By Transformer"() {
         given:

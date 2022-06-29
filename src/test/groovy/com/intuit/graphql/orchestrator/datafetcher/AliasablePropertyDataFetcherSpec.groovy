@@ -4,9 +4,9 @@ import graphql.execution.MergedField
 import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
 import graphql.schema.DataFetchingEnvironmentImpl
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class AliasablePropertyDataFetcherSpec extends BaseIntegrationTestSpecification {
+class AliasablePropertyDataFetcherSpec extends Specification {
 
     private static final MergedField aliasField = MergedField.newMergedField()
             .addField(Field.newField().name("original").alias("alias").build()).build()

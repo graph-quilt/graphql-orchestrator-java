@@ -1,9 +1,9 @@
 package com.intuit.graphql.orchestrator.batch
 
 import graphql.language.*
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
+class VariableReferenceExtractorSpec extends Specification {
 
     private VariableReference reference = VariableReference.newVariableReference()
             .name("test_reference")

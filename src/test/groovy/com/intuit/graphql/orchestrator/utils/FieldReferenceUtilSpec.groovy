@@ -1,8 +1,8 @@
 package com.intuit.graphql.orchestrator.utils
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class FieldReferenceUtilSpec extends BaseIntegrationTestSpecification {
+class FieldReferenceUtilSpec extends Specification {
 
     void getAllFieldReference_fromEmtyString_returnsEmptySet() {
         given:

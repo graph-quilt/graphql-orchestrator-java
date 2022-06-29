@@ -22,14 +22,14 @@ import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder
 import graphql.schema.FieldCoordinates
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLObjectType
-import helpers.BaseIntegrationTestSpecification
 import org.eclipse.xtext.resource.XtextResourceSet
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT
 import static graphql.schema.FieldCoordinates.coordinates
 import static java.util.Collections.singletonList
 
-class XtextStitcherSpec extends BaseIntegrationTestSpecification {
+class XtextStitcherSpec extends Specification {
 
     private static final String schema = '''
         type TestType { 

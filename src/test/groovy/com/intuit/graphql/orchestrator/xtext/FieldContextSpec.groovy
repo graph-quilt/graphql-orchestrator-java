@@ -1,9 +1,9 @@
 package com.intuit.graphql.orchestrator.xtext
 
-import helpers.BaseIntegrationTestSpecification
 import org.apache.commons.lang3.StringUtils
+import spock.lang.Specification
 
-class FieldContextSpec extends BaseIntegrationTestSpecification {
+class FieldContextSpec extends Specification {
 
     private static final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
     private static final String TEST_FIELD_NAME = "testFieldName"

@@ -6,8 +6,8 @@ import graphql.language.OperationDefinition
 import graphql.schema.DataFetchingEnvironment
 import graphql.schema.DataFetchingEnvironmentImpl
 import graphql.schema.GraphQLSchema
-import helpers.BaseIntegrationTestSpecification
 import org.dataloader.DataLoaderRegistry
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
@@ -15,7 +15,7 @@ import static com.intuit.graphql.orchestrator.GraphQLOrchestrator.DATA_LOADER_RE
 import static com.intuit.graphql.orchestrator.TestHelper.query
 import static org.mockito.Mockito.mock
 
-class ArgumentResolverSpec extends BaseIntegrationTestSpecification {
+class ArgumentResolverSpec extends Specification {
 
     private ArgumentResolver argumentResolver
 

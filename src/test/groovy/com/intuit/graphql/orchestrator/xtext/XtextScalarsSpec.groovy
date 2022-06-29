@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator.xtext
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.xtext.XtextScalars.*
 
-class XtextScalarsSpec extends BaseIntegrationTestSpecification {
+class XtextScalarsSpec extends Specification {
 
     void testDoesNotReturnSameInstance() {
         expect:

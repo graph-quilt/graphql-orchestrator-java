@@ -7,8 +7,8 @@ import graphql.language.Document
 import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.language.OperationDefinition.Operation
-import helpers.BaseIntegrationTestSpecification
 import lombok.extern.slf4j.Slf4j
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture
  * InputObjectTypeExtension TODO ScalarTypeExtension.
  */
 @Slf4j
-class TypeExtensionsSpec extends BaseIntegrationTestSpecification {
+class TypeExtensionsSpec extends Specification {
 
     void canQueryWithResultTypeExtendedInterface() {
         given:

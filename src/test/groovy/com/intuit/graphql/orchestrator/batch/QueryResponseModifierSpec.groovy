@@ -1,11 +1,11 @@
 package com.intuit.graphql.orchestrator.batch
 
 import graphql.execution.DataFetcherResult
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static org.assertj.core.api.Assertions.assertThat
 
-class QueryResponseModifierSpec extends BaseIntegrationTestSpecification {
+class QueryResponseModifierSpec extends Specification {
 
     void defaultResponseModifierReturnsDataFetcherResult() {
         given:

@@ -8,11 +8,11 @@ import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.schema.GraphQLSchema
 import graphql.schema.idl.RuntimeWiring
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.TestHelper.document
 
-class ArgumentAppenderVisitorSpec extends BaseIntegrationTestSpecification {
+class ArgumentAppenderVisitorSpec extends Specification {
 
     private RuntimeWiring schemaRuntimeWiring = RuntimeWiring.newRuntimeWiring()
             .type("Query", { builder -> builder.defaultDataFetcher({ env -> null }) })

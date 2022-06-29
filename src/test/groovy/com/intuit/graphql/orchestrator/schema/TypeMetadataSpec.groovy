@@ -2,10 +2,10 @@ package com.intuit.graphql.orchestrator.schema
 
 import com.intuit.graphql.graphQL.TypeDefinition
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 import spock.lang.Subject
 
-class TypeMetadataSpec extends BaseIntegrationTestSpecification {
+class TypeMetadataSpec extends Specification {
 
     private static final String TEST_FIELD_NAME = "testField"
 

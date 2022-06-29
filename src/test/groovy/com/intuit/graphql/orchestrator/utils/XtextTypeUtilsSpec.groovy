@@ -2,11 +2,11 @@ package com.intuit.graphql.orchestrator.utils
 
 import com.intuit.graphql.graphQL.*
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.*
 
-class XtextTypeUtilsSpec extends BaseIntegrationTestSpecification {
+class XtextTypeUtilsSpec extends Specification {
 
     void compareWrappedTypesTest() {
         given:

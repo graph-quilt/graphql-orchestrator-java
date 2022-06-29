@@ -1,9 +1,9 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
 import com.intuit.graphql.orchestrator.xtext.FieldContext
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ResolverArgumentPrematureLeafTypeSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentPrematureLeafTypeSpec extends Specification {
 
     void producesCorrectErrorMessage() {
         given:

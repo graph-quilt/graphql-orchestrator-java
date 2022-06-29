@@ -11,9 +11,9 @@ import com.intuit.graphql.orchestrator.stitching.XtextStitcher
 import com.intuit.graphql.orchestrator.xtext.XtextGraph
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder
 import graphql.schema.GraphQLObjectType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ExceptionSpec extends BaseIntegrationTestSpecification {
+class ExceptionSpec extends Specification {
 
     void NestedTypePrimitiveAndObjectType_TypeConflictExceptionTest() {
         given:

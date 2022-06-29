@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.schema.transform
 
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirectiveValidator
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getOperationType
@@ -14,12 +15,11 @@ import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import com.intuit.graphql.orchestrator.xtext.FieldContext
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder
-import helpers.BaseIntegrationTestSpecification
 import org.eclipse.xtext.resource.XtextResourceSet
 
 import java.util.stream.Stream
 
-class ResolverArgumentTransformerSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentTransformerSpec extends Specification {
 
     UnifiedXtextGraph source
 

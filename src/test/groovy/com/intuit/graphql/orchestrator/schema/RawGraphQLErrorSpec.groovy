@@ -1,9 +1,9 @@
 package com.intuit.graphql.orchestrator.schema
 
 import graphql.ErrorType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class RawGraphQLErrorSpec extends BaseIntegrationTestSpecification {
+class RawGraphQLErrorSpec extends Specification {
 
     Map<String, Number> location
     Map<String, Object> extensions

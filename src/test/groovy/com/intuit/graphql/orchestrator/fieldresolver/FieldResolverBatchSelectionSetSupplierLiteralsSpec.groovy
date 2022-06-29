@@ -11,13 +11,13 @@ import graphql.language.ObjectValue
 import graphql.language.SelectionSet
 import graphql.language.*
 import graphql.schema.DataFetchingEnvironment
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition
 import static java.util.Collections.singletonList
 
-class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegrationTestSpecification {
+class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 

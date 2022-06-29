@@ -1,7 +1,7 @@
 package com.intuit.graphql.orchestrator.batch
 
-import helpers.BaseIntegrationTestSpecification
 import org.junit.Ignore
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.TestHelper.fragmentDefinitions
 import static com.intuit.graphql.orchestrator.TestHelper.schema
@@ -12,7 +12,7 @@ import graphql.language.OperationDefinition
 import graphql.schema.GraphQLSchema
 import graphql.schema.idl.RuntimeWiring
 
-class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
+class QueryOperationModifierSpec extends Specification {
 
     private String schema = '''
         type Query {
@@ -20,16 +20,16 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
           complexFoo: [Foo!]!
           fooUnion: Union
         }
-        
+
         interface Foo {
           a: String
         }
-        
+
         type Bar implements Foo {
           a: String
           b: String
         }
-        
+
         union Union = Bar
     '''
 

@@ -3,11 +3,11 @@ package com.intuit.graphql.orchestrator.xtext
 import com.intuit.graphql.graphQL.ObjectTypeDefinition
 import com.intuit.graphql.graphQL.SchemaDefinition
 import com.intuit.graphql.orchestrator.schema.Operation
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.TestHelper.toXtextResourceSet
 
-class GraphQLResourceSetSpec extends BaseIntegrationTestSpecification {
+class GraphQLResourceSetSpec extends Specification {
 
     private static GraphQLResourceSet SCHEMA
     private static GraphQLResourceSet TYPE

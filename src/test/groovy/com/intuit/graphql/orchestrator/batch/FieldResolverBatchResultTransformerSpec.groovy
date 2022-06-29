@@ -7,12 +7,12 @@ import graphql.GraphQLError
 import graphql.GraphqlErrorBuilder
 import graphql.execution.DataFetcherResult
 import graphql.schema.DataFetchingEnvironment
-import helpers.BaseIntegrationTestSpecification
 
 import org.apache.commons.collections4.MapUtils
 import org.apache.commons.lang3.ArrayUtils
+import spock.lang.Specification
 
-class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecification {
+class FieldResolverBatchResultTransformerSpec extends Specification {
 
     private static final String[] RESOLVER_SELECTION_SET = [ "a", "b", "c" ]
 

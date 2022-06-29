@@ -7,9 +7,9 @@ import graphql.language.TypeName
 import graphql.schema.GraphQLList
 import graphql.schema.GraphQLNonNull
 import graphql.schema.GraphQLObjectType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class GraphQLUtilSpec extends BaseIntegrationTestSpecification {
+class GraphQLUtilSpec extends Specification {
 
     void canCreateTypeFromGraphQLObjectType() {
         given:

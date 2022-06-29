@@ -16,7 +16,7 @@ import graphql.schema.DataFetchingEnvironment
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLObjectType
 import graphql.schema.GraphQLSchema
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
@@ -33,7 +33,7 @@ import static java.util.Arrays.asList
 import static java.util.Collections.emptyMap
 import static java.util.Collections.singletonList
 
-class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
+class GraphQLServiceBatchLoaderSpec extends Specification {
 
     static final GraphQLObjectType FIRST_TYPE = GraphQLObjectType.newObject().name("FirstType")
             .field(GraphQLFieldDefinition.newFieldDefinition()

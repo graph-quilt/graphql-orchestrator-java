@@ -1,11 +1,11 @@
 package com.intuit.graphql.orchestrator.utils
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.attachNamespace
 import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions
 
-class DescriptionUtilsSpec extends BaseIntegrationTestSpecification {
+class DescriptionUtilsSpec extends Specification {
 
     void attachNameSpaceTest(){
         expect:

@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator.utils
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.getUniqueIdFromFieldSet
 
-class FederationUtilsSpec extends BaseIntegrationTestSpecification {
+class FederationUtilsSpec extends Specification {
     void canCreateUniqueIdFromFieldSetWithoutChildren() {
         given:
         String fieldSet = "{ foo bar c1}"

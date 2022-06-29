@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.batch
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.TestHelper.document
 import static com.intuit.graphql.orchestrator.TestHelper.fragmentDefinitions
@@ -16,7 +16,7 @@ import graphql.language.FragmentDefinition
 import graphql.schema.DataFetchingEnvironment
 import graphql.schema.GraphQLSchema
 
-class MergedFieldModifierSpec extends BaseIntegrationTestSpecification {
+class MergedFieldModifierSpec extends Specification {
 
     private String schema = '''
         schema {

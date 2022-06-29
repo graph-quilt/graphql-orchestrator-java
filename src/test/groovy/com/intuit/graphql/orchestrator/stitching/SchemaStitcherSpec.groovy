@@ -1,8 +1,8 @@
 package com.intuit.graphql.orchestrator.stitching
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class SchemaStitcherSpec extends BaseIntegrationTestSpecification {
+class SchemaStitcherSpec extends Specification {
 
     SchemaStitcher.Builder sfBuilder
 

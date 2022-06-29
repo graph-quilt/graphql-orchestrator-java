@@ -6,7 +6,7 @@ import graphql.execution.DataFetcherResult
 import graphql.execution.ExecutionStepInfo
 import graphql.language.Document
 import graphql.schema.DataFetchingEnvironment
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import java.util.stream.Collectors
 
@@ -14,7 +14,7 @@ import static com.intuit.graphql.orchestrator.TestHelper.document
 import static com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.buildCompleteExecutionStepInfo
 import static graphql.schema.DataFetchingEnvironmentImpl.newDataFetchingEnvironment
 
-class SubtreeBatchResultTransformerSpec extends BaseIntegrationTestSpecification {
+class SubtreeBatchResultTransformerSpec extends Specification {
     private String query = '''
         query {
             consumer {

@@ -6,11 +6,11 @@ import graphql.schema.GraphQLSchema
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.SchemaGenerator
 import graphql.schema.idl.SchemaParser
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser
 
-class VariableDefinitionFilterSpec extends BaseIntegrationTestSpecification {
+class VariableDefinitionFilterSpec extends Specification {
 
     private String schema = '''
         schema {

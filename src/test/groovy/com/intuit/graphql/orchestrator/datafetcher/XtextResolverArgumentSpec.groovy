@@ -1,8 +1,8 @@
 package com.intuit.graphql.orchestrator.datafetcher
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class XtextResolverArgumentSpec extends BaseIntegrationTestSpecification {
+class XtextResolverArgumentSpec extends Specification {
 
     void convertsResolverArgumentFieldsToQueries() {
         given:

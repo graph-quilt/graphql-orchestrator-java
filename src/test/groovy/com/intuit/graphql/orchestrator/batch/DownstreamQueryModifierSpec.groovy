@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.batch
 
-import helpers.BaseIntegrationTestSpecification
-
 import com.google.common.collect.ImmutableSet
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata
@@ -23,6 +21,7 @@ import graphql.schema.FieldCoordinates
 import graphql.schema.GraphQLFieldsContainer
 import graphql.schema.GraphQLScalarType
 import graphql.schema.GraphQLSchema
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema
 import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema
@@ -30,7 +29,7 @@ import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryM
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll
 import static graphql.schema.FieldCoordinates.coordinates
 
-class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
+class DownstreamQueryModifierSpec extends Specification {
 
     private ServiceMetadataImpl serviceMetadataMock
 

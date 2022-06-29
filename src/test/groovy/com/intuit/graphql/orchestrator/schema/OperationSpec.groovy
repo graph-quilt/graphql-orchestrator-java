@@ -1,8 +1,8 @@
 package com.intuit.graphql.orchestrator.schema
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class OperationSpec extends BaseIntegrationTestSpecification {
+class OperationSpec extends Specification {
 
     def "test Operation Name"() {
         expect:

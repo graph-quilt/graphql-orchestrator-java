@@ -3,9 +3,9 @@ package com.intuit.graphql.orchestrator.resolverdirective
 import com.intuit.graphql.orchestrator.TestHelper
 import graphql.Scalars
 import graphql.schema.GraphQLArgument
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ResolverArgumentDirectiveSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentDirectiveSpec extends Specification {
 
     void createsFromGraphQLArgument() {
         given:

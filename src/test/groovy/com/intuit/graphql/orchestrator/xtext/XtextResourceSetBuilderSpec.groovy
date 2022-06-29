@@ -2,10 +2,10 @@ package com.intuit.graphql.orchestrator.xtext
 
 import com.intuit.graphql.orchestrator.TestHelper
 import com.intuit.graphql.orchestrator.schema.SchemaParseException
-import helpers.BaseIntegrationTestSpecification
 import org.eclipse.xtext.resource.XtextResourceSet
+import spock.lang.Specification
 
-class XtextResourceSetBuilderSpec extends BaseIntegrationTestSpecification {
+class XtextResourceSetBuilderSpec extends Specification {
 
     void buildsEmptyResourceSet() {
         given:

@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getOperationType
@@ -16,7 +16,7 @@ import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder
 import java.util.stream.Stream
 import org.eclipse.xtext.resource.XtextResourceSet
 
-class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification {
+class ResolverDirectiveTypeResolverSpec extends Specification {
 
     private ResolverDirectiveTypeResolver resolver
 

@@ -2,9 +2,9 @@ package com.intuit.graphql.orchestrator.fieldresolver
 
 import com.google.common.collect.Sets
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ValueTemplateSpec extends BaseIntegrationTestSpecification {
+class ValueTemplateSpec extends Specification {
 
     private Map<String, Object> testDataSource
     private FieldResolverContext fieldResolverContextMock

@@ -4,9 +4,9 @@ import graphql.Scalars
 import graphql.language.AstPrinter
 import graphql.schema.GraphQLInputObjectType
 import graphql.schema.GraphQLInputType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ResolverArgumentQueryBuilderSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentQueryBuilderSpec extends Specification {
 
     void buildsQueryWithScalarType() {
         given:

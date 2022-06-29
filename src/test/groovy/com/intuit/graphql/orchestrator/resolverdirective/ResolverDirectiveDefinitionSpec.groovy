@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinitionTestUtil.createResolverArguments
 import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinitionTestUtil.createResolverField
@@ -13,7 +13,7 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
 import org.apache.commons.lang3.StringUtils
 
-class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
+class ResolverDirectiveDefinitionSpec extends Specification {
 
     private static final String TEST_RESOLVER_FIELDNAME = "resolverField"
     private static final String TEST_RESOLVER_ARGUMENT_NAME1 = "testFieldArg1"

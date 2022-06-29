@@ -10,11 +10,11 @@ import graphql.ExecutionInput
 import graphql.GraphQLContext
 import graphql.schema.GraphQLNamedType
 import graphql.schema.GraphQLObjectType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
-class XtextGraphFolderSpec extends BaseIntegrationTestSpecification {
+class XtextGraphFolderSpec extends Specification {
 
     void testScalarTypeConflictsGettingIgnoredXtextStrategy() {
         given:
