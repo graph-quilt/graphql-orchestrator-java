@@ -68,6 +68,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
                       .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
                       .entityExtensionMetadata(entityExtensionMetadata)
                       .build();
+
               addToCodeRegistry(fieldContext, dataFetcherContext, unifiedXtextGraph);
           });
       }
