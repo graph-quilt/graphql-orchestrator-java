@@ -38,29 +38,28 @@ public class EntityTypeMerger {
       entityFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getType());
     }
 
-    entityFieldDefinitions.forEach(entityFieldDefinition -> {
-      String entityFieldName = entityFieldDefinition.getName();
+    entityFieldDefinitions
+    .stream()
+    .filter(entityFieldDefinition-> !definitionContainsDirective(entityFieldDefinition, FEDERATION_EXTERNAL_DIRECTIVE))
+    .forEach(newEntityField -> {
+      getFieldDefinitions(entityMergingContext.getBaseType()).removeIf(preexistingField ->
+        definitionContainsDirective(preexistingField, RESOLVER_DIRECTIVE_NAME)
+        && preexistingField.getName().equals(newEntityField.getName())
+      );
 
-      if((definitionContainsDirective(entityFieldDefinition, FEDERATION_EXTERNAL_DIRECTIVE))) {
-        //remove field resolver meta data
-        getFieldDefinitions(entityMergingContext.getBaseType())
-                .removeIf(preexistingField -> definitionContainsDirective(preexistingField, RESOLVER_DIRECTIVE_NAME)
-                && preexistingField.getName().equals(entityFieldName));
+      unifiedXtextGraph.getFieldResolverContexts().removeIf(fieldResolverContext ->
+        fieldResolverContext.getParentTypename().equals(entityMergingContext.getTypename())
+        && fieldResolverContext.getFieldName().equals(newEntityField.getName())
+      );
 
-        unifiedXtextGraph.getFieldResolverContexts().removeIf(fieldResolverContext ->
-                fieldResolverContext.getParentTypename().equals(entityMergingContext.getTypename()) &&
-                        fieldResolverContext.getFieldName().equals(entityFieldName));
-      } else {
-          //remove field from entity metadata created during FederationTransformerPreMerge for the resolvers namespace
-          unifiedXtextGraph.getFederationMetadataByNamespace()
-          .entrySet()
-          .stream()
-          .filter(entrySet -> !entrySet.getKey().equals(entityMergingContext.getServiceNamespace()))
-          .map(Map.Entry::getValue)
-          .map(federationMetadata -> federationMetadata.getEntityMetadataByName(entityMergingContext.getTypename()))
-          .filter(Objects::nonNull)
-          .forEach(entityMetadata -> entityMetadata.getFields().remove(entityFieldName));
-      }
+      unifiedXtextGraph.getFederationMetadataByNamespace()
+      .entrySet()
+      .stream()
+      .filter(entrySet -> !entrySet.getKey().equals(entityMergingContext.getServiceNamespace()))
+      .map(Map.Entry::getValue)
+      .map(federationMetadata -> federationMetadata.getEntityMetadataByName(entityMergingContext.getTypename()))
+      .filter(Objects::nonNull)
+      .forEach(entityMetadata -> entityMetadata.getFields().remove(newEntityField.getName()));
     });
   }
 
