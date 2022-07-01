@@ -1,5 +1,17 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.cSchema;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
+
 import com.google.common.collect.ImmutableSet;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
@@ -21,26 +33,14 @@ import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema;
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema;
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.cSchema;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DownstreamQueryModifierTest {
@@ -100,8 +100,7 @@ public class DownstreamQueryModifierTest {
     when(serviceMetadataMock.shouldModifyDownStreamQuery()).thenReturn(true);
 
     subjectUnderTest =
-        new DownstreamQueryModifier(
-            aType, serviceMetadataMock, Collections.emptyMap());
+        new DownstreamQueryModifier(aType, serviceMetadataMock, emptyMap(), graphQLSchema);
   }
 
   @Test

@@ -1,5 +1,14 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static graphql.util.TreeTransformerUtil.changeNode;
+import static graphql.util.TreeTransformerUtil.deleteNode;
+import static java.util.Objects.requireNonNull;
+
 import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -15,28 +24,20 @@ import graphql.language.SelectionSet;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
+import graphql.schema.GraphQLUnionType;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
-import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static graphql.util.TreeTransformerUtil.changeNode;
-import static graphql.util.TreeTransformerUtil.deleteNode;
-import static java.util.Objects.requireNonNull;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -49,20 +50,23 @@ import static java.util.Objects.requireNonNull;
  */
 public class DownstreamQueryModifier extends NodeVisitorStub {
 
-  private final GraphQLFieldsContainer rootType;
+  private final GraphQLType rootType;
   private final ServiceMetadata serviceMetadata;
   private final SelectionCollector selectionCollector;
+  private final GraphQLSchema graphQLSchema;
 
-  DownstreamQueryModifier(
-      GraphQLFieldsContainer rootType,
+  public DownstreamQueryModifier(
+      GraphQLType rootType,
       ServiceMetadata serviceMetadata,
-      Map<String, FragmentDefinition> fragmentsByName) {
+      Map<String, FragmentDefinition> fragmentsByName,
+      GraphQLSchema graphQLSchema) {
     Objects.requireNonNull(rootType);
     Objects.requireNonNull(serviceMetadata);
     Objects.requireNonNull(fragmentsByName);
     this.rootType = rootType;
     this.serviceMetadata = serviceMetadata;
     this.selectionCollector = new SelectionCollector(fragmentsByName);
+    this.graphQLSchema = graphQLSchema;
   }
 
   @Override
@@ -131,8 +135,8 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
 
   @Override
   public TraversalControl visitInlineFragment(InlineFragment node, TraverserContext<Node> context) {
-    GraphQLType parentType = getParentType(context);
-    context.setVar(GraphQLType.class, parentType);
+    String typeName = node.getTypeCondition().getName();
+    context.setVar(GraphQLType.class, this.graphQLSchema.getType(typeName));
     return TraversalControl.CONTINUE;
   }
 
@@ -144,6 +148,10 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
 
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
+    if (getParentType(context) instanceof GraphQLUnionType) {
+      return TraversalControl.CONTINUE;
+    }
+
     GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
     context.setVar(GraphQLType.class, parentType);
     String parentTypeName = parentType.getName();
