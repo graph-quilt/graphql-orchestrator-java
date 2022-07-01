@@ -11,6 +11,8 @@ import graphql.language.NonNullType;
 import graphql.language.Type;
 import graphql.language.TypeName;
 import graphql.parser.Parser;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLNamedType;
@@ -20,6 +22,7 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -84,5 +87,13 @@ public class GraphQLUtil {
     }
     throw new CreateTypeException(
         String.format(ERR_CREATE_TYPE_UNEXPECTED_TYPE, GraphQLTypeUtil.simplePrint(graphQLType)));
+  }
+
+  public static Optional<GraphQLType> getFieldType(Field field, GraphQLFieldsContainer fieldsContainer) {
+    GraphQLFieldDefinition fieldDefinition = fieldsContainer.getField(field.getName());
+    if (fieldDefinition == null) {
+      return Optional.empty();
+    }
+    return Optional.of(fieldDefinition.getType());
   }
 }
