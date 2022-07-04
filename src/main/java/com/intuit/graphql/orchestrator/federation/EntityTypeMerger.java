@@ -1,18 +1,5 @@
 package com.intuit.graphql.orchestrator.federation;
 
-import com.intuit.graphql.graphQL.FieldDefinition;
-import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.graphQL.TypeSystemDefinition;
-import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
-import lombok.Builder;
-import lombok.Getter;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
@@ -20,6 +7,18 @@ import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystem
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static org.apache.commons.collections4.CollectionUtils.containsAny;
+
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.Builder;
+import lombok.Getter;
 
 public class EntityTypeMerger {
 
