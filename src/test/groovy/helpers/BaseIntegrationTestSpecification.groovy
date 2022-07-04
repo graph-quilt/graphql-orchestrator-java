@@ -9,6 +9,7 @@ import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.execution.AsyncExecutionStrategy
 import graphql.execution.ExecutionIdProvider
+import graphql.execution.ExecutionStrategy
 import graphql.language.Document
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
@@ -44,29 +45,41 @@ class BaseIntegrationTestSpecification extends Specification {
     }
 
     static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider service) {
-        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().service(service)
-                .build().stitchGraph()
+       return createGraphQLOrchestrator(Arrays.asList(service));
+    }
 
-        GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
-        builder.runtimeGraph(runtimeGraph)
-        builder.instrumentations(Collections.emptyList())
-        builder.executionIdProvider(ExecutionIdProvider.DEFAULT_EXECUTION_ID_PROVIDER);
-        builder.queryExecutionStrategy(new AsyncExecutionStrategy())
-        builder.mutationExecutionStrategy(new AsyncExecutionStrategy())
-        return builder.build()
+    static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider... services) {
+        return createGraphQLOrchestrator(new AsyncExecutionStrategy(), new AsyncExecutionStrategy(),
+                services);
     }
 
     static GraphQLOrchestrator createGraphQLOrchestrator(List<ServiceProvider> services) {
-        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder().services(services)
-                .build().stitchGraph()
+        return createGraphQLOrchestrator(new AsyncExecutionStrategy(), new AsyncExecutionStrategy(),
+                (ServiceProvider[])services)
+    }
 
-        GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
-        builder.runtimeGraph(runtimeGraph)
-        builder.instrumentations(Collections.emptyList())
+    static GraphQLOrchestrator createGraphQLOrchestrator(
+            ExecutionStrategy queryExecutionStrategy,
+            ExecutionStrategy mutationExecutionStrategy,
+            ServiceProvider... services) {
+
+        RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
+                .services(Arrays.asList(services)).build().stitchGraph();
+
+        GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator();
+
+        builder.runtimeGraph(runtimeGraph);
+        builder.instrumentations(Collections.emptyList());
         builder.executionIdProvider(ExecutionIdProvider.DEFAULT_EXECUTION_ID_PROVIDER);
-        builder.queryExecutionStrategy(new AsyncExecutionStrategy())
-        builder.mutationExecutionStrategy(new AsyncExecutionStrategy())
-        return builder.build()
+
+        if (Objects.nonNull(queryExecutionStrategy)) {
+            builder.queryExecutionStrategy(queryExecutionStrategy)
+        }
+        if (Objects.nonNull(mutationExecutionStrategy)) {
+            builder.mutationExecutionStrategy(mutationExecutionStrategy)
+        }
+
+        return builder.build();
     }
 
     static ExecutionInput createExecutionInput(String graphqlQuery, Map<String, Object> variables) {
