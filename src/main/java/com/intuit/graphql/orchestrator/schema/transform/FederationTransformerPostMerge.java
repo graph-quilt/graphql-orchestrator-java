@@ -6,12 +6,12 @@ import com.intuit.graphql.graphQL.TypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger;
 import com.intuit.graphql.orchestrator.federation.EntityTypeMerger.EntityMergingContext;
-import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
-import com.intuit.graphql.orchestrator.federation.validators.ExternalValidator;
 import com.intuit.graphql.orchestrator.federation.Federation2PureGraphQLUtil;
 import com.intuit.graphql.orchestrator.federation.exceptions.BaseTypeNotFoundException;
-import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
+import com.intuit.graphql.orchestrator.federation.exceptions.SharedOwnershipException;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
+import com.intuit.graphql.orchestrator.federation.validators.ExternalValidator;
+import com.intuit.graphql.orchestrator.federation.validators.KeyDirectiveValidator;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
@@ -34,6 +35,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTy
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeExtensionDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeExtensionDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static java.lang.String.format;
 
 public class FederationTransformerPostMerge implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
@@ -47,7 +49,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
       List<TypeDefinition> baseEntityTypes = unifiedXtextGraph.getEntityExtensionsByNamespace().keySet().stream()
               .flatMap(namespace -> createEntityMergingContexts(namespace, unifiedXtextGraph))
               .peek(this::validateBaseExtensionCompatibility)
-              .map(entityTypeMerger::mergeIntoBaseType)
+              .map(entityMergingContext ->  entityTypeMerger.mergeIntoBaseType(entityMergingContext, unifiedXtextGraph))
               .collect(Collectors.toList());
 
       baseEntityTypes.forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
@@ -164,11 +166,18 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
           extFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());
       }
 
-      List<String> baseFieldNames = getFieldDefinitions(entityMergingContext.getBaseType())
-              .stream().map(FieldDefinition::getName).collect(Collectors.toList());
+      List<FieldDefinition> baseFields = getFieldDefinitions(entityMergingContext.getBaseType());
+      List<String> baseFieldNames = baseFields.stream()
+              .map(FieldDefinition::getName).collect(Collectors.toList());
+
+      List<String> baseFieldResolvers = baseFields.stream()
+              .filter(fieldDefinition -> definitionContainsDirective(fieldDefinition, RESOLVER_DIRECTIVE_NAME))
+              .map(FieldDefinition::getName)
+              .collect(Collectors.toList());
 
       extFieldDefinitions.forEach( fieldDefinition -> {
           boolean sharedField = baseFieldNames.contains(fieldDefinition.getName());
+          boolean baseFieldIsResolver = baseFieldResolvers.contains(fieldDefinition.getName());
           AtomicBoolean hasExternalAtomicBoolean = new AtomicBoolean(false);
 
           fieldDefinition.getDirectives().forEach(directive -> {
@@ -179,7 +188,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
               }
           });
 
-          if(sharedField && !hasExternalAtomicBoolean.get()) {
+          if(sharedField && !hasExternalAtomicBoolean.get() && !baseFieldIsResolver) {
               throw new SharedOwnershipException(fieldDefinition.getName());
           }
       });
