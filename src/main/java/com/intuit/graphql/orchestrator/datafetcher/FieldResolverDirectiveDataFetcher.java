@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.datafetcher;
 
-import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDataLoaderUtil;
+import com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import graphql.schema.DataFetcher;
@@ -25,7 +25,7 @@ public class FieldResolverDirectiveDataFetcher implements DataFetcher<Object> {
   @Override
   public Object get(final DataFetchingEnvironment dataFetchingEnvironment) {
     return dataFetchingEnvironment
-        .getDataLoader(FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldResolverContext))
+        .getDataLoader(DataLoaderKeyUtil.createDataLoaderKeyFrom(fieldResolverContext))
         .load(dataFetchingEnvironment);
   }
 
