@@ -334,9 +334,9 @@ public class XtextStitcher implements Stitcher {
      */
     private List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> defaultPostMergeTransformers() {
       return Arrays.asList(
+          new FederationTransformerPostMerge(),
           new ResolverArgumentTransformer(),
           new FieldResolverTransformerPostMerge(),
-          new FederationTransformerPostMerge(),
           new GraphQLAdapterTransformer()
       );
     }
