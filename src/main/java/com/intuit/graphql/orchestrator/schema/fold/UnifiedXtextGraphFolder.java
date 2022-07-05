@@ -253,13 +253,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
                 if (!currentField.isPresent()) {
                     addNewFieldToObject(current, newField, newComerServiceProvider);
                 } else {
-                    getDirectiveWithNameFromDefinition(newField, FEDERATION_INACCESSIBLE_DIRECTIVE).ifPresent(
-                            newInaccessibleDirective -> {
-                                if(!getDirectiveWithNameFromDefinition(currentField.get(), FEDERATION_INACCESSIBLE_DIRECTIVE).isPresent()) {
-                                    currentField.get().getDirectives().add(EcoreUtil.copy(newInaccessibleDirective));
-                                }
-                            }
-                    );
+                    mergeInaccessibleDirectiveToField(newField, currentField.get());
                 }
             }
         );
@@ -298,6 +292,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
                             .map(ObjectTypeDefinition::getName)
                             .collect(Collectors.toList()) : new ArrayList<>();
 
+                    //Based on federation spec, new fields for interfaces must be resolvable by all types implementing to be valid new fields
                     if(!implementingTypesNotContainingField.isEmpty()) {
                         throw new StitchingException( String.format(
                                 "Implementing types %s do not contain the new field %s from interface %s",
@@ -310,13 +305,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
                         addNewFieldToObject(current, newField, newComerServiceProvider);
                     }
                 } else {
-                    getDirectiveWithNameFromDefinition(newField, FEDERATION_INACCESSIBLE_DIRECTIVE).ifPresent(
-                        newInaccessibleDirective -> {
-                            if(!getDirectiveWithNameFromDefinition(currentField.get(), FEDERATION_INACCESSIBLE_DIRECTIVE).isPresent()) {
-                                currentField.get().getDirectives().add(newInaccessibleDirective);
-                            }
-                        }
-                    );
+                    mergeInaccessibleDirectiveToField(newField, currentField.get());
                 }
             });
 
@@ -441,7 +430,17 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
     return copyCurrent;
   }
 
-  private void copyParentDataFetcher(
+    private void mergeInaccessibleDirectiveToField(FieldDefinition newFieldDef, FieldDefinition preexisitingFieldDef) {
+        getDirectiveWithNameFromDefinition(newFieldDef, FEDERATION_INACCESSIBLE_DIRECTIVE).ifPresent(
+                newInaccessibleDirective -> {
+                    if(!getDirectiveWithNameFromDefinition(preexisitingFieldDef, FEDERATION_INACCESSIBLE_DIRECTIVE).isPresent()) {
+                        preexisitingFieldDef.getDirectives().add(newInaccessibleDirective);
+                    }
+                }
+        );
+    }
+
+    private void copyParentDataFetcher(
       ObjectTypeDefinition objectTypeDefinition, DataFetcherContext dataFetcherContext) {
     objectTypeDefinition
         .getFieldDefinition()
