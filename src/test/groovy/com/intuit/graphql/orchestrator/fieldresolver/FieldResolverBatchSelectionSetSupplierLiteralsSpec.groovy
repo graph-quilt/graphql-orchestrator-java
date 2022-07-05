@@ -1,16 +1,18 @@
 package com.intuit.graphql.orchestrator.fieldresolver
 
 import com.intuit.graphql.graphQL.*
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
 import graphql.Scalars
-import graphql.language.Argument
-import graphql.language.ObjectValue
-import graphql.language.SelectionSet
 import graphql.language.*
 import graphql.schema.DataFetchingEnvironment
+import graphql.schema.GraphQLFieldDefinition
+import graphql.schema.GraphQLObjectType
+import graphql.schema.GraphQLSchema
 import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition
@@ -27,6 +29,12 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
     private ResolverDirectiveDefinition resolverDirectiveDefinitionMock
 
+    private ServiceMetadata serviceMetadataMock
+
+    private GraphQLSchema graphQLSchemaMock
+
+    private RenamedMetadata renamedMetadataMock
+
     private final Map<String, Object> testDFEDataSource = new HashMap<>()
 
     private FieldResolverContext testFieldResolverContext
@@ -40,10 +48,30 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
         dfeFieldMock = Mock(Field.class)
         fieldDefinitionWithResolver = Mock(FieldDefinition.class)
         resolverDirectiveDefinitionMock = Mock(ResolverDirectiveDefinition.class)
+        serviceMetadataMock = Mock(ServiceMetadata.class)
+        graphQLSchemaMock = Mock(GraphQLSchema.class)
+        renamedMetadataMock = Mock(RenamedMetadata.class)
+
+        renamedMetadataMock.getOriginalFieldNamesByRenamedName() >> Collections.emptyMap()
+        serviceMetadataMock.getRenamedMetadata() >> renamedMetadataMock
+
+        graphQLSchemaMock.getQueryType() >> GraphQLObjectType.newObject()
+                .name("Query")
+                .field(GraphQLFieldDefinition.newFieldDefinition()
+                        .name("targetField")
+                        .type(Scalars.GraphQLString)
+                        .build())
+                .field(GraphQLFieldDefinition.newFieldDefinition()
+                        .name("petById")
+                        .type(GraphQLObjectType.newObject().name("Pet").build())
+                        .build())
+                .build()
 
         dfeFieldMock.getSelectionSet() >> null
         dataFetchingEnvironmentMock.getField() >> dfeFieldMock
         dataFetchingEnvironmentMock.getSource() >> testDFEDataSource
+        dataFetchingEnvironmentMock.getGraphQLSchema() >> graphQLSchemaMock
+        dataFetchingEnvironmentMock.getFragmentsByName() >> Collections.emptyMap()
         dataFetchingEnvironments.add(dataFetchingEnvironmentMock)
 
         FieldDefinition childFieldDefinition = buildFieldDefinition("childField")
@@ -84,17 +112,19 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
         String[] resolverSelectedFields = [ "petById" ]
 
         when:
+
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
+            testFieldResolverContext, serviceMetadataMock)
+
 
         then:
-        SelectionSet actual = subject.get()
+        graphql.language.SelectionSet actual = subject.get()
 
         Field actualPetByIdField = (Field)actual.getSelections().get(0)
-        Argument actualArgument = actualPetByIdField.getArguments().get(0)
+        graphql.language.Argument actualArgument = actualPetByIdField.getArguments().get(0)
         actualArgument.getName() == "petIdInputObject"
 
-        ObjectValue actualArgumentValue = (ObjectValue)actualArgument.getValue()
+        graphql.language.ObjectValue actualArgumentValue = (graphql.language.ObjectValue)actualArgument.getValue()
         actualArgumentValue.getObjectFields().get(0).getName() == "id"
 
         StringValue actualStringValue = (StringValue) actualArgumentValue.getObjectFields().get(0).getValue()
@@ -114,8 +144,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -140,8 +170,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject =  new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -166,8 +196,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -192,8 +222,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -218,8 +248,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -244,8 +274,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject =  new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -270,8 +300,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -296,8 +326,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)
@@ -328,8 +358,8 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
-        SelectionSet actual = subject.get()
+            testFieldResolverContext, serviceMetadataMock)
+        graphql.language.SelectionSet actual = subject.get()
 
         then:
         Field actualField = (Field) actual.getSelections().get(0)

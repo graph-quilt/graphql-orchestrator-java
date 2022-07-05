@@ -45,6 +45,8 @@ class DownstreamQueryModifierSpec extends Specification {
 
     private DownstreamQueryModifier subjectUnderTest
 
+    AstTransformer astTransformer = new AstTransformer()
+
     void setup() {
         serviceMetadataMock = Mock(ServiceMetadataImpl)
 
@@ -89,22 +91,20 @@ class DownstreamQueryModifierSpec extends Specification {
         serviceMetadataMock.isOwnedByEntityExtension(_) >> false
         serviceMetadataMock.shouldModifyDownStreamQuery() >> true
 
-        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap())
+        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema)
     }
 
     void canRemoveField() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         // test 'a1 { af1 af2 b1 b2 b3 b4 b5 }' and remove b1..b5
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
-        Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         when:
-        Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
-        Field f2 = (Field) newA1.getSelectionSet().getSelections().get(1)
+        Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
+        Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
+        Field f2 = (Field) newA1.getSelectionSet().getSelections().get(1)
         // expect modified field to be 'a1 { af1 af2}'
         newA1.getSelectionSet().getSelections().size() == 2
         f.getName() == af1.getName()
@@ -116,18 +116,15 @@ class DownstreamQueryModifierSpec extends Specification {
     }
 
     void canRemoveFieldWithReverseSelectionSet() {
-        given:
-        AstTransformer astTransformer = new AstTransformer()
-
         // test 'a1 { af2 b5 b4 b3 b2 b1 af1 }' and remove b5..b1
         Field a1 = Field.newField("a1").selectionSet(reverseSelectionSet).build()
-        Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         when:
-        Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
-        Field f2 = (Field) newA1.getSelectionSet().getSelections().get(1)
+        Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
+        Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
+        Field f2 = (Field) newA1.getSelectionSet().getSelections().get(1)
         // expect modified field to be 'a1 { af2   af1}'
         newA1.getSelectionSet().getSelections().size() == 2
         f.getName() == af2.getName()
@@ -155,22 +152,18 @@ class DownstreamQueryModifierSpec extends Specification {
                 .typeCondition(TypeName.newTypeName("AObjectType").build())
                 .build()
 
-        AstTransformer astTransformer = new AstTransformer()
-
         when:
         FragmentDefinition newAFragmentDefinition = (FragmentDefinition) astTransformer
                 .transform(aFragment, subjectUnderTest)
-        Field f = (Field) newAFragmentDefinition.getSelectionSet().getSelections().get(0)
 
         then:
+        Field f = (Field) newAFragmentDefinition.getSelectionSet().getSelections().get(0)
         newAFragmentDefinition.getSelectionSet().getSelections().size() == 1
         f.getName() == af1.getName()
     }
 
     void canRemoveFieldsFromInlineFragmentWithoutInterface() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         InlineFragment inlineFragment = InlineFragment.newInlineFragment()
                 .selectionSet(SelectionSet.newSelectionSet().selection(af1)
                         .selection(b5).selection(b4).selection(b3).build())
@@ -180,14 +173,14 @@ class DownstreamQueryModifierSpec extends Specification {
         SelectionSet selectionSet = SelectionSet.newSelectionSet().selection(af2).selection(inlineFragment)
                 .selection(b2).selection(b1).build()
 
-        when:
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
+        then:
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
         InlineFragment newInlineFragment = (InlineFragment) newA1.getSelectionSet().getSelections().get(1)
-
-        then:
         newA1.getSelectionSet().getSelections().size() == 2
         f.getName() == af2.getName()
 
@@ -220,13 +213,11 @@ class DownstreamQueryModifierSpec extends Specification {
         selectionSet = SelectionSet.newSelectionSet().selection(af1).build()
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
 
-        AstTransformer astTransformer = new AstTransformer()
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
-        List<Selection> selections = newA1.getSelectionSet().getSelections()
-
         then:
+        List<Selection> selections = newA1.getSelectionSet().getSelections()
         selections.size() == 2
     }
 
@@ -245,23 +236,18 @@ class DownstreamQueryModifierSpec extends Specification {
                         .build())
                 .build()
 
-        AstTransformer astTransformer = new AstTransformer()
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         // test '{ a1 { af1 reqdField} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualSelections = newA1.getSelectionSet().getSelections()
-
-        then:
         actualSelections.size() == 2
         toFieldNameSet(actualSelections) == ["af1", "reqdField"]
     }
 
     void canRenameQueryFields() {
-        given:
-        AstTransformer astTransformer = new AstTransformer()
-
         when:
         // test 'renamedAf3' should be sent as a3
         Field newAf3 = (Field) astTransformer.transform(renamedAf3, subjectUnderTest)
@@ -274,15 +260,15 @@ class DownstreamQueryModifierSpec extends Specification {
 
     void canRenameTypeFields() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
-        when:
         // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
         Field a1 = Field.newField("a1").selectionSet(renamedFieldSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
-        Field selection = (Field) newA1.getSelectionSet().getSelections().get(0)
 
         then:
+        Field selection = (Field) newA1.getSelectionSet().getSelections().get(0)
+
         // expect modified field to be 'a3: renamedAf3'
         newA1.getName() == "a1"
         newA1.getSelectionSet().getSelections().size() == 1
@@ -293,18 +279,18 @@ class DownstreamQueryModifierSpec extends Specification {
 
     void validateUserInputtedAliasOverridesRename() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         // a1 { renamedId1 } should be sent as a1 { id2: customAlias }
         Field aliasField = Field.newField("renamedId1").alias("customAlias").build()
         SelectionSet aliasSelectionSet = SelectionSet.newSelectionSet().selection(aliasField).build()
 
-        when:
         Field a1 = Field.newField("a1", aliasSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
-        Field selection = (Field) newA1.getSelectionSet().getSelections().get(0)
 
         then:
+        Field selection = (Field) newA1.getSelectionSet().getSelections().get(0)
+
         newA1.getName() == "a1"
         newA1.getSelectionSet().getSelections().size() == 1
 
@@ -314,13 +300,11 @@ class DownstreamQueryModifierSpec extends Specification {
 
     void canRemoveFieldsFromRenamedResolvers() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         // test 'renamedAf3' should be sent as a3
-
-        when:
         // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
         Field a1 = Field.newField("a1").selectionSet(renamedResolverSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
@@ -331,6 +315,7 @@ class DownstreamQueryModifierSpec extends Specification {
     }
 
     void visitSelectionSet_reqFieldAlreadySelected_doesNotAddRequiredField() {
+        given:
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext.class)
         fieldResolverContextMock.getRequiredFields() >> ImmutableSet.of("reqdField")
 
@@ -346,14 +331,13 @@ class DownstreamQueryModifierSpec extends Specification {
                 .build()
 
         when:
-        AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
+        then:
         // test '{ a1 { af1 reqdField} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections()
 
-        then:
         actualA1Selections.size() == 2
 
         toFieldNameSet(actualA1Selections) == ["af1", "reqdField" ]
@@ -374,17 +358,14 @@ class DownstreamQueryModifierSpec extends Specification {
                         .build())
                 .build()
 
-        AstTransformer astTransformer = new AstTransformer()
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         // test '{ a1 { af1} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections()
-
-        then:
         actualA1Selections.size() == 1
-
         toFieldNameSet(actualA1Selections) == [ "af1" ]
     }
 
@@ -400,17 +381,14 @@ class DownstreamQueryModifierSpec extends Specification {
                         .build())
                 .build()
 
-        AstTransformer astTransformer = new AstTransformer()
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         // test '{ a1 { af1} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections()
-
-        then:
         actualA1Selections.size() == 1
-
         toFieldNameSet(actualA1Selections) == [ "af1" ]
     }
 
