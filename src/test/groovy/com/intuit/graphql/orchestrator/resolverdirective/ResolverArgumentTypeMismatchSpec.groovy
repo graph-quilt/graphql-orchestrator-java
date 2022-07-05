@@ -5,7 +5,7 @@ import spock.lang.Specification
 
 class ResolverArgumentTypeMismatchSpec extends Specification {
 
-    void errorMessageWithoutParentContext() {
+    def "error Message Without Parent Context"() {
         given:
         final ResolverArgumentTypeMismatch error = new ResolverArgumentTypeMismatch("argName",
                 new FieldContext("parentType", "fieldName"), "String", "ObjectType")
@@ -14,7 +14,7 @@ class ResolverArgumentTypeMismatchSpec extends Specification {
         error.message.contains("Resolver argument 'argName' in 'parentType:fieldName': Expected type 'String' to be 'ObjectType'.")
     }
 
-    void errorMessageWithParentContext() {
+    def "error Message With Parent Context"() {
         given:
         FieldContext rootContext = new FieldContext("rootType", "rootField")
         FieldContext fieldContext = new FieldContext("parentType", "parentField")

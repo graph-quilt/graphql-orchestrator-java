@@ -4,7 +4,7 @@ import spock.lang.Specification
 
 class FieldReferenceUtilSpec extends Specification {
 
-    void getAllFieldReference_fromEmtyString_returnsEmptySet() {
+    def "get All Field Reference from Emty String returns Empty Set"() {
         given:
         Set<String> actual = FieldReferenceUtil.getAllFieldReferenceFromString("")
 
@@ -12,7 +12,7 @@ class FieldReferenceUtilSpec extends Specification {
         actual.isEmpty()
     }
 
-    void getAllFieldReference_fromNull_returnsEmptySet() {
+    def "get All Field Reference from Null returns Empty Set"() {
         given:
         Set<String> actual = FieldReferenceUtil.getAllFieldReferenceFromString(null)
 
@@ -20,7 +20,7 @@ class FieldReferenceUtilSpec extends Specification {
         actual.isEmpty()
     }
 
-    void getAllFieldReference_fromFieldRef_returnsExtractedFields() {
+    def "get All Field Reference from Field Ref returns Extracted Fields"() {
         given:
         Set<String> actual = FieldReferenceUtil.getAllFieldReferenceFromString('$someFieldRef')
 
@@ -29,7 +29,7 @@ class FieldReferenceUtilSpec extends Specification {
         actual.contains("someFieldRef")
     }
 
-    void getAllFieldReference_fromJsonString_returnsExtractedFields() {
+    def "get All Field Reference from Json String returns Extracted Fields"() {
         given:
         Set<String> actual = FieldReferenceUtil
                 .getAllFieldReferenceFromString('{ "field": $someFieldRef }')

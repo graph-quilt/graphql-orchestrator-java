@@ -5,7 +5,7 @@ import spock.lang.Specification
 
 class ResolverArgumentFieldNotInSchemaSpec extends Specification {
 
-    void producesCorrectErrorMessage() {
+    def "produces Correct Error Message"() {
         given:
         final ResolverArgumentFieldNotInSchema error = new ResolverArgumentFieldNotInSchema(
                 "argName", new FieldContext("rootObject", "rootField"),

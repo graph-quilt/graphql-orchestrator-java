@@ -7,7 +7,7 @@ import spock.lang.Specification
 
 class ResolverArgumentDirectiveSpec extends Specification {
 
-    void createsFromGraphQLArgument() {
+    def "creates From GraphQL Argument"() {
         given:
         String schema = '''
             schema { query: Query }

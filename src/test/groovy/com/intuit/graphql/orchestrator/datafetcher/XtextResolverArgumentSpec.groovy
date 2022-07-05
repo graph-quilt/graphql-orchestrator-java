@@ -4,7 +4,7 @@ import spock.lang.Specification
 
 class XtextResolverArgumentSpec extends Specification {
 
-    void convertsResolverArgumentFieldsToQueries() {
+    def "converts Resolver Argument Fields To Queries"() {
         given:
         String resolverArgumentField = "query.consumer.fieldA"
 //
@@ -15,7 +15,7 @@ class XtextResolverArgumentSpec extends Specification {
 //    assertThat(printAstCompact(result.getPreparedQuery())).isEqualTo("query {consumer {fieldA}}")
     }
 
-    void shouldThrowInvalidFieldReferenceExceptions() {
+    def "should Throw Invalid Field Reference Exceptions"() {
         given:
         String[] resolverArgumentFieldTestCases = [
                 "",

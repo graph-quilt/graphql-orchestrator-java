@@ -5,7 +5,7 @@ import spock.lang.Specification
 
 class ResolverArgumentPrematureLeafTypeSpec extends Specification {
 
-    void producesCorrectErrorMessage() {
+    def "produces Correct Error Message"() {
         given:
         final ResolverArgumentPrematureLeafType error = new ResolverArgumentPrematureLeafType(
                 "argName", "enumType", new FieldContext("rootObject", "rootField"), "tax")

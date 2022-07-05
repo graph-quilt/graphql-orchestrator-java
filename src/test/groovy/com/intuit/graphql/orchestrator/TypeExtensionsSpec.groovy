@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture
 @Slf4j
 class TypeExtensionsSpec extends Specification {
 
-    void canQueryWithResultTypeExtendedInterface() {
+    def "can Query With Result Type Extended Interface"() {
         given:
         // person is of type PersonInterface which is extended to add field address
         TestCase testCase = TestCase.newTestCase()
@@ -52,7 +52,7 @@ class TypeExtensionsSpec extends Specification {
         person.get("address") != null
     }
 
-    void canQueryWithResultTypeExtendedUnionAndObject() {
+    def "can Query With Result Type Extended Union And Object"() {
         given:
         // firstEmployedPerson is of type EmployedPersonsUnion
         // EmployedPersonsUnion initially created with one possibler type Teacher then extended to add Actor
@@ -91,7 +91,7 @@ class TypeExtensionsSpec extends Specification {
         ((List) teacher.get("subjects")).containsAll("Accounting", "Chemistry")
     }
 
-    void canQueryWithResultTypeExtendedUnion() {
+    def "can Query With Result Type Extended Union"() {
         when:
         // secondEmployedPerson is of type EmployedPersonsUnion.
         // EmployedPersonsUnion initially created with one possibler type Teacher then extended to add Actor
@@ -122,7 +122,7 @@ class TypeExtensionsSpec extends Specification {
         actor.get("movies") != null // from extend PersonInterface
     }
 
-    void canAddWithExtendInputObjectType() {
+    def "can Add With Extend Input Object Type"() {
         given:
         // InputTeacher is extended.
         // The query returns an the data submitted

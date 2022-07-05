@@ -22,7 +22,7 @@ class ResolverDirectiveTypeResolverSpec extends Specification {
 
     public UnifiedXtextGraph source
 
-    void setup() {
+    def setup() {
         this.resolver = new ResolverDirectiveTypeResolver()
 
         final String schemaString = '''
@@ -47,7 +47,7 @@ class ResolverDirectiveTypeResolverSpec extends Specification {
                 .build()
     }
 
-    void resolvesRootTypeOfField() {
+    def "resolves Root Type Of Field"() {
         given:
         String field = "a.b"
 
@@ -57,7 +57,7 @@ class ResolverDirectiveTypeResolverSpec extends Specification {
         result.getName() == "Int"
     }
 
-    void fieldDoesNotExist() {
+    def "field Does Not Exist"() {
         given:
         String field = "c.d"
 
@@ -68,7 +68,7 @@ class ResolverDirectiveTypeResolverSpec extends Specification {
         thrown(ResolverArgumentFieldRootObjectDoesNotExist)
     }
 
-    void listsNotSupported() {
+    def "lists Not Supported"() {
         given:
         final String field = "list"
 
@@ -79,7 +79,7 @@ class ResolverDirectiveTypeResolverSpec extends Specification {
         thrown(ResolverArgumentListTypeNotSupported)
     }
 
-    void prematureLeafTypeScalar() {
+    def "premature Leaf Type Scalar"() {
         given:
         final String field = "premature_leaf.nested"
 
@@ -90,7 +90,7 @@ class ResolverDirectiveTypeResolverSpec extends Specification {
         thrown(ResolverArgumentPrematureLeafType)
     }
 
-    void prematureLeafTypeEnum() {
+    def "premature Leaf Type Enum"() {
         given:
         final String field = "some_enum.nested"
 
