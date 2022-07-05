@@ -31,6 +31,7 @@ class AllTypesTransformerSpec extends Specification {
         transformed.getTypes().containsKey("QueryType") == false
         transformed.getTypes().size() == 3
         transformed.getTypeMetadatas().size() == 3
+        transformed.getFieldCoordinates().size() == 5
     }
 
     void "test Throws Exception On Duplicate Type Definition"() {
