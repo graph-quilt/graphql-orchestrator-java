@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.stitching;
 
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
@@ -284,9 +285,10 @@ public class XtextStitcher implements Stitcher {
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().graphqlObjectTypes(visited).build();
 
     return unifiedXtextGraph.getTypes().values().stream()
+        .filter(type -> !type.getName().endsWith("ResolverArgument"))
         .filter(type -> !unifiedXtextGraph.isOperationType(type))
         .filter(type -> !(visited.containsKey(type.getName())))
-        .collect(Collectors.toMap(type -> type.getName(), type -> (GraphQLType) localVisitor.doSwitch(type)));
+        .collect(Collectors.toMap(TypeDefinition::getName, type -> (GraphQLType) localVisitor.doSwitch(type)));
   }
 
   private Set<GraphQLDirective> getAdditionalDirectives(UnifiedXtextGraph unifiedXtextGraph, Map<String, GraphQLDirective> visited) {
@@ -294,6 +296,7 @@ public class XtextStitcher implements Stitcher {
         .build();
 
     return unifiedXtextGraph.getDirectives().stream()
+        .filter(directiveDefinition -> !directiveDefinition.getName().equals("resolver"))
         .map(localVisitor::doSwitch)
         .map(GraphQLDirective.class::cast)
         .collect(Collectors.toSet());
