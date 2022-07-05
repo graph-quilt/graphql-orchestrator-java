@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture
 
 class XtextGraphFolderSpec extends Specification {
 
-    void testScalarTypeConflictsGettingIgnoredXtextStrategy() {
+    def "test Scalar Type Conflicts Getting Ignored Xtext Strategy"() {
         given:
         ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
                 "schema { query: Query } type Query { a: Date } scalar Date")
@@ -36,7 +36,7 @@ class XtextGraphFolderSpec extends Specification {
         ((GraphQLNamedType) query.getFieldDefinition("b").getType()).getName() == "Date"
     }
 
-    void testGoldenTypeSignatureConflictMissingNonNullFieldThrowsException() {
+    def "test Golden Type Signature Conflict Missing Non Null Field Throws Exception"() {
         given:
         ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
                 "schema { query: Query } type Query { a: PageInfo } type PageInfo { foo: String! bar:String! }")
@@ -54,7 +54,7 @@ class XtextGraphFolderSpec extends Specification {
         thrown(TypeConflictException)
     }
 
-    void testGoldenTypeSignatureConflictThrowsException() {
+    def "test Golden Type Signature Conflict Throws Exception"() {
         given:
         ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
                 "schema { query: Query } type Query { a: PageInfo } type PageInfo { id: ID }")
@@ -72,7 +72,7 @@ class XtextGraphFolderSpec extends Specification {
         thrown(TypeConflictException)
     }
 
-    void testGoldenInterfaceConflictThrowsException() {
+    def "test Golden Interface Conflict Throws Exception"() {
         given:
         ServiceProvider serviceProvider1 = new GenericTestService("SomeService1",
                 "schema { query: Query } type Query { a: Node } interface Node { id: String! }")

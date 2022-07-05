@@ -10,7 +10,7 @@ import spock.lang.Specification
 
 class AllTypesTransformerSpec extends Specification {
 
-    void "test Operation Types Are Filtered By Transformer"() {
+    def "test Operation Types Are Filtered By Transformer"() {
         given:
         String schema = '''
             schema { query: QueryType } 
@@ -28,12 +28,12 @@ class AllTypesTransformerSpec extends Specification {
         def transformed = new AllTypesTransformer().transform(xtextGraph);
 
         then:
-        transformed.getTypes().containsKey("QueryType") == false
+        !transformed.getTypes().containsKey("QueryType")
         transformed.getTypes().size() == 3
         transformed.getTypeMetadatas().size() == 3
     }
 
-    void "test Throws Exception On Duplicate Type Definition"() {
+    def "test Throws Exception On Duplicate Type Definition"() {
         given:
         String schema = '''
             schema { query: QueryType } type QueryType { a: A } 

@@ -11,7 +11,7 @@ class FieldNotFoundInParentExceptionSpec extends Specification {
 
     private ResolverDirectiveDefinition mockResolverDirectiveDefinition
 
-    void "can Create Field Not Found In Parent Exception"() {
+    def "can Create Field Not Found In Parent Exception"() {
         given:
         mockResolverDirectiveDefinition = Mock(ResolverDirectiveDefinition.class)
 

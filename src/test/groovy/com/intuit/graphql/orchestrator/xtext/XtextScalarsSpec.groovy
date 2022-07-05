@@ -6,7 +6,7 @@ import static com.intuit.graphql.orchestrator.xtext.XtextScalars.*
 
 class XtextScalarsSpec extends Specification {
 
-    void testDoesNotReturnSameInstance() {
+    def "test Does Not Return Same Instance"() {
         expect:
         !newBigDecimalType().is(newBigDecimalType())
         !newBigIntType().is(newBigIntType())
@@ -22,7 +22,7 @@ class XtextScalarsSpec extends Specification {
         !newFieldSetType().is(newFieldSetType())
     }
 
-    void testStandardScalarMap() {
+    def "test Standard Scalar Map"() {
         expect:
         XtextScalars.STANDARD_SCALARS.size() == 12
     }

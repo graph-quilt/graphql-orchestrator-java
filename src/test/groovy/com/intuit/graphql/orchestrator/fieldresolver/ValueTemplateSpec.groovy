@@ -9,13 +9,13 @@ class ValueTemplateSpec extends Specification {
     private Map<String, Object> testDataSource
     private FieldResolverContext fieldResolverContextMock
 
-    void setup() {
+    def setup() {
         fieldResolverContextMock = Mock(FieldResolverContext.class)
 
         testDataSource = new HashMap<>()
     }
 
-    void compile_SimpleVariable_success() {
+    def "compile SimpleVariable - success"() {
         given:
         String valueTemplateStr = '$someVar'
         ValueTemplate subjectUnderTest = new ValueTemplate(fieldResolverContextMock, valueTemplateStr)
@@ -32,7 +32,7 @@ class ValueTemplateSpec extends Specification {
         actual == "TEST_VALUE"
     }
 
-    void compile_jsonStringWithVariable_success() {
+    def "compile json String With Variable - success"() {
         given:
         String valueTemplateStr = '{ id : "$someVar" }'
         ValueTemplate subjectUnderTest = new ValueTemplate(fieldResolverContextMock, valueTemplateStr)
@@ -48,7 +48,7 @@ class ValueTemplateSpec extends Specification {
         actual == '{ id : "TEST_VALUE" }'
     }
 
-    void compile_jsonStringWithNullVariable_success() {
+    def "compile json String With Null Variable - success"() {
         given:
         String valueTemplateStr = '{ id : "$someVar" }'
         ValueTemplate subjectUnderTest = new ValueTemplate(fieldResolverContextMock, valueTemplateStr)
@@ -64,7 +64,7 @@ class ValueTemplateSpec extends Specification {
         actual == '{ id : null }'
     }
 
-    void compile_jsonStringWithMultipleVariables_success() {
+    def "compile json String With Multiple Variables - success"() {
         given:
         String valueTemplateStr = '{ id : "$petId" name : "$petName" }'
         ValueTemplate subjectUnderTest = new ValueTemplate(fieldResolverContextMock, valueTemplateStr)
@@ -81,7 +81,7 @@ class ValueTemplateSpec extends Specification {
         actual == '{ id : "pet-901" name : null }'
     }
 
-    void compile_jsonStringWithMultipleVariablesNotString_success() {
+    def "compile json String With Multiple Variables Not String - success"() {
         given:
         String valueTemplateStr = '{ includeName : "$includeName" name : "$childCount" }'
         ValueTemplate subjectUnderTest = new ValueTemplate(fieldResolverContextMock, valueTemplateStr)
