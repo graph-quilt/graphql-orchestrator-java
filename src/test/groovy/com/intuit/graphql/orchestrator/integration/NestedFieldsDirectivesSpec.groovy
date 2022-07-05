@@ -9,7 +9,7 @@ import helpers.BaseIntegrationTestSpecification
 
 class NestedFieldsDirectivesSpec extends BaseIntegrationTestSpecification {
 
-    void cannotBuildDueToQueryNestedFieldsHasMismatchedDirectives() {
+    def "cannot Build Due To Query Nested Fields Has Mismatched Directives"() {
         when:
         ServiceProvider[] services = [new ServiceA(), new ServiceC() ]
         GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)

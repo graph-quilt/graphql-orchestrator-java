@@ -11,7 +11,7 @@ import helpers.BaseIntegrationTestSpecification
 
 class NoRegisteredServicesSpec extends BaseIntegrationTestSpecification {
 
-    void testBuilderWithoutServiceNullExecutionStrategy() {
+    def "test Builder Without Service Null Execution Strategy"() {
         given:
         final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator()
 
@@ -22,7 +22,7 @@ class NoRegisteredServicesSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderWithoutServiceNullExecutionIdProvider() {
+    def "test Builder Without Service Null Execution Id Provider"() {
         given:
         final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator()
 
@@ -33,7 +33,7 @@ class NoRegisteredServicesSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderWithoutServiceNullInstrumentations() {
+    def "test Builder Without Service Null Instrumentations"() {
         given:
         final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator()
 
@@ -44,7 +44,7 @@ class NoRegisteredServicesSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderWithoutService() {
+    def "test Builder Without Service"() {
         given:
         final RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
                 .services(Collections.emptyList()).build().stitchGraph()

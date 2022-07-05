@@ -9,7 +9,7 @@ import helpers.BaseIntegrationTestSpecification
 
 class GoalServiceSpec extends BaseIntegrationTestSpecification {
 
-    void canQueryGoalService() {
+    def "can Query Goal Service"() {
         given:
         ServiceProvider[] services = [ new GoalsService() ]
         final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)

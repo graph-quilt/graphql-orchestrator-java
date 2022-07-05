@@ -16,13 +16,13 @@ class MultipleServicesSpec extends BaseIntegrationTestSpecification {
 
     private GraphQLOrchestrator orchestrator
 
-    void setup() {
+    def setup() {
         orchestrator = createGraphQLOrchestrator([ petsService, bookService, userService ])
 
         assert orchestrator.getSchema().isSupportingMutations()
     }
 
-    void testTopLevelCombinedSchemaWithExecutionInput() {
+    def "test Top Level Combined Schema With Execution Input"() {
         given:
         // Test query using ExecutionInput
         ExecutionInput booksAndPetsEI = ExecutionInput.newExecutionInput().query('''
@@ -53,7 +53,7 @@ class MultipleServicesSpec extends BaseIntegrationTestSpecification {
         ((List<Map<String, Objects>>)dataValue.get("users")).size() == 3
     }
 
-    void testTopLevelCombinedSchemaWithExecutionInputBuilder() {
+    def "test Top Level Combined Schema With Execution Input Builder"() {
         given:
         // Test query using ExecutionInput.Builder
         ExecutionInput.Builder booksEIBuilder = ExecutionInput
@@ -75,7 +75,7 @@ class MultipleServicesSpec extends BaseIntegrationTestSpecification {
         ((List<Map<String, Objects>>) dataValue.get("books")).size() == 3
     }
 
-    void testTopLevelCombinedSchemaWithUnaryOperator() {
+    def "test Top Level Combined Schema With Unary Operator"() {
         given:
         // Test query using UnaryOperator as source of query
         UnaryOperator<ExecutionInput.Builder> builderFunc = ExecutionInputTestUtil

@@ -9,9 +9,11 @@ import helpers.BaseIntegrationTestSpecification
 
 class MutationNestedFieldsArgumentsSpec extends BaseIntegrationTestSpecification {
 
-    void cannotBuildDueToMutationNestedFieldsHasMismatchedArguments() {
+    def "cannot Build Due To Mutation Nested Fields Has Mismatched Arguments"() {
+        given:
+        ServiceProvider[] services = [ new ServiceD(), new ServiceE() ]
+
         when:
-        ServiceProvider[] services = [new ServiceD(), new ServiceE() ]
         GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)
 
         then:
