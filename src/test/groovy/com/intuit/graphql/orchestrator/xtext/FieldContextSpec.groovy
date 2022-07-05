@@ -10,7 +10,7 @@ class FieldContextSpec extends Specification {
 
     private FieldContext fieldContext = new FieldContext(TEST_PARENT_TYPE_NAME,TEST_FIELD_NAME)
 
-    void equalsReturnFalseForNull() {
+    def "equals Return False For Null"() {
         given:
         boolean actual = fieldContext.equals(null)
 
@@ -18,7 +18,7 @@ class FieldContextSpec extends Specification {
         !actual
     }
 
-    void equalsReturnFalseForOtherType() {
+    def "equals Return False For Other Type"() {
         given:
         String someOtherObject = StringUtils.EMPTY
         boolean actual = fieldContext.equals(someOtherObject)
@@ -27,7 +27,7 @@ class FieldContextSpec extends Specification {
         !actual
     }
 
-    void equalsReturnFalseForDifferentFieldName() {
+    def "equals Return False For Different Field Name"() {
         given:
         FieldContext anotherFieldContext = new FieldContext(TEST_PARENT_TYPE_NAME, "anotherField")
         boolean actual = fieldContext.equals(anotherFieldContext)
@@ -36,7 +36,7 @@ class FieldContextSpec extends Specification {
         !actual
     }
 
-    void equalsReturnFalseForDifferentParentTypName() {
+    def "equals Return False For Different Parent Type Name"() {
         given:
         FieldContext anotherFieldContext = new FieldContext("anotherParentType", TEST_FIELD_NAME)
         boolean actual = fieldContext.equals(anotherFieldContext)
@@ -45,7 +45,7 @@ class FieldContextSpec extends Specification {
         !actual
     }
 
-    void equalsReturnTrueForSameValues() {
+    def "equals Return True For Same Values"() {
         given:
         FieldContext anotherFieldContext = new FieldContext(TEST_PARENT_TYPE_NAME, TEST_FIELD_NAME)
         boolean actual = fieldContext.equals(anotherFieldContext)
@@ -54,7 +54,7 @@ class FieldContextSpec extends Specification {
         actual
     }
 
-    void equalsReturnTrueForSameObject() {
+    def "equals Return True For Same Object"() {
         given:
         boolean actual = fieldContext.equals(fieldContext)
 

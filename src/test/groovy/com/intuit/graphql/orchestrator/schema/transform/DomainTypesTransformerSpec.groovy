@@ -11,7 +11,7 @@ import spock.lang.Specification
 
 class DomainTypesTransformerSpec extends Specification {
 
-    void "test Domain Types Get Renamed"() {
+    def "test Domain Types Get Renamed"() {
         given:
         /* TEST SCOPE:
          *

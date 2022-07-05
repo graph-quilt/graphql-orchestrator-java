@@ -34,7 +34,7 @@ class GraphQLResourceSetSpec extends Specification {
         '''))
     }
 
-    void getsSchemaDefinitionWhenPresent() {
+    def "gets Schema Definition When Present"() {
         given:
         Optional<SchemaDefinition> sd = SCHEMA.findSchemaDefinition()
 
@@ -44,7 +44,7 @@ class GraphQLResourceSetSpec extends Specification {
         sd.get().getOperationTypeDefinition().get(0).getOperationType().toString() == "query"
     }
 
-    void doesNotGetSchemaDefinitionWhenNotPresent() {
+    def "does Not Get Schema Definition When Not Present"() {
         given:
         GraphQLResourceSet set = new GraphQLResourceSet(
             XtextResourceSetBuilder.newBuilder().file("foo", '''
@@ -58,7 +58,7 @@ class GraphQLResourceSetSpec extends Specification {
         !sd.isPresent()
     }
 
-    void doesNotGetOperationFromSchemaDefinitionWhenNotPresent() {
+    def "does Not Get Operation From Schema Definition When Not Present"() {
         given:
         Optional<SchemaDefinition> sd = SCHEMA.findSchemaDefinition()
 
@@ -71,7 +71,7 @@ class GraphQLResourceSetSpec extends Specification {
         SCHEMA.getOperationType(Operation.SUBSCRIPTION) == null
     }
 
-    void getsOperationFromSchemaDefinitionWhenPresent() {
+    def "gets Operation From Schema Definition When Present"() {
         given:
         Optional<SchemaDefinition> sd = SCHEMA_QUERY.findSchemaDefinition()
 
@@ -86,14 +86,14 @@ class GraphQLResourceSetSpec extends Specification {
         operation.getFieldDefinition().get(0).getName() == "bar"
     }
 
-    void doesNotGetOperationFromSetWhenNotPresent() {
+    def "does Not Get Operation From Set When Not Present"() {
         expect:
         TYPE.getOperationType(Operation.QUERY) == null
         TYPE_QUERY.getOperationType(Operation.MUTATION) == null
         SCHEMA_QUERY.getOperationType(Operation.SUBSCRIPTION) == null
     }
 
-    void getsOperationFromSetWhenPresent() {
+    def "gets Operation From Set When Present"() {
         given:
         ObjectTypeDefinition operation = TYPE_QUERY.getOperationType(Operation.QUERY)
 
@@ -105,7 +105,7 @@ class GraphQLResourceSetSpec extends Specification {
         operation1.getName() == "foo"
     }
 
-    void getsObjectFromSetWhenPresent() {
+    def "gets Object From Set When Present"() {
         given:
         final ObjectTypeDefinition queryType = TYPE_QUERY.getObjectType(Operation.QUERY.getName())
 
@@ -118,7 +118,7 @@ class GraphQLResourceSetSpec extends Specification {
         TYPE_QUERY.getObjectType("FooType") != null
     }
 
-    void doesntGetObjectFromSetWhenNotPresent() {
+    def "doesnt Get Object From Set When Not Present"() {
         expect:
         TYPE_QUERY.getObjectType(Operation.MUTATION.getName()) == null
         SCHEMA_QUERY.getObjectType(Operation.SUBSCRIPTION.getName()) == null

@@ -132,13 +132,13 @@ class MergedFieldModifierSpec extends Specification {
     private GraphQLSchema graphQLSchema
     private Map<String, FragmentDefinition> fragmentDefinitions
 
-    void setup() {
+    def setup() {
         graphQLSchema = TestHelper.schema(schema)
         document = document(query)
         fragmentDefinitions = fragmentDefinitions(query)
     }
 
-    void edgeCases() {
+    def "edge Cases"() {
         when:
         new MergedFieldModifier(null)
 
@@ -146,7 +146,7 @@ class MergedFieldModifierSpec extends Specification {
         thrown(NullPointerException)
     }
 
-    void filtersFragmentDefinitionsOnObject() {
+    def "filters Fragment Definitions On Object"() {
         given:
         ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(document, "consumer", "financialProfile",
                 "health")
@@ -162,10 +162,10 @@ class MergedFieldModifierSpec extends Specification {
                 .getFilteredRootField()
 
         then:
-        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()) == [ "consumer", "financialProfile", "spread:health", "spread:creditScore" ]
+        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()).sort() == [ "consumer", "financialProfile", "spread:creditScore", "spread:health" ]
     }
 
-    void filtersInlineFragments() {
+    def "filters Inline Fragments"() {
         given:
         ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(
                 document, "consumer", "finance", "tax", "returns", "returnHeader", "taxYr")
@@ -179,13 +179,13 @@ class MergedFieldModifierSpec extends Specification {
         final MergedFieldModifierResult result = new MergedFieldModifier(dataFetchingEnvironment).getFilteredRootField()
 
         then:
-        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()) == ["consumer", "finance", "tax", "returns", "returnHeader", "taxYr"]
+        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()).sort() == [ "consumer", "finance", "returnHeader", "returns", "tax", "taxYr" ]
     }
 
-    void retainsInlineFragments() {
+    def "retains Inline Fragments"() {
         given:
-        ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(document, "consumer", "finance", "tax",
-                "returns", "returnHeader", "someField")
+        ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(
+                document, "consumer", "finance", "tax", "returns", "returnHeader", "someField")
 
         final DataFetchingEnvironment dataFetchingEnvironment = newDataFetchingEnvironment()
                 .executionStepInfo(executionStepInfo)
@@ -196,10 +196,10 @@ class MergedFieldModifierSpec extends Specification {
         final MergedFieldModifierResult result = new MergedFieldModifier(dataFetchingEnvironment).getFilteredRootField()
 
         then:
-        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()) == [ "consumer", "finance", "tax", "returns", "returnHeader", "inline:someField" ]
+        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()).sort() == [ "consumer", "finance", "inline:someField", "returnHeader", "returns", "tax" ]
     }
 
-    void filtersNonRelevantFields() {
+    def "filters Non Relevant Fields"() {
         given:
         ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(document, "consumer", "finance", "tax")
 
@@ -212,7 +212,7 @@ class MergedFieldModifierSpec extends Specification {
         final MergedFieldModifierResult result = new MergedFieldModifier(dataFetchingEnvironment).getFilteredRootField()
 
         then:
-        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()) == ["consumer", "finance", "tax", "returns", "returnHeader", "taxYr", "inline:someField"]
+        printPreOrder(result.getMergedField().getSingleField(), graphQLSchema, result.getFragmentDefinitions()).sort() == ["consumer", "finance", "inline:someField", "returnHeader", "returns", "tax", "taxYr" ]
     }
 
 //  @Test

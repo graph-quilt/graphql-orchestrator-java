@@ -16,7 +16,7 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     @Subject
     def specUnderTest
 
-    void setup() {
+    def setup() {
         employeeProvider = TestServiceProvider.newBuilder()
                 .namespace("Employee")
                 .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
