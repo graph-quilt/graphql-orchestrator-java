@@ -89,7 +89,7 @@ class DownstreamQueryModifierSpec extends Specification {
         serviceMetadataMock.isOwnedByEntityExtension(_) >> false
         serviceMetadataMock.shouldModifyDownStreamQuery() >> true
 
-        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap())
+        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema)
     }
 
     def "can Remove Field"() {
