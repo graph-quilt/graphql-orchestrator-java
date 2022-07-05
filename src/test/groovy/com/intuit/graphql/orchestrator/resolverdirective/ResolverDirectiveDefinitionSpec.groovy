@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinitionTestUtil.createResolverArguments
 import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinitionTestUtil.createResolverField
@@ -13,7 +13,7 @@ import com.intuit.graphql.graphQL.ObjectTypeDefinition
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
 import org.apache.commons.lang3.StringUtils
 
-class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
+class ResolverDirectiveDefinitionSpec extends Specification {
 
     private static final String TEST_RESOLVER_FIELDNAME = "resolverField"
     private static final String TEST_RESOLVER_ARGUMENT_NAME1 = "testFieldArg1"
@@ -23,7 +23,7 @@ class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
 
     private ResolverDirectiveDefinition subjectUnderTest
 
-    void setup() {
+    def setup() {
         Argument resolverField = createResolverField(TEST_RESOLVER_FIELDNAME)
         Argument resolverArguments = createResolverArguments(TEST_RESOLVER_ARGUMENT_NAME1,
                 TEST_RESOLVER_ARGUMENT_VALUE1,
@@ -36,7 +36,7 @@ class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
         subjectUnderTest = ResolverDirectiveDefinition.from(directive)
     }
 
-    void canCreateResolverDirectiveDefinitionTest() {
+    def "can Create Resolver Directive Definition Test"() {
         given:
         ResolverArgumentDefinition resolverArgumentEntry1 = subjectUnderTest.getArguments().get(0)
         ResolverArgumentDefinition resolverArgumentEntry2 = subjectUnderTest.getArguments().get(1)
@@ -51,7 +51,7 @@ class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
         resolverArgumentEntry2.getValue() == TEST_RESOLVER_ARGUMENT_VALUE2
     }
 
-    void unexpectedArgumentForResolverDirectiveDefinitionTest() {
+    def "unexpected Argument For Resolver Directive Definition Test"() {
         given:
         // FootType has testField.  testField has @resolver(field: "resolverField", argument: [...]])
         // argument is not valid.
@@ -83,7 +83,7 @@ class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
         thrown(ResolverDirectiveException)
     }
 
-    void unexpectedFieldForResolverDirectiveDefinitionTest() {
+    def "unexpected Field For Resolver Directive Definition Test"() {
         given:
         String resolverFieldName = StringUtils.EMPTY; // cannot be empty
 
@@ -115,7 +115,7 @@ class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
         thrown(ResolverDirectiveException)
     }
 
-    void nullDirectiveTest() {
+    def "null Directive Test"() {
         when:
         ResolverDirectiveDefinition.from(null)
 
@@ -123,7 +123,7 @@ class ResolverDirectiveDefinitionSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void extractRequiredFieldsFrom() {
+    def "extract Required Fields From"() {
         given:
         Set<String> actual = ResolverDirectiveDefinition.extractRequiredFieldsFrom(subjectUnderTest)
 

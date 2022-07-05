@@ -1,11 +1,11 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
 import com.intuit.graphql.orchestrator.xtext.FieldContext
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ResolverArgumentTypeMismatchSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentTypeMismatchSpec extends Specification {
 
-    void errorMessageWithoutParentContext() {
+    def "error Message Without Parent Context"() {
         given:
         final ResolverArgumentTypeMismatch error = new ResolverArgumentTypeMismatch("argName",
                 new FieldContext("parentType", "fieldName"), "String", "ObjectType")
@@ -14,7 +14,7 @@ class ResolverArgumentTypeMismatchSpec extends BaseIntegrationTestSpecification 
         error.message.contains("Resolver argument 'argName' in 'parentType:fieldName': Expected type 'String' to be 'ObjectType'.")
     }
 
-    void errorMessageWithParentContext() {
+    def "error Message With Parent Context"() {
         given:
         FieldContext rootContext = new FieldContext("rootType", "rootField")
         FieldContext fieldContext = new FieldContext("parentType", "parentField")

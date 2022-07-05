@@ -7,11 +7,11 @@ import com.intuit.graphql.orchestrator.schema.Operation
 import com.intuit.graphql.orchestrator.xtext.XtextGraph
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder
 import com.intuit.graphql.utils.XtextTypeUtils
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class DomainTypesTransformerSpec extends BaseIntegrationTestSpecification {
+class DomainTypesTransformerSpec extends Specification {
 
-    void "test Domain Types Get Renamed"() {
+    def "test Domain Types Get Renamed"() {
         given:
         /* TEST SCOPE:
          *

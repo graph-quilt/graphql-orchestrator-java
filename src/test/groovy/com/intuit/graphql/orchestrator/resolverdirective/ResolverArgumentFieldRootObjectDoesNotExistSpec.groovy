@@ -1,11 +1,11 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
 import com.intuit.graphql.orchestrator.xtext.FieldContext
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ResolverArgumentFieldRootObjectDoesNotExistSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentFieldRootObjectDoesNotExistSpec extends Specification {
 
-    void producesCorrectErrorMessage() {
+    def "produces Correct Error Message"() {
         given:
         final ResolverArgumentFieldRootObjectDoesNotExist error = new ResolverArgumentFieldRootObjectDoesNotExist(
                 "argName", new FieldContext("rootObject", "rootField"), "tax")

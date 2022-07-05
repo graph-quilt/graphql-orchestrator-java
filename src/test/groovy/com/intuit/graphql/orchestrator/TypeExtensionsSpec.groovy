@@ -7,8 +7,8 @@ import graphql.language.Document
 import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.language.OperationDefinition.Operation
-import helpers.BaseIntegrationTestSpecification
 import lombok.extern.slf4j.Slf4j
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
@@ -17,9 +17,9 @@ import java.util.concurrent.CompletableFuture
  * InputObjectTypeExtension TODO ScalarTypeExtension.
  */
 @Slf4j
-class TypeExtensionsSpec extends BaseIntegrationTestSpecification {
+class TypeExtensionsSpec extends Specification {
 
-    void canQueryWithResultTypeExtendedInterface() {
+    def "can Query With Result Type Extended Interface"() {
         given:
         // person is of type PersonInterface which is extended to add field address
         TestCase testCase = TestCase.newTestCase()
@@ -52,7 +52,7 @@ class TypeExtensionsSpec extends BaseIntegrationTestSpecification {
         person.get("address") != null
     }
 
-    void canQueryWithResultTypeExtendedUnionAndObject() {
+    def "can Query With Result Type Extended Union And Object"() {
         given:
         // firstEmployedPerson is of type EmployedPersonsUnion
         // EmployedPersonsUnion initially created with one possibler type Teacher then extended to add Actor
@@ -91,7 +91,7 @@ class TypeExtensionsSpec extends BaseIntegrationTestSpecification {
         ((List) teacher.get("subjects")).containsAll("Accounting", "Chemistry")
     }
 
-    void canQueryWithResultTypeExtendedUnion() {
+    def "can Query With Result Type Extended Union"() {
         when:
         // secondEmployedPerson is of type EmployedPersonsUnion.
         // EmployedPersonsUnion initially created with one possibler type Teacher then extended to add Actor
@@ -122,7 +122,7 @@ class TypeExtensionsSpec extends BaseIntegrationTestSpecification {
         actor.get("movies") != null // from extend PersonInterface
     }
 
-    void canAddWithExtendInputObjectType() {
+    def "can Add With Extend Input Object Type"() {
         given:
         // InputTeacher is extended.
         // The query returns an the data submitted

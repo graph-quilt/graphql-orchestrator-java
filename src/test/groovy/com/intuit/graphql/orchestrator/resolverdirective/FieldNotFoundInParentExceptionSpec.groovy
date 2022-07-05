@@ -1,9 +1,9 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
 import graphql.ErrorType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class FieldNotFoundInParentExceptionSpec extends BaseIntegrationTestSpecification {
+class FieldNotFoundInParentExceptionSpec extends Specification {
 
     static final String TEST_FIELD_NAME = "testFieldName"
     static final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
@@ -11,7 +11,7 @@ class FieldNotFoundInParentExceptionSpec extends BaseIntegrationTestSpecificatio
 
     private ResolverDirectiveDefinition mockResolverDirectiveDefinition
 
-    void "can Create Field Not Found In Parent Exception"() {
+    def "can Create Field Not Found In Parent Exception"() {
         given:
         mockResolverDirectiveDefinition = Mock(ResolverDirectiveDefinition.class)
 

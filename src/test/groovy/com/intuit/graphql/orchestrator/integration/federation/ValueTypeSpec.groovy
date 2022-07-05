@@ -18,7 +18,7 @@ class ValueTypeSpec extends BaseIntegrationTestSpecification {
     @Subject
     def specUnderTest
 
-    void setup() {
+    def setup() {
         enumProvider1 = TestServiceProvider.newBuilder()
                 .namespace("MANUFACTUER1")
                 .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)

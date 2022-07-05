@@ -14,13 +14,13 @@ import graphql.schema.DataFetchingEnvironment
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLObjectType
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition
 import static java.util.Collections.singletonList
 
-class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIntegrationTestSpecification {
+class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specification {
 
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 
@@ -38,7 +38,7 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIn
 
     private FieldResolverBatchSelectionSetSupplier subject
 
-    void setup() {
+    def setup() {
         dataFetchingEnvironmentMock = Mock(DataFetchingEnvironment.class)
         dfeFieldMock = Mock(Field.class)
         fieldDefinitionWithResolver = Mock(FieldDefinition.class)
@@ -61,7 +61,7 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIn
             .build()
     }
 
-    void get_argumentTypeisString_sourceTypeIsIDWithNumericValue() {
+    def "get argument Type is String, source Type Is ID With Numeric Value"() {
         given:
         testDFEDataSource.put("id", 123456789)
         dataFetchingEnvironmentMock.getParentType() >> GraphQLObjectType.newObject()
@@ -96,7 +96,7 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIn
         actualStringValue.getValue() == "123456789"
     }
 
-    void get_argumentTypeisNonNullString_sourceTypeIsIDWithNumericValue() {
+    def "get argument Type is Non Null String, source Type Is ID With Numeric Value"() {
         given:
         testDFEDataSource.put("id", 123456789)
         dataFetchingEnvironmentMock.getParentType() >> GraphQLObjectType.newObject()
@@ -131,7 +131,7 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIn
         actualStringValue.getValue() == "123456789"
     }
 
-    void get_argumentTypeisString_sourceTypeIsIDWithStringValue() {
+    def "get argument Type is String, source Type Is ID With String Value"() {
         given:
         testDFEDataSource.put("id", "ID-STRING_VALUE")
         dataFetchingEnvironmentMock.getParentType() >> GraphQLObjectType.newObject()
@@ -166,7 +166,7 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIn
         actualStringValue.getValue() == "ID-STRING_VALUE"
     }
 
-    void get_argumentTypeisString_sourceTypeIsInt() {
+    def "get argument Type is String, source Type Is Int"() {
         given:
         testDFEDataSource.put("intField", 123456789)
         dataFetchingEnvironmentMock.getParentType() >> GraphQLObjectType.newObject()
@@ -201,7 +201,7 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends BaseIn
         actualIntValue.getValue().intValue() == 123456789
     }
 
-    void get_argumentTypeisString_sourceTypeIsBoolean() {
+    def "get argument Type is String, source Type Is Boolean"() {
         given:
         testDFEDataSource.put("boolField", true)
         dataFetchingEnvironmentMock.getParentType() >> GraphQLObjectType.newObject()

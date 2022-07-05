@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getObjectType
@@ -20,7 +20,7 @@ import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder
 import java.util.stream.Stream
 import org.eclipse.xtext.resource.XtextResourceSet
 
-class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentDirectiveValidatorSpec extends Specification {
 
     public ResolverDirectiveTypeResolver resolver
 
@@ -31,7 +31,7 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
     private TypeDefinition enumType
     private TypeDefinition typeA
 
-    void setup() {
+    def setup() {
         String schema = '''
             schema { query: Query }
             type Query { a: A } 
@@ -66,7 +66,7 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
         typeA = getType("A", set)
     }
 
-    void validationPassesOnScalars() {
+    def "validation Passes On Scalars"() {
         given:
         resolver.resolveField("a.b.c", _ as UnifiedXtextGraph, _ as String, _ as FieldContext) >> newIntType()
 
@@ -80,11 +80,13 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
         when:
         FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
 
-        then:
         validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext.class))
+
+        then:
+        noExceptionThrown()
     }
 
-    void validationPassesOnEnums() {
+    def "validation Passes On Enums"() {
         given:
         resolver.resolveField("a.b.schema_enum", _ as UnifiedXtextGraph, _ as String, _ as FieldContext) >> enumType
 
@@ -98,12 +100,13 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
 
         when:
         FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
+        validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext.class))
 
         then:
-        validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext.class))
+        noExceptionThrown()
     }
 
-    void validationPassesOnObjects() {
+    def "validation Passes On Objects"() {
         given:
         resolver.resolveField("a", _ as UnifiedXtextGraph, _ as String, _ as FieldContext) >> typeA
 
@@ -118,12 +121,13 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
 
         when:
         FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
+        validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext))
 
         then:
-        validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext))
+        noExceptionThrown()
     }
 
-    void fieldDoesNotExistInSchema() {
+    def "field Does Not Exist In Schema"() {
         given:
         resolver.resolveField("a", _ as UnifiedXtextGraph, _ as String, _ as FieldContext) >> typeA
 
@@ -135,16 +139,15 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
 
         final XtextResourceSet set = XtextResourceSetBuilder.singletonSet("schema", resolverSchema)
 
-        FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
-
         when:
+        FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
         validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext.class))
 
         then:
         thrown(ResolverArgumentFieldNotInSchema)
     }
 
-    void notSameLeafName() {
+    def "not Same Leaf Name"() {
         given:
         resolver.resolveField("a.b.c", _ as UnifiedXtextGraph, _ as String, _ as FieldContext) >> newStringType()
 
@@ -155,16 +158,15 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
 
         final XtextResourceSet set = XtextResourceSetBuilder.singletonSet("schema", resolverSchema)
 
-        FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
-
         when:
+        FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
         validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext.class))
 
         then:
         thrown(ResolverArgumentLeafTypeNotSame)
     }
 
-    void typeMismatch() {
+    def "type Mismatch"() {
         given:
         resolver.resolveField("a", _ as UnifiedXtextGraph, _ as String, _ as FieldContext) >> newStringType()
 
@@ -176,9 +178,8 @@ class ResolverArgumentDirectiveValidatorSpec extends BaseIntegrationTestSpecific
 
         final XtextResourceSet set = XtextResourceSetBuilder.singletonSet("schema", resolverSchema)
 
-        FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
-
         when:
+        FieldDefinition fieldWithResolverDirective = getObjectType("Query", set).getFieldDefinition().get(0)
         validator.validateField(fieldWithResolverDirective, source, Mock(FieldContext.class))
 
         then:

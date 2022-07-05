@@ -1,19 +1,19 @@
 package com.intuit.graphql.orchestrator.utils
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.attachNamespace
 import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions
 
-class DescriptionUtilsSpec extends BaseIntegrationTestSpecification {
+class DescriptionUtilsSpec extends Specification {
 
-    void attachNameSpaceTest(){
+    def "attach Name Space Test"(){
         expect:
         attachNamespace("ns","desc") == "[ns] desc"
         attachNamespace("ns",null) == "[ns]"
     }
 
-    void mergeDescrtiptionTest(){
+    def "merge Descrtiption Test"(){
         given:
         String firstMerge = mergeDescriptions("[ns1] desc1", "[ns2] desc2")
 

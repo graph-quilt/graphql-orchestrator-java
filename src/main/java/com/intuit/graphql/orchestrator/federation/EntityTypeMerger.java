@@ -1,25 +1,65 @@
 package com.intuit.graphql.orchestrator.federation;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForExtensionType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static org.apache.commons.collections4.CollectionUtils.containsAny;
 
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
-
+import com.intuit.graphql.graphQL.TypeSystemDefinition;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import lombok.Builder;
 import lombok.Getter;
 
 public class EntityTypeMerger {
 
-  public TypeDefinition mergeIntoBaseType(EntityMergingContext entityMergingContext) {
+  public TypeDefinition mergeIntoBaseType(EntityMergingContext entityMergingContext, UnifiedXtextGraph unifiedXtextGraph) {
+    pruneConflictingResolverInfo(entityMergingContext, unifiedXtextGraph);
     merge(entityMergingContext);
     return entityMergingContext.getBaseType();
+  }
+
+  private void pruneConflictingResolverInfo(EntityMergingContext entityMergingContext, UnifiedXtextGraph unifiedXtextGraph) {
+    List<FieldDefinition> entityFieldDefinitions = null;
+
+    if(isTypeSystemForExtensionType(entityMergingContext.getExtensionSystemDefinition())) {
+      entityFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());
+    } else {
+      entityFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getType());
+    }
+
+    entityFieldDefinitions
+    .stream()
+    .filter(entityFieldDefinition-> !definitionContainsDirective(entityFieldDefinition, FEDERATION_EXTERNAL_DIRECTIVE))
+    .forEach(newEntityField -> {
+      getFieldDefinitions(entityMergingContext.getBaseType()).removeIf(preexistingField ->
+        definitionContainsDirective(preexistingField, RESOLVER_DIRECTIVE_NAME)
+        && preexistingField.getName().equals(newEntityField.getName())
+      );
+
+      unifiedXtextGraph.getFieldResolverContexts().removeIf(fieldResolverContext ->
+        fieldResolverContext.getParentTypename().equals(entityMergingContext.getTypename())
+        && fieldResolverContext.getFieldName().equals(newEntityField.getName())
+      );
+
+      unifiedXtextGraph.getFederationMetadataByNamespace()
+      .entrySet()
+      .stream()
+      .filter(entrySet -> !entrySet.getKey().equals(entityMergingContext.getServiceNamespace()))
+      .map(Map.Entry::getValue)
+      .map(federationMetadata -> federationMetadata.getEntityMetadataByName(entityMergingContext.getTypename()))
+      .filter(Objects::nonNull)
+      .forEach(entityMetadata -> entityMetadata.getFields().remove(newEntityField.getName()));
+    });
   }
 
   private void merge(EntityMergingContext entityMergingContext) {

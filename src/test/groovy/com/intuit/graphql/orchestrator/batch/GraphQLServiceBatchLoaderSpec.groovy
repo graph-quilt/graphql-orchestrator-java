@@ -16,7 +16,7 @@ import graphql.schema.DataFetchingEnvironment
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLObjectType
 import graphql.schema.GraphQLSchema
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
@@ -33,7 +33,7 @@ import static java.util.Arrays.asList
 import static java.util.Collections.emptyMap
 import static java.util.Collections.singletonList
 
-class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
+class GraphQLServiceBatchLoaderSpec extends Specification {
 
     static final GraphQLObjectType FIRST_TYPE = GraphQLObjectType.newObject().name("FirstType")
             .field(GraphQLFieldDefinition.newFieldDefinition()
@@ -55,7 +55,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
 
     public BatchFieldAuthorization mockBatchFieldAuthorization
 
-    void setup() {
+    def setup() {
         mockServiceProvider = Mock(ServiceProvider)
         mockServiceMetadata = Mock(ServiceMetadataImpl)
         mockVariableDefinitionFilter = Mock(VariableDefinitionFilter)
@@ -71,7 +71,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         mockServiceMetadata.getServiceProvider() >> mockServiceProvider
     }
 
-    void makesCorrectBatchQuery() {
+    def "makes Correct Batch Query"() {
         given:
         QueryExecutor validator = { environment, context ->
             //  TODO: add describedAs
@@ -140,7 +140,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void makesCorrectBatchQueryWithCustomFieldAuthorization() {
+    def "makes Correct Batch Query With Custom Field Authorization"() {
         given:
         QueryExecutor validator = { environment, context ->
             //  TODO: add describedAs
@@ -211,7 +211,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void makesCorrectBatchMutation() {
+    def "makes Correct Batch Mutation"() {
         given:
         QueryExecutor validator = { environment, context ->
             assert environment.getQuery() ==~ /mutation .*first/
@@ -262,7 +262,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void makesCorrectBatchMutationWithCustomFieldAuthorization() {
+    def "makes Correct Batch Mutation With Custom Field Authorization"() {
         given:
         QueryExecutor validator = { environment, context ->
             assert environment.getQuery() ==~ /mutation .*first/
@@ -316,7 +316,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void defaultsOperationTypeToQuery() {
+    def "defaults Operation Type To Query"() {
         given:
         QueryExecutor validator = { environment, context ->
             assert environment.getQuery() ==~ /query .*first/
@@ -360,7 +360,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void propagatesQueryOperationName() {
+    def "propagates Query Operation Name"() {
         given:
         QueryExecutor validator = { environment, context ->
             assert environment.getQuery() ==~ /query/
@@ -409,7 +409,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void propagatesMutationOperationName() {
+    def "propagates Mutation Operation Name"() {
         given:
         QueryExecutor validator = { environment, context ->
             assert environment.getQuery() ==~ /mutation/
@@ -466,7 +466,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void propagatesVariableDefinitions() {
+    def "propagates Variable Definitions"() {
         given:
         mockVariableDefinitionFilter.getVariableReferencesFromNode(_ as GraphQLSchema, _ as GraphQLObjectType, _ as Map, _ as Map, _ as Node) >> new HashSet<String>() {{
             add("TestVariableDefinition")
@@ -539,7 +539,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void testBuilderThrowsExceptionWithQueryExecutor() {
+    def "test Builder Throws Exception With Query Executor"() {
         given:
         GraphQLServiceBatchLoader.Builder builder = newQueryExecutorBatchLoader()
 
@@ -554,7 +554,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderThrownExceptionWithQueryResponseModified() {
+    def "test Builder Thrown Exception With Query Response Modified"() {
         given:
         GraphQLServiceBatchLoader.Builder builder = newQueryExecutorBatchLoader()
 
@@ -569,7 +569,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderThrowsExceptionWithBatchResultTransformer() {
+    def "test Builder Throws Exception With Batch Result Transformer"() {
         given:
         GraphQLServiceBatchLoader.Builder builder = newQueryExecutorBatchLoader()
 
@@ -584,7 +584,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderThrowsExceptionWithQueryOperationModifier() {
+    def "test Builder Throws Exception With Query Operation Modifier"() {
         given:
         GraphQLServiceBatchLoader.Builder builder = newQueryExecutorBatchLoader()
 
@@ -599,7 +599,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderThrowsExceptionWithServiceMetadata() {
+    def "test Builder Throws Exception With Service Metadata"() {
         given:
         GraphQLServiceBatchLoader.Builder builder = newQueryExecutorBatchLoader()
 
@@ -614,7 +614,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void callsQueryModifierIfInterfaceFieldDefinitionExists() {
+    def "calls Query Modifier If Interface Field Definition Exists"() {
         given:
         QueryExecutor noopQueryExecutor = { executionInput, context ->
             assert executionInput.getOperationName() == "TestName"
@@ -671,11 +671,11 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void queryDirectivesArePropagated() {
+    def "query Directives Are Propagated"() {
         given:
         QueryExecutor fn = { environment, context ->
-            assert ((Document) environment.getRoot()).getDefinitionsOfType(OperationDefinition.class).get(0)
-                    .getDirectives() != null
+            assert !((Document) environment.getRoot()).getDefinitionsOfType(OperationDefinition.class).get(0)
+                    .getDirectives().isEmpty()
             return CompletableFuture.completedFuture(new HashMap<>())
         }
 
@@ -722,7 +722,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void variableFilterNotCalledWhenEmpty() {
+    def "variable Filter Not Called When Empty"() {
         given:
         QueryExecutor fn = { environment, context -> CompletableFuture.completedFuture(new HashMap<>()) }
 
@@ -778,7 +778,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         0 * mockVariableDefinitionFilter.getVariableReferencesFromNode(_ as GraphQLSchema, _ as GraphQLObjectType, _ as Map, _ as Map, _ as Node)
     }
 
-    void callsAllHooks() {
+    def "calls All Hooks"() {
         given:
         QueryExecutor emptyFn = { input, context -> CompletableFuture.completedFuture(new HashMap<>()) }
 
@@ -822,7 +822,7 @@ class GraphQLServiceBatchLoaderSpec extends BaseIntegrationTestSpecification {
         1 * mockHooks.onBatchLoadEnd(_, _)
     }
 
-    void fragmentDefinitionCallTest() {
+    def "fragment Definition Call Test"() {
         given:
         QueryExecutor emptyFn = { input, context -> CompletableFuture.completedFuture(new HashMap<>()) }
         final BatchLoaderExecutionHooks mockHooks = Mock(BatchLoaderExecutionHooks.class)

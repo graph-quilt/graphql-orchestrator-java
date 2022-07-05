@@ -7,9 +7,8 @@ import graphql.GraphQLContext
 import graphql.language.*
 import graphql.language.OperationDefinition.Operation
 
-import helpers.BaseIntegrationTestSpecification
-
 import lombok.extern.slf4j.Slf4j
+import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
@@ -18,9 +17,9 @@ import java.util.concurrent.CompletableFuture
  * InputObjectTypeExtension TODO ScalarTypeExtension.
  */
 @Slf4j
-class TexSpec extends BaseIntegrationTestSpecification {
+class TexSpec extends Specification {
 
-    void canMakeQuery() {
+    def "can Make Query"() {
         given:
         // person is of type PersonInterface which is extended to add field address
         TestCase testCase = TestCase.newTestCase()
@@ -72,7 +71,7 @@ class TexSpec extends BaseIntegrationTestSpecification {
         CSSimulationExperimentData.keySet().size() == 2
     }
 
-    void canMakeMutationWithMergeDirectiveOnField() {
+    def "can Make Mutation With Merge Directive On Field"() {
         given:
         // person is of type PersonInterface which is extended to add field address
         TestCase testCase = TestCase.newTestCase()

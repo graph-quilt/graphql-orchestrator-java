@@ -6,7 +6,7 @@ import graphql.execution.DataFetcherResult
 import graphql.execution.ExecutionStepInfo
 import graphql.language.Document
 import graphql.schema.DataFetchingEnvironment
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import java.util.stream.Collectors
 
@@ -14,7 +14,8 @@ import static com.intuit.graphql.orchestrator.TestHelper.document
 import static com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.buildCompleteExecutionStepInfo
 import static graphql.schema.DataFetchingEnvironmentImpl.newDataFetchingEnvironment
 
-class SubtreeBatchResultTransformerSpec extends BaseIntegrationTestSpecification {
+class SubtreeBatchResultTransformerSpec extends Specification {
+
     private String query = '''
         query {
             consumer {
@@ -48,11 +49,11 @@ class SubtreeBatchResultTransformerSpec extends BaseIntegrationTestSpecification
 
     private Document document
 
-    void setup() {
+    def setup() {
         document = document(query)
     }
 
-    void nullInitialdataReturnsNull() {
+    def "null Initial Data Returns Null"() {
         given:
         final ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(document, "consumer", "finance")
 
@@ -73,7 +74,7 @@ class SubtreeBatchResultTransformerSpec extends BaseIntegrationTestSpecification
         results.get(0).getData() == null
     }
 
-    void nullDataPathReturnsNull() {
+    def "null Data Path Returns Null"() {
         given:
         Map<String, Object> data = new HashMap<>()
 
@@ -100,7 +101,7 @@ class SubtreeBatchResultTransformerSpec extends BaseIntegrationTestSpecification
         results.get(0).getData() == null
     }
 
-    void producesPartitionedResult() {
+    def "produces Partitioned Result"() {
         given:
         Map<String, Object> data = new HashMap<>()
 
@@ -128,7 +129,7 @@ class SubtreeBatchResultTransformerSpec extends BaseIntegrationTestSpecification
         results.get(0).getData() == "test"
     }
 
-    void addErrorsToPartitionedResult() {
+    def "add Errors To Partitioned Result"() {
         given:
         Map<String, Object> data = new HashMap<>()
 

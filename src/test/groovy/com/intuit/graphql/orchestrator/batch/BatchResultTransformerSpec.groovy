@@ -1,16 +1,17 @@
 package com.intuit.graphql.orchestrator.batch
 
-import static graphql.execution.MergedField.newMergedField;
-import static graphql.language.Field.newField;
+import spock.lang.Specification
 
-import graphql.GraphQLError;
-import graphql.GraphqlErrorBuilder;
-import graphql.execution.DataFetcherResult;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.DataFetchingEnvironmentImpl;
-import helpers.BaseIntegrationTestSpecification
+import static graphql.execution.MergedField.newMergedField
+import static graphql.language.Field.newField
 
-class BatchResultTransformerSpec extends BaseIntegrationTestSpecification {
+import graphql.GraphQLError
+import graphql.GraphqlErrorBuilder
+import graphql.execution.DataFetcherResult
+import graphql.schema.DataFetchingEnvironment
+import graphql.schema.DataFetchingEnvironmentImpl
+
+class BatchResultTransformerSpec extends Specification {
 
     private Map<String, Object> batchResults
     private List<DataFetchingEnvironment> environments
@@ -18,12 +19,12 @@ class BatchResultTransformerSpec extends BaseIntegrationTestSpecification {
 
     private static final BatchResultTransformer batchResultTransformer = new DefaultBatchResultTransformer()
 
-    void setup() {
+    def setup() {
         batchResults = new HashMap<>()
         environments = new ArrayList<>()
     }
 
-    void defaultBatchTransformerBatchResultWithError() {
+    def "default Batch Transformer Batch Result With Error"() {
         given:
         batchResults.put("field1", "value1")
 
@@ -52,7 +53,7 @@ class BatchResultTransformerSpec extends BaseIntegrationTestSpecification {
         results.get(0).getErrors() == [error]
     }
 
-    void defaultBatchTransformerTwoBatchResults() {
+    def "default Batch Transformer Two Batch Results"() {
         given:
         batchResults.put("field1", "value1")
         batchResults.put("field2", "value2")
@@ -80,7 +81,7 @@ class BatchResultTransformerSpec extends BaseIntegrationTestSpecification {
         results.collect{ it.getErrors() }.flatten() == []
     }
 
-    void defaultBatchTransformerWithAlias() {
+    def "default Batch Transformer With Alias"() {
         given:
         batchResults.put("alias", "value1")
 
@@ -103,7 +104,7 @@ class BatchResultTransformerSpec extends BaseIntegrationTestSpecification {
         results.collect { it.getData() } == [ "value1" ]
     }
 
-    void defaultBatchTransformerWithMatchingPathError() {
+    def "default Batch Transformer With Matching Path Error"() {
         given:
         final DataFetchingEnvironment environment = DataFetchingEnvironmentImpl.newDataFetchingEnvironment()
                 .mergedField(newMergedField().addField(newField("field1").build()).build())

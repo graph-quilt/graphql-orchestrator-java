@@ -1,16 +1,16 @@
 package com.intuit.graphql.orchestrator.stitching
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class SchemaStitcherSpec extends BaseIntegrationTestSpecification {
+class SchemaStitcherSpec extends Specification {
 
     SchemaStitcher.Builder sfBuilder
 
-    void setup() {
+    def setup() {
         sfBuilder = SchemaStitcher.newBuilder()
     }
 
-    void testBuilderService() {
+    def "test Builder Service"() {
         when:
         sfBuilder.service(null)
 
@@ -18,7 +18,7 @@ class SchemaStitcherSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderServices() {
+    def "test Builder Services"() {
         when:
         sfBuilder.services(null)
 
@@ -26,7 +26,7 @@ class SchemaStitcherSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderBatchLoaderHooks() {
+    def "test Builder Batch Loader Hooks"() {
         when:
         sfBuilder.batchLoaderHooks(null)
 

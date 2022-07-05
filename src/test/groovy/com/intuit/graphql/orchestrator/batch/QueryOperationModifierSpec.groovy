@@ -1,7 +1,7 @@
 package com.intuit.graphql.orchestrator.batch
 
-import helpers.BaseIntegrationTestSpecification
 import org.junit.Ignore
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.TestHelper.fragmentDefinitions
 import static com.intuit.graphql.orchestrator.TestHelper.schema
@@ -12,7 +12,7 @@ import graphql.language.OperationDefinition
 import graphql.schema.GraphQLSchema
 import graphql.schema.idl.RuntimeWiring
 
-class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
+class QueryOperationModifierSpec extends Specification {
 
     private String schema = '''
         type Query {
@@ -20,16 +20,16 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
           complexFoo: [Foo!]!
           fooUnion: Union
         }
-        
+
         interface Foo {
           a: String
         }
-        
+
         type Bar implements Foo {
           a: String
           b: String
         }
-        
+
         union Union = Bar
     '''
 
@@ -40,11 +40,11 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
 
     private GraphQLSchema graphQLSchema
 
-    void setup() {
+    def setup() {
         graphQLSchema = schema(schema, runtimeWiring)
     }
 
-    void addsTypenameToQuery() {
+    def "adds Typename To Query"() {
         given:
         final String query = '''
             {
@@ -68,7 +68,7 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
         preOrderResult == ["foo", "a", "__typename"]
     }
 
-    void addsTypenameToQueryForComplexObjects() {
+    def "adds Typename To Query For Complex Objects"() {
         given:
         final String query = '''
             {
@@ -93,7 +93,7 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
         preOrderResult == ["complexFoo", "a", "__typename"]
     }
 
-    void doesNotModifyQueryWithTypename() {
+    def "does Not Modify Query With Typename"() {
         given:
         final String queryWithTypename = '''
             {
@@ -119,7 +119,7 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
         preOrderResult == ["foo", "a", "__typename"]
     }
 
-    void addsTypenameToUnion() {
+    def "adds Typename To Union"() {
         given:
         final String queryWithUnion = "{ fooUnion { ...on Bar { b } } }"
 
@@ -139,7 +139,7 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
     }
 
     @Ignore("to be done later")
-    void addsTypenameToQueryInFragmentDefinition() {
+    def "adds Typename To Query In Fragment Definition"() {
         given:
         final String queryWithFragment = '''
             query {
@@ -163,7 +163,7 @@ class QueryOperationModifierSpec extends BaseIntegrationTestSpecification {
                 .modifyQuery(graphQLSchema, queryOperation, fragmentsByName, Collections.emptyMap())
 
         then:
-        definition != null
+        noExceptionThrown()
     }
 
 }

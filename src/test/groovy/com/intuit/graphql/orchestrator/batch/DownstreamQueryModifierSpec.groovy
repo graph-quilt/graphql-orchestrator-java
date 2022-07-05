@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator.batch
 
-import helpers.BaseIntegrationTestSpecification
-
 import com.google.common.collect.ImmutableSet
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata
@@ -23,6 +21,7 @@ import graphql.schema.FieldCoordinates
 import graphql.schema.GraphQLFieldsContainer
 import graphql.schema.GraphQLScalarType
 import graphql.schema.GraphQLSchema
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema
 import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema
@@ -30,7 +29,7 @@ import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryM
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll
 import static graphql.schema.FieldCoordinates.coordinates
 
-class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
+class DownstreamQueryModifierSpec extends Specification {
 
     private ServiceMetadataImpl serviceMetadataMock
 
@@ -46,7 +45,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
 
     private DownstreamQueryModifier subjectUnderTest
 
-    void setup() {
+    def setup() {
         serviceMetadataMock = Mock(ServiceMetadataImpl)
 
         ServiceProvider serviceA = new TestService("serviceA", aSchema, null)
@@ -93,15 +92,15 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap())
     }
 
-    void canRemoveField() {
+    def "can Remove Field"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
+        when:
         // test 'a1 { af1 af2 b1 b2 b3 b4 b5 }' and remove b1..b5
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
         Field f2 = (Field) newA1.getSelectionSet().getSelections().get(1)
 
@@ -116,15 +115,15 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         a1.getSelectionSet().getSelections().size() == 7
     }
 
-    void canRemoveFieldWithReverseSelectionSet() {
+    def "can Remove Field With Reverse Selection Set"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
+        when:
         // test 'a1 { af2 b5 b4 b3 b2 b1 af1 }' and remove b5..b1
         Field a1 = Field.newField("a1").selectionSet(reverseSelectionSet).build()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
         Field f2 = (Field) newA1.getSelectionSet().getSelections().get(1)
 
@@ -140,7 +139,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
     }
 
     // TODO resolver defined in ObjectType
-    void canRemoveFieldsFromFragmentDefinition() {
+    def "can Remove Fields From Fragment Definition"() {
         given:
         //    fragment aFragment on A {
         //      af1
@@ -168,7 +167,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         f.getName() == af1.getName()
     }
 
-    void canRemoveFieldsFromInlineFragmentWithoutInterface() {
+    def "can Remove Fields From Inline Fragment Without Interface"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
@@ -185,10 +184,10 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
+        then:
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
         InlineFragment newInlineFragment = (InlineFragment) newA1.getSelectionSet().getSelections().get(1)
 
-        then:
         newA1.getSelectionSet().getSelections().size() == 2
         f.getName() == af2.getName()
 
@@ -198,7 +197,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         a1.getSelectionSet().getSelections().size() == 4
     }
 
-    void visitSelectionSet_addRequiredFields() {
+    def "visit Selection Set add Required Fields"() {
         given:
         KeyDirectiveMetadata keyDirectiveDataMock = Mock(KeyDirectiveMetadata.class)
         keyDirectiveDataMock.getFieldSet() >> ImmutableSet.of(Field.newField("id").build())
@@ -221,17 +220,17 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         selectionSet = SelectionSet.newSelectionSet().selection(af1).build()
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
 
+        when:
         AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         List<Selection> selections = newA1.getSelectionSet().getSelections()
 
-        then:
         selections.size() == 2
     }
 
-    void visitSelectionSet_reqFieldNotSelected_addRequiredFields() {
+    def "visit Selection Set req Field Not Selected add Required Fields"() {
         given:
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext.class)
         fieldResolverContextMock.getRequiredFields() >> ImmutableSet.of("reqdField")
@@ -246,20 +245,20 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
                         .build())
                 .build()
 
+        when:
         AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         // test '{ a1 { af1 reqdField} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualSelections = newA1.getSelectionSet().getSelections()
 
-        then:
         actualSelections.size() == 2
-        toFieldNameSet(actualSelections) == ["af1", "reqdField"]
+        toFieldNameSet(actualSelections).sort() == ["af1", "reqdField"]
     }
 
-    void canRenameQueryFields() {
+    def "can Rename Query Fields"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
@@ -273,7 +272,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         newAf3.getAlias() == "renamedAf3"
     }
 
-    void canRenameTypeFields() {
+    def "can Rename Type Fields"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
@@ -292,7 +291,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         selection.getAlias() == "renamedId1"
     }
 
-    void validateUserInputtedAliasOverridesRename() {
+    def "validate User Inputted Alias Overrides Rename"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
@@ -313,7 +312,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         selection.getAlias() == "customAlias"
     }
 
-    void canRemoveFieldsFromRenamedResolvers() {
+    def "can Remove Fields From Renamed Resolvers"() {
         given:
         AstTransformer astTransformer = new AstTransformer()
 
@@ -331,7 +330,7 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         newA1.getSelectionSet().getSelections().size() == 0
     }
 
-    void visitSelectionSet_reqFieldAlreadySelected_doesNotAddRequiredField() {
+    def "visit Selection Set reqField Already Selected does Not Add RequiredField"() {
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext.class)
         fieldResolverContextMock.getRequiredFields() >> ImmutableSet.of("reqdField")
 
@@ -350,17 +349,17 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
         AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
+        then:
         // test '{ a1 { af1 reqdField} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections()
 
-        then:
         actualA1Selections.size() == 2
 
-        toFieldNameSet(actualA1Selections) == ["af1", "reqdField" ]
+        toFieldNameSet(actualA1Selections).sort() == ["af1", "reqdField" ]
     }
 
-    void visitSelectionSet_noRequiredFields_doesNotAddRequiredField() {
+    def "visit Selection Set no Required Fields does Not Add Required Field"() {
         given:
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext.class)
         fieldResolverContextMock.getRequiredFields() >> Collections.emptySet()
@@ -375,21 +374,21 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
                         .build())
                 .build()
 
+        when:
         AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         // test '{ a1 { af1} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections()
 
-        then:
         actualA1Selections.size() == 1
 
         toFieldNameSet(actualA1Selections) == [ "af1" ]
     }
 
-    void visitSelectionSet_noFieldResolvers_doesNotAddRequiredField() {
+    def "visit Selection Set no Field Resolvers does Not Add Required Field"() {
         given:
         FieldCoordinates testFieldCoordinate = coordinates("AObjectType", "af1")
         serviceMetadataMock.getFieldResolverContext(testFieldCoordinate) >> null
@@ -401,15 +400,15 @@ class DownstreamQueryModifierSpec extends BaseIntegrationTestSpecification {
                         .build())
                 .build()
 
+        when:
         AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
-        when:
+        then:
         // test '{ a1 { af1} }', expected
         @SuppressWarnings("rawtypes")
         List<Selection> actualA1Selections = newA1.getSelectionSet().getSelections()
 
-        then:
         actualA1Selections.size() == 1
 
         toFieldNameSet(actualA1Selections) == [ "af1" ]

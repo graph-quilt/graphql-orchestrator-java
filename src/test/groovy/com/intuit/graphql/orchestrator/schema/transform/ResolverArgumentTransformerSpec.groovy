@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.schema.transform
 
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirectiveValidator
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getOperationType
@@ -14,12 +15,11 @@ import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import com.intuit.graphql.orchestrator.xtext.FieldContext
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph
 import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder
-import helpers.BaseIntegrationTestSpecification
 import org.eclipse.xtext.resource.XtextResourceSet
 
 import java.util.stream.Stream
 
-class ResolverArgumentTransformerSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentTransformerSpec extends Specification {
 
     UnifiedXtextGraph source
 
@@ -29,7 +29,7 @@ class ResolverArgumentTransformerSpec extends BaseIntegrationTestSpecification {
 
     ResolverArgumentDirectiveValidator validator
 
-    void setup() {
+    def setup() {
         validator = Mock(ResolverArgumentDirectiveValidator.class)
 
         //assume all validations pass unless otherwise stated.
@@ -63,7 +63,7 @@ class ResolverArgumentTransformerSpec extends BaseIntegrationTestSpecification {
         transformer.validator = validator
     }
 
-    void "resolver Argument Transforms Graph"() {
+    def "resolver Argument Transforms Graph"() {
         when:
         def final transformedSource = transformer.transform(source)
         def final resultFieldDefinition = queryType.getFieldDefinition().get(0)

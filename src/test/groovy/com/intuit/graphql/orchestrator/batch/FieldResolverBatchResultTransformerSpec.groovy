@@ -7,12 +7,12 @@ import graphql.GraphQLError
 import graphql.GraphqlErrorBuilder
 import graphql.execution.DataFetcherResult
 import graphql.schema.DataFetchingEnvironment
-import helpers.BaseIntegrationTestSpecification
 
 import org.apache.commons.collections4.MapUtils
 import org.apache.commons.lang3.ArrayUtils
+import spock.lang.Specification
 
-class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecification {
+class FieldResolverBatchResultTransformerSpec extends Specification {
 
     private static final String[] RESOLVER_SELECTION_SET = [ "a", "b", "c" ]
 
@@ -24,7 +24,7 @@ class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecifi
 
     private FieldResolverBatchResultTransformer subjectUnderTest
 
-    void setup() {
+    def setup() {
         fieldResolverContextMock = Mock(FieldResolverContext.class)
         dataFetchingEnvironmentMock = Mock(DataFetchingEnvironment.class)
 
@@ -38,7 +38,7 @@ class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecifi
                 .build()
     }
 
-    void constructorEmptyResolverSelectedFields() {
+    def "constructor Empty Resolver Selected Fields"() {
         when:
         new FieldResolverBatchResultTransformer(
                 ArrayUtils.EMPTY_STRING_ARRAY, fieldResolverContextMock)
@@ -47,7 +47,7 @@ class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecifi
         thrown(IllegalArgumentException)
     }
 
-    void toBatchResult_success() {
+    def "to Batch Result success"() {
         given:
         DataFetcherResult<Map<String, Object>> dataFetcherResult =
                 DataFetcherResult.<Map<String, Object>>newResult()
@@ -65,7 +65,7 @@ class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecifi
         actualDataFetcherResult.getData() == "cValue"
     }
 
-    void toBatchResult_NoDataHasErrors_throwsException() {
+    def "to Batch Result No Data Has Errors throws Exception"() {
         given:
         DataFetcherResult<Map<String, Object>> dataFetcherResult =
                 DataFetcherResult.<Map<String, Object>>newResult()
@@ -83,7 +83,7 @@ class FieldResolverBatchResultTransformerSpec extends BaseIntegrationTestSpecifi
         actualDataFetcherResult.getErrors().size() == 1
     }
 
-    void toBatchResult_nullData_throwsException() {
+    def "to Batch Result null Data throws Exception"() {
         given:
         Map<String, Object> data = new HashMap<>()
         data.put("a", null)

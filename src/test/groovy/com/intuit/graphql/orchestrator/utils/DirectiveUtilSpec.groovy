@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator.utils
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class DirectiveUtilSpec extends BaseIntegrationTestSpecification {
+class DirectiveUtilSpec extends Specification {
 
-    void buildDeprecationReasonNullInputTest() {
+    def "build Deprecation Reason Null Input Test"() {
         expect:
         DirectivesUtil.buildDeprecationReason(null) == null
     }

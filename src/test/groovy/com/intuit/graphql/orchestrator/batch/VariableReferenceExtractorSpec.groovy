@@ -1,9 +1,9 @@
 package com.intuit.graphql.orchestrator.batch
 
 import graphql.language.*
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
+class VariableReferenceExtractorSpec extends Specification {
 
     private VariableReference reference = VariableReference.newVariableReference()
             .name("test_reference")
@@ -11,11 +11,11 @@ class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
 
     private VariableReferenceExtractor extractor
 
-    void setup() {
+    def setup() {
         extractor = new VariableReferenceExtractor()
     }
 
-    void extractsVariableReferences() {
+    def "extracts Variable References"() {
         when:
         extractor.captureVariableReferences(Collections.singletonList(reference))
 
@@ -23,7 +23,7 @@ class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
         extractor.getVariableReferences().toArray() == [reference]
     }
 
-    void extractsVariableReferenceInObject() {
+    def "extracts Variable Reference In Object"() {
         given:
         ObjectValue objectValue = ObjectValue.newObjectValue()
                 .objectField(ObjectField.newObjectField().value(reference).name("test_object").build()).build()
@@ -35,7 +35,7 @@ class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
         extractor.getVariableReferences().toArray() == [reference]
     }
 
-    void extractsVariableReferenceInArray() {
+    def "extracts Variable Reference In Array"() {
         given:
         ArrayValue arrayValue = ArrayValue.newArrayValue()
                 .value(IntValue.newIntValue().value(BigInteger.ONE).build())
@@ -48,7 +48,7 @@ class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
         extractor.getVariableReferences().toArray() == [reference]
     }
 
-    void extractsNoVariableReferences() {
+    def "extracts No Variable References"() {
         given:
         ArrayValue arrayValue = ArrayValue.newArrayValue()
                 .value(IntValue.newIntValue(BigInteger.ONE).build())
@@ -62,7 +62,7 @@ class VariableReferenceExtractorSpec extends BaseIntegrationTestSpecification {
         extractor.getVariableReferences().isEmpty()
     }
 
-    void returnsDifferentReferences() {
+    def "returns Different References"() {
         given:
         def one = extractor.getVariableReferences()
         def two = extractor.getVariableReferences()

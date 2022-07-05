@@ -8,11 +8,11 @@ import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.schema.GraphQLSchema
 import graphql.schema.idl.RuntimeWiring
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.TestHelper.document
 
-class ArgumentAppenderVisitorSpec extends BaseIntegrationTestSpecification {
+class ArgumentAppenderVisitorSpec extends Specification {
 
     private RuntimeWiring schemaRuntimeWiring = RuntimeWiring.newRuntimeWiring()
             .type("Query", { builder -> builder.defaultDataFetcher({ env -> null }) })
@@ -23,7 +23,7 @@ class ArgumentAppenderVisitorSpec extends BaseIntegrationTestSpecification {
             .type("NestedType", { builder -> builder.defaultDataFetcher({ env -> null }) })
             .build()
 
-    void addsArgumentToField() {
+    def "adds Argument To Field"() {
         given:
         final String schema = "schema { query: Query } type Query { needs_arguments: Int }"
         GraphQLSchema graphQLSchema = TestHelper.schema(schema, schemaRuntimeWiring)
@@ -51,7 +51,7 @@ class ArgumentAppenderVisitorSpec extends BaseIntegrationTestSpecification {
                 .isEmpty()
     }
 
-    void addsArgumentToNestedField() {
+    def "adds Argument To Nested Field"() {
         given:
         final String nestedSchema = "schema { query: Query } type Query { root : NestedType } type NestedType { needs_arguments: Int }"
         GraphQLSchema graphQLSchema = TestHelper.schema(nestedSchema, nestedSchemaRuntimeWiring)

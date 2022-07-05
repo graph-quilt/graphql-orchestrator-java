@@ -11,11 +11,11 @@ import com.intuit.graphql.orchestrator.stitching.XtextStitcher
 import com.intuit.graphql.orchestrator.xtext.XtextGraph
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder
 import graphql.schema.GraphQLObjectType
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ExceptionSpec extends BaseIntegrationTestSpecification {
+class ExceptionSpec extends Specification {
 
-    void NestedTypePrimitiveAndObjectType_TypeConflictExceptionTest() {
+    void "Nested Type Primitive And Object Type - Type Conflict Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -52,7 +52,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
                 "Nested fields (parentType:A, field:bbc) are not eligible to merge")
     }
 
-    void NestedTypeUnEqualArgumentsExceptionTest() {
+    def "Nested Type UnEqual Arguments Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -92,7 +92,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
                 "Nested fields (parentType:A, field:bbc) are not eligible to merge")
     }
 
-    void NestedTypeMissingArgumentsExceptionTest() {
+    def "Nested Type Missing Arguments Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -131,7 +131,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
                 "Nested fields (parentType:A, field:bbc) are not eligible to merge")
     }
 
-    void NestedTypeMismatchedArgumentsExceptionTest() {
+    def "Nested Type Mismatched Arguments Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -172,7 +172,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
                 "Nested fields (parentType:A, field:bbc) are not eligible to merge")
     }
 
-    void NestedWrapedTypeMismatchedArgumentsExceptionTest() {
+    def "Nested Wraped Type Mismatched Arguments Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -212,7 +212,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
                 "Nested fields (parentType:A, field:bbc) are not eligible to merge")
     }
 
-    void NestedTypeMatchedArgumentsNoExceptionTest() {
+    def "Nested Type Matched Arguments No Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -251,7 +251,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void NestedTypeMatchedArgumentsMultilevelNoExceptionTest() {
+    def "Nested Type Matched Arguments Multilevel No Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -299,7 +299,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         bbcType.getFieldDefinition("dd") != null
     }
 
-    void NestedTypeMisMatchedArgumentsMultilevelExceptionTest() {
+    def "Nested Type MisMatched Arguments Multilevel Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -342,7 +342,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
                 "Nested fields (parentType:A, field:bbc) are not eligible to merge")
     }
 
-    void NestedTypeUnEqualDirectivesExceptionTest() {
+    def "Nested Type UnEqual Directives Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -385,7 +385,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         exception.message.contains("Unequal directives")
     }
 
-    void NestedMismatchedDirectivesExceptionTest() {
+    def "Nested Mismatched Directives Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -429,7 +429,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         exception.message.contains("Missing directive")
     }
 
-    void NestedUnEqualDirectiveLocationsExceptionTest() {
+    def "Nested UnEqual Directive Locations Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -472,7 +472,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         exception.message.contains("Unequal directive locations")
     }
 
-    void NestedMismatchedDirectiveLocationsExceptionTest() {
+    def "Nested Mismatched Directive Locations Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -515,7 +515,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         exception.message.contains("Missing directive location")
     }
 
-    void NestedMatchedDirectivesNoExceptionTest() {
+    def "Nested Matched Directives No Exception Test"() {
         given:
         String schema1 = '''
             schema { query: Query }
@@ -565,7 +565,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         bbcType.getFieldDefinition("dd") != null
     }
 
-    void IsAGraphQLObjectType_ValidationExceptionTest() {
+    def "Is A GraphQL Object Type Validation Exception Test"() {
         given:
         String schema = '''
             schema { query: Query }
@@ -586,7 +586,7 @@ class ExceptionSpec extends BaseIntegrationTestSpecification {
         exception.message.endsWith("is not an ObjectType")
     }
 
-    void HasTheSameTypeName_ValidationExceptionTest() {
+    def "Has The Same Type Name Validation Exception Test"() {
         given:
         String schema = '''
             schema { query: Query }

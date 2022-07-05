@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getOperationType
@@ -16,13 +16,13 @@ import com.intuit.graphql.orchestrator.xtext.XtextResourceSetBuilder
 import java.util.stream.Stream
 import org.eclipse.xtext.resource.XtextResourceSet
 
-class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification {
+class ResolverDirectiveTypeResolverSpec extends Specification {
 
     private ResolverDirectiveTypeResolver resolver
 
     public UnifiedXtextGraph source
 
-    void setup() {
+    def setup() {
         this.resolver = new ResolverDirectiveTypeResolver()
 
         final String schemaString = '''
@@ -47,7 +47,7 @@ class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification
                 .build()
     }
 
-    void resolvesRootTypeOfField() {
+    def "resolves Root Type Of Field"() {
         given:
         String field = "a.b"
 
@@ -57,7 +57,7 @@ class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification
         result.getName() == "Int"
     }
 
-    void fieldDoesNotExist() {
+    def "field Does Not Exist"() {
         given:
         String field = "c.d"
 
@@ -68,7 +68,7 @@ class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification
         thrown(ResolverArgumentFieldRootObjectDoesNotExist)
     }
 
-    void listsNotSupported() {
+    def "lists Not Supported"() {
         given:
         final String field = "list"
 
@@ -79,7 +79,7 @@ class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification
         thrown(ResolverArgumentListTypeNotSupported)
     }
 
-    void prematureLeafTypeScalar() {
+    def "premature Leaf Type Scalar"() {
         given:
         final String field = "premature_leaf.nested"
 
@@ -90,7 +90,7 @@ class ResolverDirectiveTypeResolverSpec extends BaseIntegrationTestSpecification
         thrown(ResolverArgumentPrematureLeafType)
     }
 
-    void prematureLeafTypeEnum() {
+    def "premature Leaf Type Enum"() {
         given:
         final String field = "some_enum.nested"
 

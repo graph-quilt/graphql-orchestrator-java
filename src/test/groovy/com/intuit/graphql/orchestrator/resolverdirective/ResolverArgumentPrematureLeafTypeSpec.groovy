@@ -1,11 +1,11 @@
 package com.intuit.graphql.orchestrator.resolverdirective
 
 import com.intuit.graphql.orchestrator.xtext.FieldContext
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class ResolverArgumentPrematureLeafTypeSpec extends BaseIntegrationTestSpecification {
+class ResolverArgumentPrematureLeafTypeSpec extends Specification {
 
-    void producesCorrectErrorMessage() {
+    def "produces Correct Error Message"() {
         given:
         final ResolverArgumentPrematureLeafType error = new ResolverArgumentPrematureLeafType(
                 "argName", "enumType", new FieldContext("rootObject", "rootField"), "tax")

@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
@@ -217,15 +216,17 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
   private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
       Map<String, Object> mergedVariables) {
-    if (CollectionUtils.isNotEmpty(filteredVariableDefinitions) && MapUtils.isEmpty(mergedVariables)) {
-      throw new IllegalArgumentException("Failed to filter variables.  Variables are empty.");
+    if (MapUtils.isEmpty(mergedVariables)) {
+      return mergedVariables;
     }
 
     Map<String, Object> output = new HashMap<>();
     filteredVariableDefinitions
         .forEach(variableDefinition -> {
-          String key = variableDefinition.getName();
-          output.put(key, mergedVariables.get(key));
+          String variableDefinitionName = variableDefinition.getName();
+          if (mergedVariables.containsKey(variableDefinitionName)) {
+            output.put(variableDefinitionName, mergedVariables.get(variableDefinitionName));
+          }
         });
     return output;
   }

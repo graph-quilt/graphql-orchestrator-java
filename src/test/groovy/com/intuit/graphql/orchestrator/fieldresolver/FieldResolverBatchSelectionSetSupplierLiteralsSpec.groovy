@@ -11,13 +11,13 @@ import graphql.language.ObjectValue
 import graphql.language.SelectionSet
 import graphql.language.*
 import graphql.schema.DataFetchingEnvironment
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildObjectTypeDefinition
 import static java.util.Collections.singletonList
 
-class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegrationTestSpecification {
+class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 
@@ -35,7 +35,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
 
     private FieldResolverBatchSelectionSetSupplier subject
 
-    void setup() {
+    def setup() {
         dataFetchingEnvironmentMock = Mock(DataFetchingEnvironment.class)
         dfeFieldMock = Mock(Field.class)
         fieldDefinitionWithResolver = Mock(FieldDefinition.class)
@@ -58,7 +58,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
             .build()
     }
 
-    void testWithObjectLiteralsArgument() {
+    def "test With Object Literals Argument"() {
         given:
         testDFEDataSource.put("petId", "pet-901")
 
@@ -101,7 +101,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "pet-901"
     }
 
-    void get_argumentTypeisID_LiteralIsString() {
+    def "get argument Type is ID, Literal Is String"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLID.getName())
@@ -127,7 +127,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "stringArgumentValue"
     }
 
-    void get_argumentTypeisID_LiteralIsNumeric() {
+    def "get argument Type is ID, Literal Is Numeric"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLID.getName())
@@ -153,7 +153,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "123456789"
     }
 
-    void get_argumentTypeisString_LiteralIsString() {
+    def "get argument Type is String, Literal Is String"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLString.getName())
@@ -179,7 +179,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "stringArgumentValue"
     }
 
-    void get_argumentTypeisNonNullString_LiteralIsString() {
+    def "get argument Type is Non Null String, Literal Is String"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLString.getName())
@@ -205,7 +205,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "stringArgumentValue"
     }
 
-    void get_argumentTypeisString_LiteralIsInt() {
+    def "get argument Type is String, Literal Is Int"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLString.getName())
@@ -231,7 +231,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "123456789"
     }
 
-    void get_argumentTypeisString_LiteralIsBoolean() {
+    def "get argument Type is String, Literal Is Boolean"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLString.getName())
@@ -257,7 +257,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualStringValue.getValue() == "true"
     }
 
-    void get_argumentTypeisInt_LiteralIsInt() {
+    def "get argument Type is Int, Literal Is Int"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLInt.getName())
@@ -283,7 +283,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualIntValue.getValue().intValue() == 123456789
     }
 
-    void get_argumentTypeisBoolean_LiteralIsBoolean() {
+    def "get argument Type is Boolean, Literal Is Boolean"() {
         given:
         PrimitiveType targetArgumentType = GraphQLFactoryDelegate.createPrimitiveType()
         targetArgumentType.setType(Scalars.GraphQLBoolean.getName())
@@ -309,7 +309,7 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends BaseIntegration
         actualBooleanValue.isValue()
     }
 
-    void get_argumentTypeisEnum_LiteralIsAnValidEnumValue() {
+    def "get argument Type is Enum, Literal Is An Valid Enum Value"() {
         given:
         EnumValueDefinition enumValue1 = GraphQLFactoryDelegate.createEnumValueDefinition()
         enumValue1.setEnumValue("ENUM_VALUE_1")

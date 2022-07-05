@@ -4,9 +4,9 @@ import graphql.execution.MergedField
 import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
 import graphql.schema.DataFetchingEnvironmentImpl
-import helpers.BaseIntegrationTestSpecification
+import spock.lang.Specification
 
-class AliasablePropertyDataFetcherSpec extends BaseIntegrationTestSpecification {
+class AliasablePropertyDataFetcherSpec extends Specification {
 
     private static final MergedField aliasField = MergedField.newMergedField()
             .addField(Field.newField().name("original").alias("alias").build()).build()
@@ -15,12 +15,12 @@ class AliasablePropertyDataFetcherSpec extends BaseIntegrationTestSpecification 
 
     private DataFetchingEnvironmentImpl.Builder dfeBuilder
 
-    void setup() {
+    def setup() {
         this.data = new HashMap<>()
         dfeBuilder = DataFetchingEnvironmentImpl.newDataFetchingEnvironment()
     }
 
-    void getsCorrectAliasValueFromMap() {
+    def "gets Correct Alias Value From Map"() {
         given:
         data.put("alias", "data")
         final DataFetchingEnvironment dataFetchingEnvironment = dfeBuilder
@@ -35,7 +35,7 @@ class AliasablePropertyDataFetcherSpec extends BaseIntegrationTestSpecification 
         aliasablePropertyDataFetcher.get(dataFetchingEnvironment) == "data"
     }
 
-    void getsOriginalValueWithField() {
+    def "gets Original Value With Field"() {
         given:
         data.put("original", "data")
         final MergedField fieldWithoutAlias = MergedField.newMergedField()
@@ -51,7 +51,7 @@ class AliasablePropertyDataFetcherSpec extends BaseIntegrationTestSpecification 
         aliasablePropertyDataFetcher.get(dataFetchingEnvironment) == "data"
     }
 
-    void delegatesToDefaultDataFetcher() {
+    def "delegates To Default Data Fetcher"() {
         given:
         final DataFetchingEnvironment dataFetchingEnvironment = dfeBuilder.source(new Original())
                 .build()
