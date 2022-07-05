@@ -14,21 +14,9 @@ import helpers.BaseIntegrationTestSpecification
 import org.dataloader.BatchLoader
 import org.dataloader.DataLoader
 import org.dataloader.DataLoaderRegistry
-import org.junit.Test
-import org.mockito.ArgumentCaptor
 
-import java.util.Collections
-import java.util.HashMap
-import java.util.Map
 import java.util.concurrent.CompletableFuture
 
-import static org.assertj.core.api.Assertions.assertThat
-import static org.assertj.core.api.Assertions.assertThat
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.any
-import static org.mockito.ArgumentMatchers.anyMap
-import static org.mockito.Mockito.doReturn
-import static org.mockito.Mockito.doReturn
 
 class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
@@ -71,7 +59,7 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
     private DataLoaderRegistry dataLoaderRegistry
 
-    void setup() {
+    def setup() {
         mockHelper = Mock(ResolverArgumentDataFetcherHelper.class)
         mockArgumentResolver = Mock(ArgumentResolver.class)
 
@@ -86,7 +74,7 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         dataLoaderRegistry.register(namespace, DataLoader.newDataLoader(batchLoader))
     }
 
-    void testBuilder() {
+    def "test Builder"() {
         when:
         ResolverArgumentDataFetcher.newBuilder()
                 .queriesByResolverArgument(Collections.emptyMap())
@@ -96,7 +84,7 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         noExceptionThrown()
     }
 
-    void testBuilderResolverDataIsNull() {
+    def "test Builder Resolver Data Is Null"() {
         when:
         ResolverArgumentDataFetcher.newBuilder()
                 .queriesByResolverArgument(null)
@@ -105,7 +93,7 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void testBuilderNamespaceIsNull() {
+    def "test Builder Namespace Is Null"() {
         when:
         ResolverArgumentDataFetcher.newBuilder()
                 .namespace(null)
@@ -114,7 +102,7 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
-    void singleArgument() {
+    def "single Argument"() {
         given:
         DataFetcherResult<Object> dataFetcherResult = DataFetcherResult.newResult()
                 .data("test_response").build()
@@ -148,16 +136,19 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         result.getData() == "test_response"
     }
 
-    void multipleArguments() {
+    def "multiple Arguments"() {
         given:
         DataFetcherResult<Object> dataFetcherResult = DataFetcherResult.newResult()
                 .data("test_response").build()
 
-        Map<ResolverArgumentDirective, CompletableFuture<ExecutionResult>> mockResolverData = new HashMap<>();
-        mockResolverData.put(debtArgumentResolver, CompletableFuture.completedFuture(debtExecutionResult));
-        mockResolverData.put(incomeArgumentResolver, CompletableFuture.completedFuture(incomeExecutionResult));
+        Map<ResolverArgumentDirective, CompletableFuture<ExecutionResult>> mockResolverData = new HashMap<>()
+        mockResolverData.put(debtArgumentResolver, CompletableFuture.completedFuture(debtExecutionResult))
+        mockResolverData.put(incomeArgumentResolver, CompletableFuture.completedFuture(incomeExecutionResult))
 
-        mockArgumentResolver.resolveArguments(_ as DataFetchingEnvironment, _ as Map) >> mockResolverData
+        mockArgumentResolver.resolveArguments(_ as DataFetchingEnvironment, _ as Map) >> { arguments ->
+            assert ((Map<?, ?>) arguments[1]).size() == 2
+            return mockResolverData
+        }
 
         mockHelper.callBatchLoaderWithArguments(_ as DataFetchingEnvironment, _ as Map) >> CompletableFuture.completedFuture(dataFetcherResult)
 
@@ -166,9 +157,8 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         map.put(incomeArgumentResolver, incomeQuery)
 
         ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
-                .namespace(namespace)
                 .queriesByResolverArgument(map)
-                .build()
+                .namespace(namespace).build()
 
         dataFetcher.argumentResolver = mockArgumentResolver
         dataFetcher.helper = mockHelper
@@ -178,18 +168,13 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
                 .build()
 
         when:
-        //  PIC::TODO : this line is running into null pointer exception
         DataFetcherResult<Object> result = dataFetcher.get(dataFetchingEnvironment).join()
 
         then:
         result.getData() == "test_response"
-
-        1 * mockArgumentResolver.resolveArguments(_ as DataFetchingEnvironment, _ as Map) >> { arguments ->
-            assert ((Map<?, ?>) arguments[1]).size() == 2
-        }
     }
 
-    void errors() {
+    def "errors"() {
         given:
         ExecutionResult errorResult = ExecutionResultImpl.newExecutionResult()
                 .addError(GraphqlErrorBuilder.newError().message("boom").build())
