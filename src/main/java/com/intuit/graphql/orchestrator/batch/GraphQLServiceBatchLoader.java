@@ -1,5 +1,11 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
+import static graphql.language.AstPrinter.printAstCompact;
+import static graphql.language.OperationDefinition.Operation.QUERY;
+import static graphql.schema.GraphQLTypeUtil.unwrapAll;
+import static java.util.Objects.requireNonNull;
+
 import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
@@ -30,9 +36,6 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import org.apache.commons.lang3.StringUtils;
-import org.dataloader.BatchLoader;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,12 +47,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
-import static graphql.language.AstPrinter.printAstCompact;
-import static graphql.language.OperationDefinition.Operation.QUERY;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
-import static java.util.Objects.requireNonNull;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -181,6 +181,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         .directives(operationDirectives)
         .build();
 
+    Map<String, Object> filteredVariables = mergedVariables;
+
     if (!variableDefinitions.isEmpty()) {
       final Set<String> foundVariableReferences = variableDefinitionFilter.getVariableReferencesFromNode(
           graphQLSchema,
@@ -194,20 +196,39 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           .filter(variableDefinition -> foundVariableReferences.contains(variableDefinition.getName()))
           .collect(Collectors.toList());
 
+      filteredVariables = filterVariables(filteredVariableDefinitions, mergedVariables);
+
       query = query.transform(builder -> builder.variableDefinitions(filteredVariableDefinitions));
     }
 
     if (serviceMetadata.requiresTypenameInjection()) {
-      query = queryOperationModifier.modifyQuery(graphQLSchema, query, mergedFragmentDefinitions, mergedVariables);
+      query = queryOperationModifier.modifyQuery(graphQLSchema, query, mergedFragmentDefinitions, filteredVariables);
     }
 
-    return execute(context, query, mergedVariables, fragmentsAsDefinitions)
+    return execute(context, query, filteredVariables, fragmentsAsDefinitions)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, keys))
         .thenApply(batchResult -> {
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
+  }
+
+  private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
+      Map<String, Object> mergedVariables) {
+    if (MapUtils.isEmpty(mergedVariables)) {
+      return mergedVariables;
+    }
+
+    Map<String, Object> output = new HashMap<>();
+    filteredVariableDefinitions
+        .forEach(variableDefinition -> {
+          String variableDefinitionName = variableDefinition.getName();
+          if (mergedVariables.containsKey(variableDefinitionName)) {
+            output.put(variableDefinitionName, mergedVariables.get(variableDefinitionName));
+          }
+        });
+    return output;
   }
 
   private GraphQLFieldDefinition getRootFieldDefinition(ExecutionStepInfo executionStepInfo) {

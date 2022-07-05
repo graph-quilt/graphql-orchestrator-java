@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
@@ -52,7 +53,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
       List<TypeDefinition> baseEntityTypes = unifiedXtextGraph.getEntityExtensionsByNamespace().keySet().stream()
               .flatMap(namespace -> createEntityMergingContexts(namespace, unifiedXtextGraph))
               .peek(this::validateBaseExtensionCompatibility)
-              .map(entityTypeMerger::mergeIntoBaseType)
+              .map(entityMergingContext ->  entityTypeMerger.mergeIntoBaseType(entityMergingContext, unifiedXtextGraph))
               .collect(Collectors.toList());
 
       //prune inaccessible info from entity types
@@ -78,6 +79,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
                       .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
                       .entityExtensionMetadata(entityExtensionMetadata)
                       .build();
+
               addToCodeRegistry(fieldContext, dataFetcherContext, unifiedXtextGraph);
           });
       }
@@ -175,11 +177,18 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
           extFieldDefinitions = getFieldDefinitions(entityMergingContext.getExtensionSystemDefinition().getTypeExtension());
       }
 
-      List<String> baseFieldNames = getFieldDefinitions(entityMergingContext.getBaseType())
-              .stream().map(FieldDefinition::getName).collect(Collectors.toList());
+      List<FieldDefinition> baseFields = getFieldDefinitions(entityMergingContext.getBaseType());
+      List<String> baseFieldNames = baseFields.stream()
+              .map(FieldDefinition::getName).collect(Collectors.toList());
+
+      List<String> baseFieldResolvers = baseFields.stream()
+              .filter(fieldDefinition -> definitionContainsDirective(fieldDefinition, RESOLVER_DIRECTIVE_NAME))
+              .map(FieldDefinition::getName)
+              .collect(Collectors.toList());
 
       extFieldDefinitions.forEach( fieldDefinition -> {
           boolean sharedField = baseFieldNames.contains(fieldDefinition.getName());
+          boolean baseFieldIsResolver = baseFieldResolvers.contains(fieldDefinition.getName());
           AtomicBoolean hasExternalAtomicBoolean = new AtomicBoolean(false);
 
           fieldDefinition.getDirectives().forEach(directive -> {
@@ -190,7 +199,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
               }
           });
 
-          if(sharedField && !hasExternalAtomicBoolean.get()) {
+          if(sharedField && !hasExternalAtomicBoolean.get() && !baseFieldIsResolver) {
               throw new SharedOwnershipException(fieldDefinition.getName());
           }
       });

@@ -3,6 +3,8 @@ package com.intuit.graphql.orchestrator.stitching;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
+import com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil;
+import com.intuit.graphql.orchestrator.batch.EntityFetcherBatchLoader;
 import com.intuit.graphql.orchestrator.batch.FieldResolverBatchLoader;
 import com.intuit.graphql.orchestrator.batch.GraphQLServiceBatchLoader;
 import com.intuit.graphql.orchestrator.datafetcher.FieldResolverDirectiveDataFetcher;
@@ -10,7 +12,6 @@ import com.intuit.graphql.orchestrator.datafetcher.ResolverArgumentDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.RestDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher;
 import com.intuit.graphql.orchestrator.federation.EntityDataFetcher;
-import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDataLoaderUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentQueryBuilder;
 import com.intuit.graphql.orchestrator.schema.Operation;
@@ -33,8 +34,8 @@ import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer
 import com.intuit.graphql.orchestrator.schema.transform.UnionAndInterfaceTransformer;
 import com.intuit.graphql.orchestrator.utils.XtextToGraphQLJavaVisitor;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
+import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder;
 import graphql.execution.DataFetcherResult;
 import graphql.language.OperationDefinition;
@@ -58,6 +59,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
@@ -127,10 +129,18 @@ public class XtextStitcher implements Stitcher {
           .fieldResolverContext(fieldResolverContext)
           .build();
 
-      String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldResolverContext);
+      String batchLoaderKey = DataLoaderKeyUtil.createDataLoaderKeyFrom(fieldResolverContext);
       batchLoaders.put(batchLoaderKey, fieldResolverDataLoader);
 
     });
+
+    stitchedGraph.getEntityExtensionMetadatas().forEach(metadata ->
+      metadata.getRequiredFieldsByFieldName().forEach((fieldName, fields) -> {
+        EntityFetcherBatchLoader entityFetcherBatchLoader = new EntityFetcherBatchLoader(metadata, fieldName);
+        String batchLoaderKey = createDataLoaderKey(metadata.getTypeName(), fieldName);
+        batchLoaders.put(batchLoaderKey, entityFetcherBatchLoader);
+      })
+    );
 
     final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph,
         serviceMetadataMap);
@@ -155,6 +165,7 @@ public class XtextStitcher implements Stitcher {
    */
   private Map<String, BatchLoader> getBatchLoaders(Map<String, ServiceMetadata> serviceMetadataMap) {
 
+    //created an entity batch loader here
     HashMap<String, BatchLoader> batchLoaderMap = new HashMap<>();
     serviceMetadataMap.forEach((namespace, serviceMetadata) -> {
       if (serviceMetadata.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || serviceMetadata
@@ -229,7 +240,7 @@ public class XtextStitcher implements Stitcher {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
       } else if (type == ENTITY_FETCHER && mergedGraph.getType(fieldContext.getParentType()) != null) {
-        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata())
+        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata().getTypeName())
         );
       }
     });
@@ -324,9 +335,9 @@ public class XtextStitcher implements Stitcher {
      */
     private List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> defaultPostMergeTransformers() {
       return Arrays.asList(
+          new FederationTransformerPostMerge(),
           new ResolverArgumentTransformer(),
           new FieldResolverTransformerPostMerge(),
-          new FederationTransformerPostMerge(),
           new GraphQLAdapterTransformer()
       );
     }
