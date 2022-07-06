@@ -6,7 +6,7 @@ import helpers.BaseIntegrationTestSpecification
 
 class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
 
-    void testQueryOnNestedCombinedSchema() {
+    def "test Query On Nested Combined Schema"() {
         given:
         ServiceProvider[] services = [
                 new PersonService(), new NestedBooksService(), new NestedPetsService() ]
@@ -17,7 +17,7 @@ class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
         when:
         // Test query using ExecutionInput
         ExecutionInput personEI = ExecutionInput.newExecutionInput()
-            .query('''
+                .query('''
                 { 
                     person { 
                         id name book {
@@ -29,7 +29,7 @@ class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
                     } 
                 }
             ''')
-            .build()
+                .build()
 
         then:
         Map<String, Object> executionResult = orchestrator.execute(personEI).get().toSpecification()
