@@ -15,6 +15,7 @@ import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDir
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.checkFieldsCompatibility;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isEntity;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInaccessible;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isScalarType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
@@ -50,21 +51,24 @@ public class XtextTypeConflictResolver {
       boolean conflictingTypeisEntity = isEntity(conflictingType);
       boolean existingTypeIsEntity = isEntity(existingType);
       boolean entityComparison =  conflictingTypeisEntity && existingTypeIsEntity;
+      boolean isInaccessibleComparison = isInaccessible(conflictingType) || isInaccessible(existingType);
       boolean baseExtensionComparison = definitionContainsDirective(existingType, FEDERATION_EXTENDS_DIRECTIVE) || definitionContainsDirective(conflictingType, FEDERATION_EXTENDS_DIRECTIVE);
 
-      if(isEntity(conflictingType) != isEntity(existingType)) {
-        throw new TypeConflictException("Type %s is conflicting with existing type %s. Only one of the types are an entity.");
-      }
+      if(!isInaccessibleComparison) {
+        if(isEntity(conflictingType) != isEntity(existingType)) {
+          throw new TypeConflictException("Type %s is conflicting with existing type %s. Only one of the types are an entity.");
+        }
 
-      //In this specific case one is an entity and another is not an entity
-      if(entityComparison && !baseExtensionComparison) {
-        throw new TypeConflictException(
-          String.format("Type %s is conflicting with existing type %s. Two schemas cannot own an entity.", toDescriptiveString(conflictingType),
-                  toDescriptiveString(existingType)));
-      }
+        //In this specific case one is an entity and another is not an entity
+        if(entityComparison && !baseExtensionComparison) {
+          throw new TypeConflictException(
+                  String.format("Type %s is conflicting with existing type %s. Two schemas cannot own an entity.", toDescriptiveString(conflictingType),
+                          toDescriptiveString(existingType)));
+        }
 
-      if(!(conflictingType instanceof UnionTypeDefinition || isScalarType(conflictingType) || conflictingType instanceof EnumTypeDefinition)) {
-        checkFieldsCompatibility(existingType, conflictingType, existingTypeIsEntity, conflictingTypeisEntity,federatedComparison);
+        if(!(conflictingType instanceof UnionTypeDefinition || isScalarType(conflictingType) || conflictingType instanceof EnumTypeDefinition)) {
+          checkFieldsCompatibility(existingType, conflictingType, existingTypeIsEntity, conflictingTypeisEntity,federatedComparison);
+        }
       }
     }
   }

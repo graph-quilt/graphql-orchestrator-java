@@ -7,15 +7,17 @@ interface Vehicle {
     wheels: Int
     type: String
     features: String
+    newField: String
 }
 
 type Car implements Vehicle {
     wheels: Int
     type: String
     features: String
-    color: String
     make: Manufacturer
     model: String
+    color: String
+    newField: String
 }
 
 
