@@ -1,21 +1,12 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.GraphQLOrchestrator.DATA_LOADER_REGISTRY_CONTEXT_KEY;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_FIELD_SEPARATOR;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverOperationName;
-import static graphql.language.AstPrinter.printAstCompact;
-
 import com.intuit.graphql.orchestrator.ServiceProvider;
-import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverBatchSelectionSetSupplier;
-import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverGraphQLError;
 import com.intuit.graphql.orchestrator.fieldresolver.QueryOperationFactory;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
-import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
@@ -25,13 +16,12 @@ import graphql.language.FragmentDefinition;
 import graphql.language.FragmentSpread;
 import graphql.language.OperationDefinition;
 import graphql.language.SelectionSet;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLFieldsContainer;
-import graphql.schema.GraphQLSchema;
+import lombok.Builder;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.dataloader.BatchLoader;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +29,11 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import lombok.Builder;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.GraphQLOrchestrator.DATA_LOADER_REGISTRY_CONTEXT_KEY;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_FIELD_SEPARATOR;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverOperationName;
+import static graphql.language.AstPrinter.printAstCompact;
 
 public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -56,14 +47,20 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
 
   private final BatchResultTransformer batchResultTransformer;
 
+  private final ServiceMetadata serviceMetadata;
+
   private final QueryOperationFactory queryOperationFactory = new QueryOperationFactory();
 
+
   @Builder
-  public FieldResolverBatchLoader(FieldResolverContext fieldResolverContext) {
+  public FieldResolverBatchLoader(FieldResolverContext fieldResolverContext, ServiceMetadata serviceMetadata) {
     Objects.requireNonNull(fieldResolverContext, "fieldResolverContext is required");
     Objects.requireNonNull(fieldResolverContext.getResolverDirectiveDefinition(),
         "resolverDirectiveDefinition is required");
+    Objects.requireNonNull(serviceMetadata, "serviceMetadata is required");
+    Objects.requireNonNull(serviceMetadata.getServiceProvider(), "serviceProvider is required");
 
+    this.serviceMetadata = serviceMetadata;
     this.fieldResolverContext = fieldResolverContext;
     ResolverDirectiveDefinition resolverDirectiveDefinition = fieldResolverContext.getResolverDirectiveDefinition();
 
@@ -76,11 +73,11 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
 
     String originalOperationName = dataFetchingEnvironments.get(0).getOperationDefinition().getName();
     String downstreamQueryOpName = createFieldResolverOperationName(originalOperationName);
-    ServiceMetadata serviceMetadata = getServiceMetadata(dataFetchingEnvironments.get(0));
 
     FieldResolverBatchSelectionSetSupplier fieldResolverBatchSelectionSetSupplier =
             new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields,
                 dataFetchingEnvironments, fieldResolverContext, serviceMetadata);
+
     SelectionSet selectionSet = fieldResolverBatchSelectionSetSupplier.get();
     OperationDefinition downstreamQueryOpDef = queryOperationFactory.create(downstreamQueryOpName, selectionSet);
 
@@ -102,42 +99,6 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
         .thenApply(result -> batchResultTransformer.toBatchResult(result, dataFetchingEnvironments));
   }
 
-  private ServiceMetadata getServiceMetadata(DataFetchingEnvironment dataFetchingEnvironment) {
-    GraphQLSchema graphQLSchema = dataFetchingEnvironment.getGraphQLSchema();
-    GraphQLCodeRegistry graphQLCodeRegistry = graphQLSchema.getCodeRegistry();
-
-    int start = 0;
-    if (FQN_KEYWORD_QUERY.equals(resolverSelectedFields[0])) {
-      start = 1;
-    }
-
-    GraphQLFieldsContainer currentParentType = graphQLSchema.getQueryType();
-    for (int i = start; i < resolverSelectedFields.length; i++) {
-      String fieldName = resolverSelectedFields[i];
-      GraphQLFieldDefinition graphQLFieldDefinition = currentParentType.getFieldDefinition(fieldName);
-      FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(currentParentType.getName(), fieldName);
-      DataFetcher<?> dataFetcher = graphQLCodeRegistry.getDataFetcher(fieldCoordinates, graphQLFieldDefinition);
-      if (Objects.nonNull(dataFetcher) && dataFetcher instanceof ServiceDataFetcher) {
-        ServiceDataFetcher serviceDataFetcher = (ServiceDataFetcher) dataFetcher;
-        return serviceDataFetcher.getServiceMetadata();
-      }
-      if (!(graphQLFieldDefinition.getType() instanceof GraphQLFieldsContainer)) {
-        break;
-      }
-      currentParentType = (GraphQLFieldsContainer) graphQLFieldDefinition.getType();
-    }
-
-    FieldContext fieldContext = this.fieldResolverContext.getTargetFieldContext();
-    FieldCoordinates fieldCoordinates = fieldContext.getFieldCoordinates();
-    throw FieldResolverGraphQLError.builder()
-        .errorMessage("Service DataFetcher not found.")
-        .fieldName(fieldCoordinates.getFieldName())
-        .parentTypeName(fieldCoordinates.getTypeName())
-        .resolverDirectiveDefinition(this.fieldResolverContext.getResolverDirectiveDefinition())
-        .serviceNameSpace(fieldResolverContext.getServiceNamespace())
-        .build();
-  }
-
   private List<Definition<FragmentDefinition>> createResolverQueryFragmentDefinitions(DataFetchingEnvironment dataFetchingEnvironment) {
     SelectionSet selectionSet = dataFetchingEnvironment.getField().getSelectionSet();
     if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
@@ -145,9 +106,10 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
     }
     return dataFetchingEnvironment.getField().getSelectionSet().getSelections()
         .stream()
-        .filter(selection -> selection instanceof FragmentSpread)
-        .map(spread -> (FragmentSpread) spread)
-        .map(spread -> dataFetchingEnvironment.getFragmentsByName().get(spread.getName()))
+        .filter(FragmentSpread.class::isInstance)
+        .map(FragmentSpread.class::cast)
+        .map(FragmentSpread::getName)
+        .map(dataFetchingEnvironment.getFragmentsByName()::get)
         .collect(Collectors.toList());
   }
 

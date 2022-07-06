@@ -1,5 +1,38 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import com.intuit.graphql.graphQL.ArgumentsDefinition;
+import com.intuit.graphql.graphQL.Directive;
+import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeExtensionDefinition;
+import com.intuit.graphql.graphQL.ListType;
+import com.intuit.graphql.graphQL.NamedType;
+import com.intuit.graphql.graphQL.ObjectType;
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
+import com.intuit.graphql.graphQL.PrimitiveType;
+import com.intuit.graphql.graphQL.ScalarTypeDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.TypeExtensionDefinition;
+import com.intuit.graphql.graphQL.UnionTypeDefinition;
+import com.intuit.graphql.graphQL.impl.ListTypeImpl;
+import com.intuit.graphql.graphQL.impl.ObjectTypeImpl;
+import com.intuit.graphql.graphQL.impl.PrimitiveTypeImpl;
+import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
+import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
@@ -9,23 +42,6 @@ import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapOne;
 import static java.lang.String.format;
-
-import com.intuit.graphql.graphQL.*;
-import com.intuit.graphql.graphQL.impl.ListTypeImpl;
-import com.intuit.graphql.graphQL.impl.ObjectTypeImpl;
-import com.intuit.graphql.graphQL.impl.PrimitiveTypeImpl;
-import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
-import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EObject;
 
 public class XtextTypeUtils {
 
@@ -58,6 +74,18 @@ public class XtextTypeUtils {
       return ((TypeExtensionDefinition) eContainer).getName();
     } else {
       return ((TypeDefinition) eContainer).getName();
+    }
+  }
+
+  public static String getNamedTypeName(NamedType namedType) {
+    if(isObjectType(namedType)) {
+      return ((ObjectType) namedType).getType().getName();
+    } else if (isPrimitiveType(namedType)) {
+      return ((PrimitiveType) namedType).getType();
+    } else if( isListType(namedType)) {
+      return  getNamedTypeName(((ListType) namedType).getType());
+    } else {
+      return null;
     }
   }
 

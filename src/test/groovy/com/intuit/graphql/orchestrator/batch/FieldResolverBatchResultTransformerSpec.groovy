@@ -40,8 +40,7 @@ class FieldResolverBatchResultTransformerSpec extends Specification {
 
     void constructorEmptyResolverSelectedFields() {
         when:
-        new FieldResolverBatchResultTransformer(
-                ArrayUtils.EMPTY_STRING_ARRAY, fieldResolverContextMock)
+        new FieldResolverBatchResultTransformer(ArrayUtils.EMPTY_STRING_ARRAY, fieldResolverContextMock)
 
         then:
         thrown(IllegalArgumentException)

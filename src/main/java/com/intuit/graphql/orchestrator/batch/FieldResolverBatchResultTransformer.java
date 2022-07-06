@@ -1,14 +1,17 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createAlias;
-import static com.intuit.graphql.orchestrator.utils.ExecutionPathUtils.graphQLErrorPathStartsWith;
-
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ResultPath;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,11 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.ArrayUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createAlias;
+import static com.intuit.graphql.orchestrator.utils.ExecutionPathUtils.graphQLErrorPathStartsWith;
 
 @AllArgsConstructor
 public class FieldResolverBatchResultTransformer implements BatchResultTransformer {
@@ -121,7 +122,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
 
   private GraphQLError mapErrorToPath(GraphQLError graphQLError, ResultPath dfeExecutionPath) {
     final Map<String, Object> extensions = new HashMap<>();
-    extensions.put("serviceNamespace", fieldResolverContext.getServiceNamespace());
+    extensions.put("serviceNamespace", fieldResolverContext.getTargetServiceNamespace());
     extensions.put("parentTypename", fieldResolverContext.getParentTypename());
     extensions.put("fieldName", fieldResolverContext.getFieldName());
     extensions.put("downstreamErrors", graphQLError.toSpecification());

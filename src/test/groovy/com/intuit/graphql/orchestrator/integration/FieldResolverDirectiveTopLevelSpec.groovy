@@ -250,8 +250,10 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
         executionResult?.errors[0]?.message == "FieldResolverDirectiveDataFetcher encountered an error while calling downstream service."
         executionResult?.errors[0]?.extensions?.downstreamErrors?.message == "Exception while fetching data (/pet_0) : Hello Error!"
         executionResult?.errors[1]?.extensions?.downstreamErrors?.message == "Exception while fetching data (/pet_1/age) : Null Pointer Exception"
+        executionResult?.errors[1]?.extensions?.serviceNamespace == "PETS"
         executionResult?.errors[2]?.message == "FieldResolverDirectiveDataFetcher encountered an error while calling downstream service."
         executionResult?.errors[2]?.extensions?.downstreamErrors?.message == "Exception while fetching data (/pet_2) : Hello Error!"
+        executionResult?.errors[2]?.extensions?.serviceNamespace == "PETS"
 
         executionResult?.data?.books?.size() == 3
         executionResult?.data?.pets?.size() == 3
