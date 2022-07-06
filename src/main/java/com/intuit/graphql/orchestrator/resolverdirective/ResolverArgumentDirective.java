@@ -5,8 +5,11 @@ import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.InputValueWithState;
-import java.util.Objects;
 import lombok.Getter;
+
+import java.util.Objects;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 
 /**
  * This class holds information about the resolver argument directive without the need to parse it via Xtext or
@@ -32,7 +35,7 @@ public class ResolverArgumentDirective {
   public static ResolverArgumentDirective fromGraphQLArgument(GraphQLArgument graphQLArgument) {
     Builder b = new Builder();
 
-    final GraphQLDirective directive = graphQLArgument.getDirective("resolver");
+    final GraphQLDirective directive = graphQLArgument.getDirective(RESOLVER_DIRECTIVE_NAME);
 
     b.argumentName(graphQLArgument.getName());
     b.graphQLInputType(graphQLArgument.getType());
