@@ -61,6 +61,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
@@ -285,7 +287,7 @@ public class XtextStitcher implements Stitcher {
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().graphqlObjectTypes(visited).build();
 
     return unifiedXtextGraph.getTypes().values().stream()
-        .filter(type -> !type.getName().endsWith("ResolverArgument"))
+        .filter(type -> !type.getName().endsWith(RESOLVER_ARGUMENT_INPUT_NAME))
         .filter(type -> !unifiedXtextGraph.isOperationType(type))
         .filter(type -> !(visited.containsKey(type.getName())))
         .collect(Collectors.toMap(TypeDefinition::getName, type -> (GraphQLType) localVisitor.doSwitch(type)));
@@ -296,7 +298,7 @@ public class XtextStitcher implements Stitcher {
         .build();
 
     return unifiedXtextGraph.getDirectives().stream()
-        .filter(directiveDefinition -> !directiveDefinition.getName().equals("resolver"))
+        .filter(directiveDefinition -> !directiveDefinition.getName().equals(RESOLVER_DIRECTIVE_NAME))
         .map(localVisitor::doSwitch)
         .map(GraphQLDirective.class::cast)
         .collect(Collectors.toSet());
