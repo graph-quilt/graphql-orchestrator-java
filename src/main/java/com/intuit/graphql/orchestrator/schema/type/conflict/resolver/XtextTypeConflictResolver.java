@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.checkFieldsCompatibility;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isEntity;
@@ -22,7 +23,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContain
 public class XtextTypeConflictResolver {
 
   public static final XtextTypeConflictResolver INSTANCE = new XtextTypeConflictResolver();
-  public static final Set<String> goldenTypes = new HashSet<>(Arrays.asList("PageInfo", "ResolverArgument"));
+  public static final Set<String> goldenTypes = new HashSet<>(Arrays.asList("PageInfo", RESOLVER_ARGUMENT_INPUT_NAME));
   public static final Set<String> interfaceGoldenTypes = new HashSet<>(Arrays.asList("Node", "Entity"));
 
   private XtextTypeConflictResolver() {

@@ -3,17 +3,18 @@ package com.intuit.graphql.orchestrator.fieldresolver
 import com.intuit.graphql.graphQL.FieldDefinition
 import com.intuit.graphql.graphQL.ObjectTypeDefinition
 import com.intuit.graphql.graphQL.PrimitiveType
+import com.intuit.graphql.orchestrator.metadata.RenamedMetadata
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
-
 import graphql.Scalars
 import graphql.language.*
 import graphql.schema.DataFetchingEnvironment
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLObjectType
-
+import graphql.schema.GraphQLSchema
 import spock.lang.Specification
 
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.buildFieldDefinition
@@ -22,6 +23,8 @@ import static java.util.Collections.singletonList
 
 class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specification {
 
+    private static final String[] RESOLVER_SELECTED_FIELDS = ["targetField"];
+
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 
     private Field dfeFieldMock
@@ -29,6 +32,12 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
     private FieldDefinition fieldDefinitionWithResolver
 
     private ResolverDirectiveDefinition resolverDirectiveDefinitionMock
+
+    private ServiceMetadata serviceMetadataMock
+
+    private GraphQLSchema graphQLSchemaMock
+
+    private RenamedMetadata renamedMetadataMock
 
     private final Map<String, Object> testDFEDataSource = new HashMap<>()
 
@@ -43,10 +52,25 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
         dfeFieldMock = Mock(Field.class)
         fieldDefinitionWithResolver = Mock(FieldDefinition.class)
         resolverDirectiveDefinitionMock = Mock(ResolverDirectiveDefinition.class)
+        serviceMetadataMock = Mock(ServiceMetadata.class)
+        graphQLSchemaMock = Mock(GraphQLSchema.class)
+        renamedMetadataMock = Mock(RenamedMetadata.class)
+
+        renamedMetadataMock.getOriginalFieldNamesByRenamedName() >> Collections.emptyMap()
+        serviceMetadataMock.getRenamedMetadata() >> renamedMetadataMock
+        graphQLSchemaMock.getQueryType() >> GraphQLObjectType.newObject()
+                .name("Query")
+                .field(GraphQLFieldDefinition.newFieldDefinition()
+                        .name("targetField")
+                        .type(Scalars.GraphQLString)
+                        .build())
+                .build()
 
         dfeFieldMock.getSelectionSet() >> null
         dataFetchingEnvironmentMock.getField() >> dfeFieldMock
         dataFetchingEnvironmentMock.getSource() >> testDFEDataSource
+        dataFetchingEnvironmentMock.getGraphQLSchema() >> graphQLSchemaMock
+        dataFetchingEnvironmentMock.getFragmentsByName() >> Collections.emptyMap()
         dataFetchingEnvironments.add(dataFetchingEnvironmentMock)
 
         FieldDefinition childFieldDefinition = buildFieldDefinition("childField")
@@ -76,14 +100,12 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
         targetArgumentType.setType(Scalars.GraphQLString.getName())
         targetArgumentType.setNonNull(false)
 
-        resolverDirectiveDefinitionMock.getArguments() >> Collections.singletonList(
+        resolverDirectiveDefinitionMock.getArguments() >> singletonList(
             new ResolverArgumentDefinition("argName", '$id', targetArgumentType))
 
-        String[] resolverSelectedFields = [ "targetField" ]
-
         when:
-        subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
+        subject = new FieldResolverBatchSelectionSetSupplier(RESOLVER_SELECTED_FIELDS, dataFetchingEnvironments,
+            testFieldResolverContext, serviceMetadataMock)
         SelectionSet actual = subject.get()
         Field actualField = (Field) actual.getSelections().get(0)
         StringValue actualStringValue = (StringValue) actualField.getArguments().get(0).getValue()
@@ -111,14 +133,12 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
         targetArgumentType.setType(Scalars.GraphQLString.getName())
         targetArgumentType.setNonNull(true)
 
-        resolverDirectiveDefinitionMock.getArguments() >> Collections.singletonList(
+        resolverDirectiveDefinitionMock.getArguments() >> singletonList(
             new ResolverArgumentDefinition("argName", '$id', targetArgumentType))
 
-        String[] resolverSelectedFields = [ "targetField" ]
-
         when:
-        subject =  new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
+        subject =  new FieldResolverBatchSelectionSetSupplier(RESOLVER_SELECTED_FIELDS, dataFetchingEnvironments,
+            testFieldResolverContext, serviceMetadataMock)
         SelectionSet actual = subject.get()
         Field actualField = (Field) actual.getSelections().get(0)
         StringValue actualStringValue = (StringValue) actualField.getArguments().get(0).getValue()
@@ -146,14 +166,12 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
         targetArgumentType.setType(Scalars.GraphQLString.getName())
         targetArgumentType.setNonNull(false)
 
-        resolverDirectiveDefinitionMock.getArguments() >> Collections.singletonList(
+        resolverDirectiveDefinitionMock.getArguments() >> singletonList(
             new ResolverArgumentDefinition("argName", '$id', targetArgumentType))
 
-        String[] resolverSelectedFields = [ "targetField" ]
-
         when:
-        subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
+        subject = new FieldResolverBatchSelectionSetSupplier(RESOLVER_SELECTED_FIELDS, dataFetchingEnvironments,
+            testFieldResolverContext, serviceMetadataMock)
         SelectionSet actual = subject.get()
         Field actualField = (Field) actual.getSelections().get(0)
         StringValue actualStringValue = (StringValue) actualField.getArguments().get(0).getValue()
@@ -181,14 +199,12 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
         targetArgumentType.setType(Scalars.GraphQLString.getName())
         targetArgumentType.setNonNull(false)
 
-        resolverDirectiveDefinitionMock.getArguments() >> Collections.singletonList(
+        resolverDirectiveDefinitionMock.getArguments() >> singletonList(
             new ResolverArgumentDefinition("argName", '$intField', targetArgumentType))
 
-        String[] resolverSelectedFields = [ "targetField" ]
-
         when:
-        subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
+        subject = new FieldResolverBatchSelectionSetSupplier(RESOLVER_SELECTED_FIELDS, dataFetchingEnvironments,
+            testFieldResolverContext, serviceMetadataMock)
         SelectionSet actual = subject.get()
         Field actualField = (Field) actual.getSelections().get(0)
         IntValue actualIntValue = (IntValue) actualField.getArguments().get(0).getValue()
@@ -216,14 +232,14 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
         targetArgumentType.setType(Scalars.GraphQLString.getName())
         targetArgumentType.setNonNull(false)
 
-        resolverDirectiveDefinitionMock.getArguments() >> Collections.singletonList(
+        resolverDirectiveDefinitionMock.getArguments() >> singletonList(
             new ResolverArgumentDefinition("argName", '$boolField', targetArgumentType))
 
         String[] resolverSelectedFields = [ "targetField" ]
 
         when:
         subject = new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments,
-            testFieldResolverContext)
+            testFieldResolverContext, serviceMetadataMock)
         SelectionSet actual = subject.get()
         Field actualField = (Field) actual.getSelections().get(0)
         BooleanValue booleanValue = (BooleanValue) actualField.getArguments().get(0).getValue()

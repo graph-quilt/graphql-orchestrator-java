@@ -1,8 +1,5 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isAnyTypeLeaf;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.parseString;
-
 import com.intuit.graphql.graphQL.Argument;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -13,10 +10,15 @@ import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import graphql.VisibleForTesting;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isAnyTypeLeaf;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.parseString;
 
 /**
  * This class helps break up the {@link com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer} by
@@ -119,7 +121,7 @@ public class ResolverArgumentDirectiveValidator {
   }
 
   private Directive getResolverDirective(InputValueDefinition argument) {
-    return argument.getDirectives().stream().filter(directive -> directive.getDefinition().getName().equals("resolver"))
+    return argument.getDirectives().stream().filter(directive -> directive.getDefinition().getName().equals(RESOLVER_DIRECTIVE_NAME))
         .findFirst().orElse(null);
   }
 }

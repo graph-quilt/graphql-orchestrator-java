@@ -17,6 +17,7 @@ import java.util.List;
 
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.*;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FIELD_REFERENCE_PREFIX;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.core.StringStartsWith.startsWith;
@@ -75,8 +76,8 @@ public class FieldResolverDirectiveUtilTest {
 
     XtextGraph mockXtextGraph = Mockito.mock(XtextGraph.class);
 
-    Directive resolverDirective1 = buildDirective(buildDirectiveDefinition("resolver"), Collections.emptyList());
-    Directive resolverDirective2 = buildDirective(buildDirectiveDefinition("resolver"), Collections.emptyList());
+    Directive resolverDirective1 = buildDirective(buildDirectiveDefinition(RESOLVER_DIRECTIVE_NAME), Collections.emptyList());
+    Directive resolverDirective2 = buildDirective(buildDirectiveDefinition(RESOLVER_DIRECTIVE_NAME), Collections.emptyList());
 
     List<Directive> directives = Arrays.asList(resolverDirective1, resolverDirective2);
     FieldDefinition fieldDefinitionWithResolver1 = buildFieldDefinition("testField1", directives);
