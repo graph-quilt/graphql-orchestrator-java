@@ -8,6 +8,7 @@ import spock.lang.Specification
 import static com.intuit.graphql.orchestrator.XtextObjectCreationUtil.*
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FIELD_REFERENCE_PREFIX
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createInterfaceTypeDefinition
 
 class FieldResolverDirectiveUtilSpec extends Specification {
 
@@ -114,7 +115,7 @@ class FieldResolverDirectiveUtilSpec extends Specification {
 
     def "get Resolver Directive Parent Type Name Invalid Parent Type"() {
         given:
-        EObject eContainer = Mock(InterfaceTypeDefinition.class)
+        EObject eContainer = createInterfaceTypeDefinition()
 
         DirectiveDefinition mockDirectiveDefinition = Mock(DirectiveDefinition.class)
         mockDirectiveDefinition.getName() >> "mockDirective"
@@ -127,18 +128,8 @@ class FieldResolverDirectiveUtilSpec extends Specification {
         FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName(mockDirective)
 
         then:
-        //  PIC::TODO : is this okay? The message is slightly different but is the same for the most part
-        //  xception.getMessage().startsWith("Expecting parent to be an instance of FieldDefinition.  " + "directive=mockDirective, pareTypeInstance=InterfaceTypeDefinition")
-        //|         |            |                                                                     |
-        //|         |            false                                                                 Expecting parent to be an instance of FieldDefinition.  directive=mockDirective, pareTypeInstance=InterfaceTypeDefinition
-        //|         Expecting parent to be an instance of FieldDefinition.  directive=mockDirective, pareTypeInstance=$Proxy21
-        //com.intuit.graphql.orchestrator.resolverdirective.UnexpectedResolverDirectiveParentType: Expecting parent to be an instance of FieldDefinition.  directive=mockDirective, pareTypeInstance=$Proxy21
-        //	at com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getResolverDirectiveParentTypeName(FieldResolverDirectiveUtil.java:109)
-        //	at com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtilSpec.$spock_feature_0_7(FieldResolverDirectiveUtilSpec.groovy:127)
-
         def exception = thrown(UnexpectedResolverDirectiveParentType)
-        //exception.getMessage().startsWith("Expecting parent to be an instance of FieldDefinition.  " + "directive=mockDirective, pareTypeInstance=InterfaceTypeDefinition")
-        exception.getMessage().startsWith("Expecting parent to be an instance of FieldDefinition.  " + "directive=mockDirective, pareTypeInstance=")
+        exception.getMessage().startsWith("Expecting parent to be an instance of FieldDefinition.  directive=mockDirective, pareTypeInstance=InterfaceTypeDefinition")
     }
 
 }

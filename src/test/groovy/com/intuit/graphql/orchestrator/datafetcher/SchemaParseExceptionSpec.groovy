@@ -8,20 +8,22 @@ import java.io.IOException
 
 class SchemaParseExceptionSpec extends Specification {
 
-    //  PIC::TODO fix
+    //  PIC::TODO:update
     def "test Thrown From Xtext Resource Set Builder"() {
         given:
         // have XtextResourceSetBuilder.createGraphqlResourceFromString throw an IOException
         // build method should throw a SchemaParseException when it catches the IOException
-        XtextResourceSetBuilder mock = Mock(XtextResourceSetBuilder.newBuilder())
+        XtextResourceSetBuilder spy = Spy(XtextResourceSetBuilder.newBuilder())
 
-        //doThrow(new IOException("Some IO Error")).when(mock, "createGraphqlResourceFromString", anyString(), anyString())
-        mock.createGraphqlResourceFromString(_, _) >> { String source, String uri ->
+        String fileName = "somefile.graphqls"
+        String content = "Query {id : String}}"
+
+        spy.createGraphqlResourceFromString(_ as String, _ as String) >> { String source, String uri ->
             throw new IOException("Some IO Error")
         }
 
         when:
-        mock.file("somefile.graphqls","{Query {id : String}}").build()
+        spy.file(fileName, content).build()
 
         then:
         thrown(SchemaParseException)

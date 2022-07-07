@@ -54,17 +54,74 @@ class RequiredFieldsCollectorSpec extends Specification {
         serviceMetadataMock = Mock(ServiceMetadata)
         federationMetadataMock = Mock(FederationMetadata)
         keyDirectiveMetadataMock = Mock(KeyDirectiveMetadata)
+    }
 
-        subjectUnderTest =
-                RequiredFieldsCollector.builder()
-                        .excludeFields(Collections.emptyMap())
-                        .parentTypeName(TEST_ENTITY_TYPE_NAME)
-                        .serviceMetadata(serviceMetadataMock)
-                        .fieldResolverContexts(Collections.emptyList())
-                        .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT)
-                        )
-                        .build()
+    private RequiredFieldsCollector buildRequiredFieldsCollector(
+            Map<String, Field> excludeFields,
+            List<FieldResolverContext> fieldResolverContexts,
+            Set<Field> requiredDirectives) {
+        return RequiredFieldsCollector.builder()
+                .excludeFields(excludeFields)
+                .parentTypeName(TEST_ENTITY_TYPE_NAME)
+                .serviceMetadata(serviceMetadataMock)
+                .fieldResolverContexts(fieldResolverContexts)
+                //.fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
+                .fieldsWithRequiresDirective(requiredDirectives)
+                .build()
+    }
 
+    def "get returns Required Fields For Requires Directive"() {
+        given:
+        serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME) >> true
+        serviceMetadataMock.getFederationServiceMetadata() >> federationMetadataMock
+        federationMetadataMock.getEntityMetadataByName(TEST_ENTITY_TYPE_NAME) >> entityMetadataMock
+
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD) >> true
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD) >> true
+
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_STRFIELD) >> ImmutableSet.of(REQD_FIELD_1)
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_OBJFIELD) >> ImmutableSet.of(REQD_FIELD_2)
+
+        keyDirectiveMetadataMock.getFieldSet() >> ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
+        entityMetadataMock.getKeyDirectives() >> Collections.emptyList()
+
+        subjectUnderTest = buildRequiredFieldsCollector(Collections.emptyMap(), Collections.emptyList(), ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
+
+        when:
+        Set<Field> actual = subjectUnderTest.get()
+
+        then:
+        actual.size() == 2
+        actual == ImmutableSet.of(REQD_FIELD_1, REQD_FIELD_2)
+    }
+
+    def "get returns Required Fields For Key Directive"() {
+        given:
+        serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME) >> true
+        serviceMetadataMock.getFederationServiceMetadata() >> federationMetadataMock
+        federationMetadataMock.getEntityMetadataByName(TEST_ENTITY_TYPE_NAME) >> entityMetadataMock
+
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD) >> false
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD) >> false
+
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_STRFIELD) >> ImmutableSet.of(REQD_FIELD_1)
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_OBJFIELD) >> ImmutableSet.of(REQD_FIELD_2)
+
+        entityMetadataMock.getKeyDirectives() >> Collections.singletonList(keyDirectiveMetadataMock)
+        keyDirectiveMetadataMock.getFieldSet() >> ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
+
+        subjectUnderTest = buildRequiredFieldsCollector(Collections.emptyMap(), Collections.emptyList(), ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
+
+        when:
+        Set<Field> actual = subjectUnderTest.get()
+
+        then:
+        actual.size() == 2
+        actual == ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
+    }
+
+    def "get returns Required Fields For Key Directives And Requires Directive"() {
+        given:
         serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME) >> true
         serviceMetadataMock.getFederationServiceMetadata() >> federationMetadataMock
         federationMetadataMock.getEntityMetadataByName(TEST_ENTITY_TYPE_NAME) >> entityMetadataMock
@@ -77,35 +134,9 @@ class RequiredFieldsCollectorSpec extends Specification {
 
         entityMetadataMock.getKeyDirectives() >> Collections.singletonList(keyDirectiveMetadataMock)
         keyDirectiveMetadataMock.getFieldSet() >> ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
-    }
 
-    def "get returns Required Fields For Requires Directive"() {
-        given:
-        entityMetadataMock.getKeyDirectives() >> Collections.emptyList()
+        subjectUnderTest = buildRequiredFieldsCollector(Collections.emptyMap(), Collections.emptyList(), ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
 
-        when:
-        Set<Field> actual = subjectUnderTest.get()
-
-        then:
-        actual.size() == 2
-        actual == ImmutableSet.of(REQD_FIELD_1, REQD_FIELD_2)
-    }
-
-    def "get returns Required Fields For Key Directive"() {
-        given:
-        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD) >> false
-        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD) >> false
-
-        when:
-        Set<Field> actual = subjectUnderTest.get()
-
-        then:
-        actual.size() == 2
-        actual == ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
-    }
-
-    def "get returns Required Fields For Key Directives And Requires Directive"() {
-        given:
         Set<Field> actual = subjectUnderTest.get()
 
         expect:
@@ -115,16 +146,22 @@ class RequiredFieldsCollectorSpec extends Specification {
 
     def "get returns Required Fields For Key Directives And Requires Directive Without Exclude Fields"() {
         given:
+        serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME) >> true
+        serviceMetadataMock.getFederationServiceMetadata() >> federationMetadataMock
+        federationMetadataMock.getEntityMetadataByName(TEST_ENTITY_TYPE_NAME) >> entityMetadataMock
+
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD) >> true
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD) >> true
+
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_STRFIELD) >> ImmutableSet.of(REQD_FIELD_1)
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_OBJFIELD) >> ImmutableSet.of(REQD_FIELD_2)
+
+        entityMetadataMock.getKeyDirectives() >> Collections.singletonList(keyDirectiveMetadataMock)
+        keyDirectiveMetadataMock.getFieldSet() >> ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
+
         Map<String, Field> excludeFields = ImmutableMap.of(KEY_FIELD_2.getName(),KEY_FIELD_2, REQD_FIELD_1.getName(),REQD_FIELD_1)
 
-        subjectUnderTest =
-                RequiredFieldsCollector.builder()
-                        .excludeFields(excludeFields)
-                        .parentTypeName(TEST_ENTITY_TYPE_NAME)
-                        .serviceMetadata(serviceMetadataMock)
-                        .fieldResolverContexts(Collections.emptyList())
-                        .fieldsWithRequiresDirective(ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
-                        .build()
+        subjectUnderTest = buildRequiredFieldsCollector(excludeFields, Collections.emptyList(), ImmutableSet.of(FIELD_PRIMITIVE, FIELD_OBJECT))
 
         when:
         Set<Field> actual = subjectUnderTest.get()
@@ -134,21 +171,26 @@ class RequiredFieldsCollectorSpec extends Specification {
         actual == ImmutableSet.of(KEY_FIELD_1, REQD_FIELD_2)
     }
 
-    def "get_returns Required Fields For Field Resolver"() {
+    def "get returns Required Fields For Field Resolver"() {
         given:
+        serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME) >> true
+        serviceMetadataMock.getFederationServiceMetadata() >> federationMetadataMock
+        federationMetadataMock.getEntityMetadataByName(TEST_ENTITY_TYPE_NAME) >> entityMetadataMock
+
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD) >> true
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD) >> true
+
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_STRFIELD) >> ImmutableSet.of(REQD_FIELD_1)
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_OBJFIELD) >> ImmutableSet.of(REQD_FIELD_2)
+
         entityMetadataMock.getKeyDirectives() >> Collections.emptyList()
+        keyDirectiveMetadataMock.getFieldSet() >> ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
 
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext)
         fieldResolverContextMock.getRequiredFields() >> ImmutableSet.of("reqdField")
 
-        subjectUnderTest =
-                RequiredFieldsCollector.builder()
-                        .excludeFields(Collections.emptyMap())
-                        .parentTypeName(TEST_ENTITY_TYPE_NAME)
-                        .serviceMetadata(serviceMetadataMock)
-                        .fieldResolverContexts(ImmutableList.of(fieldResolverContextMock))
-                        .fieldsWithRequiresDirective(Collections.emptySet())
-                        .build()
+        subjectUnderTest = buildRequiredFieldsCollector(
+                Collections.emptyMap(), ImmutableList.of(fieldResolverContextMock), Collections.emptySet())
 
         when:
         Set<Field> actual = subjectUnderTest.get()
@@ -158,23 +200,28 @@ class RequiredFieldsCollectorSpec extends Specification {
         actual.stream().findFirst().get().getName() == "reqdField"
     }
 
-    def "get_returns Required Fields For Field Resolver With Excluded Fields"() {
+    def "get returns Required Fields For Field Resolver With Excluded Fields"() {
         given:
-        Map<String, Field> excludeFields = ImmutableMap.of(REQD_FIELD_1.getName(),REQD_FIELD_1)
+        serviceMetadataMock.isEntity(TEST_ENTITY_TYPE_NAME) >> true
+        serviceMetadataMock.getFederationServiceMetadata() >> federationMetadataMock
+        federationMetadataMock.getEntityMetadataByName(TEST_ENTITY_TYPE_NAME) >> entityMetadataMock
+
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_STRFIELD) >> true
+        federationMetadataMock.hasRequiresFieldSet(FIELD_COORDINATE_OBJFIELD) >> true
+
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_STRFIELD) >> ImmutableSet.of(REQD_FIELD_1)
+        federationMetadataMock.getRequireFields(FIELD_COORDINATE_OBJFIELD) >> ImmutableSet.of(REQD_FIELD_2)
 
         entityMetadataMock.getKeyDirectives() >> Collections.emptyList()
+        keyDirectiveMetadataMock.getFieldSet() >> ImmutableSet.of(KEY_FIELD_1, KEY_FIELD_2)
+
+        Map<String, Field> excludeFields = ImmutableMap.of(REQD_FIELD_1.getName(),REQD_FIELD_1)
 
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext.class)
         fieldResolverContextMock.getRequiredFields() >> ImmutableSet.of("reqdField1")
 
-        subjectUnderTest =
-                RequiredFieldsCollector.builder()
-                        .excludeFields(excludeFields)
-                        .parentTypeName(TEST_ENTITY_TYPE_NAME)
-                        .serviceMetadata(serviceMetadataMock)
-                        .fieldResolverContexts(ImmutableList.of(fieldResolverContextMock))
-                        .fieldsWithRequiresDirective(Collections.emptySet())
-                        .build()
+        subjectUnderTest = buildRequiredFieldsCollector(
+                excludeFields, ImmutableList.of(fieldResolverContextMock), Collections.emptySet())
 
         when:
         Set<Field> actual = subjectUnderTest.get()
