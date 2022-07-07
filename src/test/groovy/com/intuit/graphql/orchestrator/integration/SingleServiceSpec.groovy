@@ -10,7 +10,7 @@ class SingleServiceSpec extends BaseIntegrationTestSpecification {
 
     private PetsService petsService = new PetsService(GraphQLOrchestratorSpec.PET_ASSERTS)
 
-    void testMultipleTopLevelFieldFromSameService() {
+    def "test Multiple Top Level Field From Same Service"() {
         given:
         ServiceProvider[] services = [ petsService ]
         final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)

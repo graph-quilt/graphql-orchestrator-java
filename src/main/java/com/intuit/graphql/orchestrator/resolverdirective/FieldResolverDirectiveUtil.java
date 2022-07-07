@@ -1,8 +1,5 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
@@ -14,18 +11,23 @@ import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class FieldResolverDirectiveUtil {
 
   public static final String RESOLVER_DIRECTIVE_NAME = "resolver";
+  public static final String RESOLVER_ARGUMENT_INPUT_NAME = "ResolverArgument";
   public static final String FIELD_REFERENCE_PREFIX = "$";
 
   public static final String FQN_KEYWORD_QUERY = "query";

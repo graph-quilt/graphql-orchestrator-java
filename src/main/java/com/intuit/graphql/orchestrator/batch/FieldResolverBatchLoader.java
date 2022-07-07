@@ -5,7 +5,6 @@ import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDir
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverOperationName;
 import static graphql.language.AstPrinter.printAstCompact;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher;
@@ -20,7 +19,6 @@ import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
-import graphql.language.AstTransformer;
 import graphql.language.Definition;
 import graphql.language.Document;
 import graphql.language.FragmentDefinition;
@@ -33,7 +31,6 @@ import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
-import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import java.util.Collections;
 import java.util.List;
@@ -61,8 +58,6 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
 
   private final QueryOperationFactory queryOperationFactory = new QueryOperationFactory();
 
-  private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
-
   @Builder
   public FieldResolverBatchLoader(FieldResolverContext fieldResolverContext) {
     Objects.requireNonNull(fieldResolverContext, "fieldResolverContext is required");
@@ -81,16 +76,13 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
 
     String originalOperationName = dataFetchingEnvironments.get(0).getOperationDefinition().getName();
     String downstreamQueryOpName = createFieldResolverOperationName(originalOperationName);
+    ServiceMetadata serviceMetadata = getServiceMetadata(dataFetchingEnvironments.get(0));
 
     FieldResolverBatchSelectionSetSupplier fieldResolverBatchSelectionSetSupplier =
-            new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields, dataFetchingEnvironments, fieldResolverContext);
+            new FieldResolverBatchSelectionSetSupplier(resolverSelectedFields,
+                dataFetchingEnvironments, fieldResolverContext, serviceMetadata);
     SelectionSet selectionSet = fieldResolverBatchSelectionSetSupplier.get();
     OperationDefinition downstreamQueryOpDef = queryOperationFactory.create(downstreamQueryOpName, selectionSet);
-
-    ServiceMetadata serviceMetadata = getServiceMetadata(dataFetchingEnvironments.get(0));
-    if (serviceMetadata.hasFieldResolverDirective()) {
-      downstreamQueryOpDef = removeExternalFields(downstreamQueryOpDef, dataFetchingEnvironments.get(0), serviceMetadata);
-    }
 
     if (this.fieldResolverContext.isRequiresTypeNameInjection()) {
       downstreamQueryOpDef = queryOperationModifier.modifyQuery(
@@ -108,15 +100,6 @@ public class FieldResolverBatchLoader implements BatchLoader<DataFetchingEnviron
     return execute(dataFetchingEnvironments.get(0), downstreamQueryOpDef, downstreamQueryFragmentDefinitions, serviceProvider)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, dataFetchingEnvironments));
-  }
-
-  private OperationDefinition removeExternalFields(OperationDefinition operationDefinition,
-      DataFetchingEnvironment dataFetchingEnvironment, ServiceMetadata serviceMetadata) {
-    GraphQLSchema graphQLSchema = dataFetchingEnvironment.getGraphQLSchema();
-    GraphQLObjectType rootType = graphQLSchema.getQueryType();
-    Map<String, FragmentDefinition> fragmentsByName = dataFetchingEnvironment.getFragmentsByName();
-    return (OperationDefinition) AST_TRANSFORMER.transform(operationDefinition,
-        new DownstreamQueryModifier((GraphQLFieldsContainer) unwrapAll(rootType), serviceMetadata, fragmentsByName));
   }
 
   private ServiceMetadata getServiceMetadata(DataFetchingEnvironment dataFetchingEnvironment) {

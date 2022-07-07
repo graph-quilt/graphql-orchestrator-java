@@ -32,7 +32,7 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         }         
     """
 
-    def QUERY_A = "query Resolver_Directive_Query {arootField {aTopField_0:aTopField(p1:\"bObjectFieldValue1\") {aObjectField}} arootField {aTopField_1:aTopField(p1:\"bObjectFieldValue2\") {aObjectField cTopField {cObjectField}}}}"
+    def QUERY_A = "query Resolver_Directive_Query {arootField {aTopField_0:aTopField(p1:\"bObjectFieldValue1\") {aObjectField}} arootField {aTopField_1:aTopField(p1:\"bObjectFieldValue2\") {aObjectField}}}"
     def mockServiceResponseA = [
             (QUERY_A): [data: [
                     arootField : [

@@ -17,7 +17,7 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
 
     private def userService = new UserRestService(GraphQLOrchestratorSpec.USER_ASSERTS)
 
-    void testTopLevelCombinedSchemaWithIncludeDirectiveOnQuery() {
+    def "test Top Level Combined Schema With Include Directive On Query"() {
         given:
         ServiceProvider[] services = [ petsService, bookService, userService ]
         final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)
@@ -39,11 +39,11 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
                 } 
             }
         ''')
-        .variables(ImmutableMap.of("includeType", Boolean.TRUE))
-        .build()
+                .variables(ImmutableMap.of("includeType", Boolean.TRUE))
+                .build()
 
         Map<String, Object> executionResult = orchestrator.execute(booksAndPetsEI).get()
-        .toSpecification()
+                .toSpecification()
 
         then:
         executionResult.get("errors") == null

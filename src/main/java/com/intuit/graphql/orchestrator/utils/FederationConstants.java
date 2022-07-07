@@ -15,6 +15,7 @@ public class FederationConstants {
     private FederationConstants(){}
 
     public static final String FEDERATION_KEY_DIRECTIVE = "key";
+    public static final String FEDERATION_INACCESSIBLE_DIRECTIVE = "inaccessible";
     public static final String FEDERATION_EXTERNAL_DIRECTIVE = "external";
     public static final String FEDERATION_EXTENDS_DIRECTIVE = "extends";
     public static final String FEDERATION_REQUIRES_DIRECTIVE = "requires";

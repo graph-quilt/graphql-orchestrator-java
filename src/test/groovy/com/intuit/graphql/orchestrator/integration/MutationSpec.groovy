@@ -11,7 +11,7 @@ class MutationSpec extends BaseIntegrationTestSpecification {
 
     private UserRestService userService = new UserRestService(GraphQLOrchestratorSpec.USER_ASSERTS)
 
-    void testMutationOnTopLevelCombinedSchema() {
+    def "test Mutation On Top Level Combined Schema"() {
         given:
         ServiceProvider[] services = [ bookService, new MutablePetsService(), userService ]
         final GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)

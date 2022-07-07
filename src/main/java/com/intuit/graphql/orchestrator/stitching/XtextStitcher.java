@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.stitching;
 
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
@@ -60,6 +61,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
@@ -239,7 +242,7 @@ public class XtextStitcher implements Stitcher {
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
-      } else if (type == ENTITY_FETCHER) {
+      } else if (type == ENTITY_FETCHER && mergedGraph.getType(fieldContext.getParentType()) != null) {
         builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata().getTypeName())
         );
       }
@@ -255,8 +258,9 @@ public class XtextStitcher implements Stitcher {
    */
   private RuntimeGraph.Builder createRuntimeGraph(UnifiedXtextGraph unifiedXtextGraph) {
 
-    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();
-
+    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder()
+            .graphqlBlackList(unifiedXtextGraph.getBlacklistedTypes())
+            .build();
     //fill operations
     final Map<Operation, GraphQLObjectType> operationMap = new EnumMap<>(Operation.class);
 
@@ -284,9 +288,10 @@ public class XtextStitcher implements Stitcher {
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().graphqlObjectTypes(visited).build();
 
     return unifiedXtextGraph.getTypes().values().stream()
+        .filter(type -> !type.getName().endsWith(RESOLVER_ARGUMENT_INPUT_NAME))
         .filter(type -> !unifiedXtextGraph.isOperationType(type))
         .filter(type -> !(visited.containsKey(type.getName())))
-        .collect(Collectors.toMap(type -> type.getName(), type -> (GraphQLType) localVisitor.doSwitch(type)));
+        .collect(Collectors.toMap(TypeDefinition::getName, type -> (GraphQLType) localVisitor.doSwitch(type)));
   }
 
   private Set<GraphQLDirective> getAdditionalDirectives(UnifiedXtextGraph unifiedXtextGraph, Map<String, GraphQLDirective> visited) {
@@ -294,6 +299,7 @@ public class XtextStitcher implements Stitcher {
         .build();
 
     return unifiedXtextGraph.getDirectives().stream()
+        .filter(directiveDefinition -> !directiveDefinition.getName().equals(RESOLVER_DIRECTIVE_NAME))
         .map(localVisitor::doSwitch)
         .map(GraphQLDirective.class::cast)
         .collect(Collectors.toSet());
