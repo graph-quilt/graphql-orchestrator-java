@@ -21,7 +21,7 @@ class ArgumentResolverSpec extends Specification {
 
     public GraphQL mockedGraphQL
 
-    void setup() {
+    def setup() {
         mockedGraphQL = Mock(GraphQL.class)
 
         argumentResolver = ArgumentResolver.newBuilder()
@@ -29,7 +29,7 @@ class ArgumentResolverSpec extends Specification {
                 .build()
     }
 
-    void resolvesArguments() {
+    def "resolves Arguments"() {
         given:
         ExecutionResult aResult = ExecutionResultImpl.newExecutionResult()
                 .data(Collections.emptyMap()).build()

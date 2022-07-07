@@ -12,7 +12,7 @@ class RawGraphQLErrorSpec extends Specification {
     List<Object> path
     List<Map> locations
 
-    void setup() {
+    def setup() {
         this.rawGraphQLError = new HashMap<>()
         this.extensions = new HashMap<>()
         this.locations = new ArrayList<>()
@@ -20,7 +20,7 @@ class RawGraphQLErrorSpec extends Specification {
         this.path = new ArrayList<>()
     }
 
-    void "should extract everything"() {
+    def "should extract everything"() {
         given:
         location.put("line", 2)
         location.put("column", 3L)
@@ -51,6 +51,18 @@ class RawGraphQLErrorSpec extends Specification {
 
         rawGraphQLError.getExtensions().get("detailed") == "message"
         rawGraphQLError.getErrorType() == ErrorType.DataFetchingException
+    }
+
+    def "should Provide Default Values For Missing Error Fields"() {
+        given:
+        final RawGraphQLError rawGraphQLError = new RawGraphQLError(this.rawGraphQLError)
+
+        expect:
+        rawGraphQLError.getMessage() == "Unknown error"
+        rawGraphQLError.getErrorType() == ErrorType.DataFetchingException
+        rawGraphQLError.getLocations() == null
+        rawGraphQLError.getPath() == null
+        rawGraphQLError.getExtensions() == null
     }
 
 }

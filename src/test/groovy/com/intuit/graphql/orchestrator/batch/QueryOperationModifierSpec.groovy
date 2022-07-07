@@ -40,11 +40,11 @@ class QueryOperationModifierSpec extends Specification {
 
     private GraphQLSchema graphQLSchema
 
-    void setup() {
+    def setup() {
         graphQLSchema = schema(schema, runtimeWiring)
     }
 
-    void addsTypenameToQuery() {
+    def "adds Typename To Query"() {
         given:
         final String query = '''
             {
@@ -68,7 +68,7 @@ class QueryOperationModifierSpec extends Specification {
         preOrderResult == ["foo", "a", "__typename"]
     }
 
-    void addsTypenameToQueryForComplexObjects() {
+    def "adds Typename To Query For Complex Objects"() {
         given:
         final String query = '''
             {
@@ -93,7 +93,7 @@ class QueryOperationModifierSpec extends Specification {
         preOrderResult == ["complexFoo", "a", "__typename"]
     }
 
-    void doesNotModifyQueryWithTypename() {
+    def "does Not Modify Query With Typename"() {
         given:
         final String queryWithTypename = '''
             {
@@ -119,7 +119,7 @@ class QueryOperationModifierSpec extends Specification {
         preOrderResult == ["foo", "a", "__typename"]
     }
 
-    void addsTypenameToUnion() {
+    def "adds Typename To Union"() {
         given:
         final String queryWithUnion = "{ fooUnion { ...on Bar { b } } }"
 
@@ -139,7 +139,7 @@ class QueryOperationModifierSpec extends Specification {
     }
 
     @Ignore("to be done later")
-    void addsTypenameToQueryInFragmentDefinition() {
+    def "adds Typename To Query In Fragment Definition"() {
         given:
         final String queryWithFragment = '''
             query {
@@ -163,7 +163,7 @@ class QueryOperationModifierSpec extends Specification {
                 .modifyQuery(graphQLSchema, queryOperation, fragmentsByName, Collections.emptyMap())
 
         then:
-        definition != null
+        noExceptionThrown()
     }
 
 }

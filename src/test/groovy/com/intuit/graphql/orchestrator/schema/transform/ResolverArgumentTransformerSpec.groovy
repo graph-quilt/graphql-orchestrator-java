@@ -29,7 +29,7 @@ class ResolverArgumentTransformerSpec extends Specification {
 
     ResolverArgumentDirectiveValidator validator
 
-    void setup() {
+    def setup() {
         validator = Mock(ResolverArgumentDirectiveValidator.class)
 
         //assume all validations pass unless otherwise stated.
@@ -63,7 +63,7 @@ class ResolverArgumentTransformerSpec extends Specification {
         transformer.validator = validator
     }
 
-    void "resolver Argument Transforms Graph"() {
+    def "resolver Argument Transforms Graph"() {
         when:
         def final transformedSource = transformer.transform(source)
         def final resultFieldDefinition = queryType.getFieldDefinition().get(0)

@@ -11,7 +11,7 @@ import spock.lang.Specification
 
 class GraphQLUtilSpec extends Specification {
 
-    void canCreateTypeFromGraphQLObjectType() {
+    def "can Create Type From Graph QLObject Type"() {
         given:
         GraphQLObjectType graphQLObjectType = GraphQLObjectType.newObject().name("object").build()
         Type type = GraphQLUtil.createTypeBasedOnGraphQLType(graphQLObjectType)
@@ -21,7 +21,7 @@ class GraphQLUtilSpec extends Specification {
         ((TypeName) type).getName() == "object"
     }
 
-    void canCreateTypeFromNonNullType() {
+    def "can Create Type From Non Null Type"() {
         given:
         GraphQLObjectType graphQLObjectType = GraphQLObjectType.newObject().name("object").build()
         GraphQLNonNull nonNull = GraphQLNonNull.nonNull(graphQLObjectType)
@@ -34,7 +34,7 @@ class GraphQLUtilSpec extends Specification {
         ((TypeName) nonNullType).getName() == "object"
     }
 
-    void canCreateTypeFromListType() {
+    def "can Create Type From List Type"() {
         given:
         GraphQLObjectType graphQLObjectType = GraphQLObjectType.newObject().name("object").build()
         GraphQLNonNull nonNull = GraphQLNonNull.nonNull(graphQLObjectType)
