@@ -45,6 +45,8 @@ class DownstreamQueryModifierSpec extends Specification {
 
     private DownstreamQueryModifier subjectUnderTest
 
+    private AstTransformer astTransformer = new AstTransformer()
+
     def setup() {
         serviceMetadataMock = Mock(ServiceMetadataImpl)
 
@@ -89,16 +91,15 @@ class DownstreamQueryModifierSpec extends Specification {
         serviceMetadataMock.isOwnedByEntityExtension(_) >> false
         serviceMetadataMock.shouldModifyDownStreamQuery() >> true
 
-        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap())
+        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema)
     }
 
     def "can Remove Field"() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
-        when:
         // test 'a1 { af1 af2 b1 b2 b3 b4 b5 }' and remove b1..b5
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
@@ -117,11 +118,10 @@ class DownstreamQueryModifierSpec extends Specification {
 
     def "can Remove Field With Reverse Selection Set"() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
-        when:
         // test 'a1 { af2 b5 b4 b3 b2 b1 af1 }' and remove b5..b1
         Field a1 = Field.newField("a1").selectionSet(reverseSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
@@ -155,8 +155,6 @@ class DownstreamQueryModifierSpec extends Specification {
                 .typeCondition(TypeName.newTypeName("AObjectType").build())
                 .build()
 
-        AstTransformer astTransformer = new AstTransformer()
-
         when:
         FragmentDefinition newAFragmentDefinition = (FragmentDefinition) astTransformer
                 .transform(aFragment, subjectUnderTest)
@@ -169,8 +167,6 @@ class DownstreamQueryModifierSpec extends Specification {
 
     def "can Remove Fields From Inline Fragment Without Interface"() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         InlineFragment inlineFragment = InlineFragment.newInlineFragment()
                 .selectionSet(SelectionSet.newSelectionSet().selection(af1)
                         .selection(b5).selection(b4).selection(b3).build())
@@ -221,7 +217,6 @@ class DownstreamQueryModifierSpec extends Specification {
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
 
         when:
-        AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
@@ -246,7 +241,6 @@ class DownstreamQueryModifierSpec extends Specification {
                 .build()
 
         when:
-        AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
@@ -259,9 +253,6 @@ class DownstreamQueryModifierSpec extends Specification {
     }
 
     def "can Rename Query Fields"() {
-        given:
-        AstTransformer astTransformer = new AstTransformer()
-
         when:
         // test 'renamedAf3' should be sent as a3
         Field newAf3 = (Field) astTransformer.transform(renamedAf3, subjectUnderTest)
@@ -274,11 +265,10 @@ class DownstreamQueryModifierSpec extends Specification {
 
     def "can Rename Type Fields"() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
-        when:
         // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
         Field a1 = Field.newField("a1").selectionSet(renamedFieldSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
         Field selection = (Field) newA1.getSelectionSet().getSelections().get(0)
 
@@ -293,14 +283,13 @@ class DownstreamQueryModifierSpec extends Specification {
 
     def "validate User Inputted Alias Overrides Rename"() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         // a1 { renamedId1 } should be sent as a1 { id2: customAlias }
         Field aliasField = Field.newField("renamedId1").alias("customAlias").build()
         SelectionSet aliasSelectionSet = SelectionSet.newSelectionSet().selection(aliasField).build()
 
-        when:
         Field a1 = Field.newField("a1", aliasSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
         Field selection = (Field) newA1.getSelectionSet().getSelections().get(0)
 
@@ -314,13 +303,11 @@ class DownstreamQueryModifierSpec extends Specification {
 
     def "can Remove Fields From Renamed Resolvers"() {
         given:
-        AstTransformer astTransformer = new AstTransformer()
-
         // test 'renamedAf3' should be sent as a3
-
-        when:
         // a1 { renamedId1 } should be sent as a1 { id2: renamedId1 }
         Field a1 = Field.newField("a1").selectionSet(renamedResolverSelectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
@@ -331,6 +318,7 @@ class DownstreamQueryModifierSpec extends Specification {
     }
 
     def "visit Selection Set reqField Already Selected does Not Add RequiredField"() {
+        given:
         FieldResolverContext fieldResolverContextMock = Mock(FieldResolverContext.class)
         fieldResolverContextMock.getRequiredFields() >> ImmutableSet.of("reqdField")
 
@@ -346,7 +334,6 @@ class DownstreamQueryModifierSpec extends Specification {
                 .build()
 
         when:
-        AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
@@ -375,7 +362,6 @@ class DownstreamQueryModifierSpec extends Specification {
                 .build()
 
         when:
-        AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:
@@ -401,7 +387,6 @@ class DownstreamQueryModifierSpec extends Specification {
                 .build()
 
         when:
-        AstTransformer astTransformer = new AstTransformer()
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         then:

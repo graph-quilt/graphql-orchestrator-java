@@ -61,6 +61,7 @@ class FederationTransformerPostMergeSpec extends Specification {
 
         1 * unifiedXtextGraphMock.getEntitiesByTypeName() >> getEntities()
         2 * unifiedXtextGraphMock.getEntityExtensionsByNamespace() >> getEntityExtensions()
+        unifiedXtextGraphMock.getValueTypesByName() >> new HashMap<>()
         unifiedXtextGraphMock.getEntityExtensionMetadatas() >> []
 
         when:
@@ -98,6 +99,7 @@ class FederationTransformerPostMergeSpec extends Specification {
 
         1 * unifiedXtextGraphMock.getEntitiesByTypeName() >> baseDefinitionsByName
         2 * unifiedXtextGraphMock.getEntityExtensionsByNamespace() >> extensionsByNamespace
+        unifiedXtextGraphMock.getValueTypesByName() >> new HashMap<>()
         unifiedXtextGraphMock.getEntityExtensionMetadatas() >> []
 
         when:
@@ -136,6 +138,7 @@ class FederationTransformerPostMergeSpec extends Specification {
 
         1 * unifiedXtextGraphMock.getEntitiesByTypeName() >> baseDefinitionsByName
         2 * unifiedXtextGraphMock.getEntityExtensionsByNamespace() >> extensionsByNamespace
+        unifiedXtextGraphMock.getValueTypesByName() >> new HashMap<>()
         unifiedXtextGraphMock.getEntityExtensionMetadatas() >> []
 
         when:
