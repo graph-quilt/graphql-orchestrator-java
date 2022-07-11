@@ -36,12 +36,19 @@ class BaseIntegrationTestSpecification extends Specification {
                 .build()
     }
 
-    def createQueryMatchingService(String namespace, String testSchema, Map<String, Object> mockServiceResponse) {
+    def createQueryMatchingService(String namespace, ServiceProvider.ServiceType serviceType,
+                                   String testSchema, Map<String, Object> mockServiceResponse) {
         return MockServiceProvider.builder()
                 .sdlFiles(["schema.graphqls": testSchema])
                 .namespace(namespace)
+                .serviceType(serviceType)
                 .responseMap(mockServiceResponse)
                 .build()
+    }
+
+    def createQueryMatchingService(String namespace, String testSchema, Map<String, Object> mockServiceResponse) {
+        return this.createQueryMatchingService(namespace, ServiceProvider.ServiceType.GRAPHQL,
+                testSchema, mockServiceResponse)
     }
 
     static GraphQLOrchestrator createGraphQLOrchestrator(ServiceProvider service) {
