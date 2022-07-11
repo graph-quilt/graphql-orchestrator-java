@@ -4,6 +4,12 @@
 
 </div>
 
+[![CircleCI](https://circleci.com/gh/intuit/graphql-orchestrator-java/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/intuit/graphql-orchestrator-java)  
+
+![Master Build](https://github.com/intuit/graphql-orchestrator-java/actions/workflows/main.yml/badge.svg)
+
+
+
 [Builds](https://circleci.com/gh/intuit/graphql-orchestrator-java)
 
 ### Overview
