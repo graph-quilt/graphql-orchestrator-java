@@ -11,7 +11,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
 
     private GraphQLOrchestrator orchestrator
 
-    void setup() {
+    def setup() {
         services = [ new StarWarsService() ]
 
         orchestrator = createGraphQLOrchestrator(new AsyncExecutionStrategy(), null, services)
@@ -19,7 +19,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         assert !orchestrator.getSchema().isSupportingMutations()
     }
 
-    void canQueryToplevelWithResultTypeOfBaseInterface() {
+    def "can Query Toplevel With Result Type Of Base Interface"() {
         when:
         // Test query using ExecutionInput
         ExecutionInput executionInput = ExecutionInput.newExecutionInput().query('''
@@ -53,18 +53,18 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         heroValue.get("primaryFunction") == "Rescuing Luke"
     }
 
-    void canQueryToplevelWithResultTypeOfInterfaceImpl() {
+    def "can Query Toplevel With Result Type Of Interface Impl"() {
         when:
         // Test query using ExecutionInput
         ExecutionInput executionInput = ExecutionInput
-            .newExecutionInput().query('''
+                .newExecutionInput().query('''
                 {
                     human {
                         name appearsIn homePlanet
                     } 
                 }
             ''')
-            .build()
+                .build()
 
         then:
         Map<String, Object> executionResult = orchestrator.execute(executionInput).get().toSpecification()
@@ -80,7 +80,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         human.get("homePlanet") == "Stewjon"
     }
 
-    void canQueryToplevelWithResultTypeOfWrappedInterfaceImpl() {
+    def "can Query Toplevel With Result Type Of Wrapped Interface Impl"() {
         when:
         // Test query using ExecutionInput
         ExecutionInput executionInput = ExecutionInput

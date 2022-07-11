@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture
 @Slf4j
 class TexSpec extends Specification {
 
-    void canMakeQuery() {
+    def "can Make Query"() {
         given:
         // person is of type PersonInterface which is extended to add field address
         TestCase testCase = TestCase.newTestCase()
@@ -71,7 +71,7 @@ class TexSpec extends Specification {
         CSSimulationExperimentData.keySet().size() == 2
     }
 
-    void canMakeMutationWithMergeDirectiveOnField() {
+    def "can Make Mutation With Merge Directive On Field"() {
         given:
         // person is of type PersonInterface which is extended to add field address
         TestCase testCase = TestCase.newTestCase()

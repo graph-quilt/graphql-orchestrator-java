@@ -19,12 +19,12 @@ class BatchResultTransformerSpec extends Specification {
 
     private static final BatchResultTransformer batchResultTransformer = new DefaultBatchResultTransformer()
 
-    void setup() {
+    def setup() {
         batchResults = new HashMap<>()
         environments = new ArrayList<>()
     }
 
-    void defaultBatchTransformerBatchResultWithError() {
+    def "default Batch Transformer Batch Result With Error"() {
         given:
         batchResults.put("field1", "value1")
 
@@ -53,7 +53,7 @@ class BatchResultTransformerSpec extends Specification {
         results.get(0).getErrors() == [error]
     }
 
-    void defaultBatchTransformerTwoBatchResults() {
+    def "default Batch Transformer Two Batch Results"() {
         given:
         batchResults.put("field1", "value1")
         batchResults.put("field2", "value2")
@@ -81,7 +81,7 @@ class BatchResultTransformerSpec extends Specification {
         results.collect{ it.getErrors() }.flatten() == []
     }
 
-    void defaultBatchTransformerWithAlias() {
+    def "default Batch Transformer With Alias"() {
         given:
         batchResults.put("alias", "value1")
 
@@ -104,7 +104,7 @@ class BatchResultTransformerSpec extends Specification {
         results.collect { it.getData() } == [ "value1" ]
     }
 
-    void defaultBatchTransformerWithMatchingPathError() {
+    def "default Batch Transformer With Matching Path Error"() {
         given:
         final DataFetchingEnvironment environment = DataFetchingEnvironmentImpl.newDataFetchingEnvironment()
                 .mergedField(newMergedField().addField(newField("field1").build()).build())

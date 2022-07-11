@@ -51,7 +51,7 @@ class VariableDefinitionFilterSpec extends Specification {
 
     private VariableDefinitionFilter variableDefinitionFilter
 
-    void setup() {
+    def setup() {
         graphQLSchema = new SchemaGenerator()
                 .makeExecutableSchema(new SchemaParser().parse(schema), RuntimeWiring.newRuntimeWiring().build())
         this.variableDefinitionFilter = new VariableDefinitionFilter()
@@ -68,7 +68,7 @@ class VariableDefinitionFilterSpec extends Specification {
                 .inject([:]) {map, it -> map << [(it.getName()): it]}
     }
 
-    void producesVariableReferencesInArgumentsAndDirectiveArguments() {
+    def "produces Variable References In Arguments And Directive Arguments"() {
         given:
         String query = '''
             query($debt_arg: Int $income_arg: Int $inline_arg: Int $spread_arg: Int $definition_arg: Int $operation_arg: Int) {
@@ -104,7 +104,7 @@ class VariableDefinitionFilterSpec extends Specification {
         variableReferences.containsAll("income_arg", "debt_arg", "inline_arg", "spread_arg", "definition_arg")
     }
 
-    void variableReferencesInArgumentValues() {
+    def "variable References In Argument Values"() {
         given:
         String query = '''
             query($int_arg: Int $string_arg: String) {
@@ -129,7 +129,7 @@ class VariableDefinitionFilterSpec extends Specification {
         results.containsAll("int_arg", "string_arg")
     }
 
-    void variableReferencesInArrays() {
+    def "variable References In Arrays"() {
         given:
         String query = '''
             query($int_arg: Int $string_arg: String) { 
@@ -154,7 +154,7 @@ class VariableDefinitionFilterSpec extends Specification {
         results.containsAll("int_arg", "string_arg")
     }
 
-    void variableReferencesInQueryDirective() {
+    def "variable References In Query Directive"() {
         given:
         String query = '''
             query($int_arg: Int $string_arg: String) @field_directive_argument(arg: {
@@ -179,7 +179,7 @@ class VariableDefinitionFilterSpec extends Specification {
         results.containsAll("int_arg", "string_arg")
     }
 
-    void testNegativeCases() {
+    def "test Negative Cases"() {
         given:
         final String negativeTestCaseQuery = "query { consumer { liabilities { totalDebt(arg: 1234) } } }"
         Document document = parser.parseDocument(negativeTestCaseQuery)

@@ -4,7 +4,7 @@ import spock.lang.Specification
 
 class DirectiveUtilSpec extends Specification {
 
-    void buildDeprecationReasonNullInputTest() {
+    def "build Deprecation Reason Null Input Test"() {
         expect:
         DirectivesUtil.buildDeprecationReason(null) == null
     }

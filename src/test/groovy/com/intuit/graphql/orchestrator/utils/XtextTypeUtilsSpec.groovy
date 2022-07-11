@@ -8,7 +8,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.*
 
 class XtextTypeUtilsSpec extends Specification {
 
-    void compareWrappedTypesTest() {
+    def "compare Wrapped Types Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -23,7 +23,7 @@ class XtextTypeUtilsSpec extends Specification {
         !XtextTypeUtils.compareTypes(listType, outerlistType)
     }
 
-    void compareNonNullTypesTest() {
+    def "compare Non Null Types Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -42,7 +42,7 @@ class XtextTypeUtilsSpec extends Specification {
         !XtextTypeUtils.compareTypes(listType, listType2)
     }
 
-    void compareEqualWrappedNonNullTypesTest() {
+    def "compare Equal Wrapped Non Null Types Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -64,7 +64,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.compareTypes(listType, listType2)
     }
 
-    void generateArgumentsDefinitionStringTest() {
+    def "generate Arguments Definition String Test"() {
         given:
         final ArgumentsDefinition argumentsDefinition = GraphQLFactoryDelegate.createArgumentsDefinition()
         InputValueDefinition ivf = GraphQLFactoryDelegate.createInputValueDefinition()
@@ -83,7 +83,7 @@ class XtextTypeUtilsSpec extends Specification {
                         .contains(it)}).size() == 4
     }
 
-    void generateDirectivesStringTest() {
+    void "generate Directives String Test"() {
         given:
         FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition()
 
@@ -110,7 +110,7 @@ class XtextTypeUtilsSpec extends Specification {
                         .contains(it)}).size() == 4
     }
 
-    void throwsExceptionForObjectTypeNotValidAsInput() {
+    def "throws Exception For Object Type Not Valid As Input"() {
         given:
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
         objectTypeDefinition.setName("Arg1")
@@ -123,7 +123,7 @@ class XtextTypeUtilsSpec extends Specification {
         !XtextTypeUtils.isValidInputType(listType)
     }
 
-    void InputObjectTypeIsValidAsInput() {
+    def "Input Object Type Is Valid As Input"() {
         given:
         InputObjectTypeDefinition inputObjectTypeDefinition = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
         inputObjectTypeDefinition.setName("Arg1")
@@ -136,7 +136,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isValidInputType(listType)
     }
 
-    void EnumTypeIsValidAsInput() {
+    def "Enum Type Is Valid As Input"() {
         given:
         EnumTypeDefinition enumTypeDefinition = GraphQLFactoryDelegate.createEnumTypeDefinition()
         enumTypeDefinition.setName("Arg1")
@@ -146,7 +146,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isValidInputType(namedType)
     }
 
-    void ScalarTypeIsValidAsInput() {
+    def "Scalar Type Is Valid As Input"() {
         given:
         PrimitiveType primitiveType = GraphQLFactoryDelegate.createPrimitiveType()
         primitiveType.setType("String")
@@ -155,7 +155,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isValidInputType(primitiveType)
     }
 
-    void ScalarTypeDefinitionIsValidAsInput() {
+    def "Scalar Type Definition Is Valid As Input"() {
         given:
         ScalarTypeDefinition scalarTypeDefinition = GraphQLFactoryDelegate.createScalarTypeDefinition()
         scalarTypeDefinition.setName("TestScalar")
@@ -165,7 +165,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isValidInputType(namedType)
     }
 
-    void isCompatibleScalarsTestBothNullable() {
+    def "is Compatible Scalars Test Both Nullable"() {
         when:
         PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
@@ -178,7 +178,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
-    void isCompatibleScalarsTestStubNullable() {
+    def "is Compatible Scalars Test Stub Nullable"() {
         when:
         PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
@@ -193,7 +193,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
-    void isCompatibleScalarsTestTargetNullable() {
+    def "is Compatible Scalars Test Target Nullable"() {
         when:
         PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
@@ -209,7 +209,7 @@ class XtextTypeUtilsSpec extends Specification {
         !XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
-    void isCompatibleScalarsTestBothNonNullable() {
+    def "is Compatible Scalars Test Both Non Nullable"() {
         when:
         PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
@@ -224,7 +224,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
-    void isCompatibleWrappedTypesTest() {
+    def "is Compatible Wrapped Types Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -240,7 +240,7 @@ class XtextTypeUtilsSpec extends Specification {
         !XtextTypeUtils.isCompatible(outerlistType, listType)
     }
 
-    void isCompatibleWrappedNonNullTypesTest() {
+    def "is Compatible Wrapped Non Null Types Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -260,7 +260,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isCompatible(listType2, listType)
     }
 
-    void isCompatibleSameTypeWrappingNonNullTypesTest() {
+    def "is Compatible Same Type Wrapping Non Null Types Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -283,7 +283,7 @@ class XtextTypeUtilsSpec extends Specification {
         XtextTypeUtils.isCompatible(listType2, listType)
     }
 
-    void isCompatibleWrappedAndNonWrappedTypeTest() {
+    def "is Compatible Wrapped And Non Wrapped Type Test"() {
         given:
         ListType listType = GraphQLFactoryDelegate.createListType()
         ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
@@ -302,7 +302,7 @@ class XtextTypeUtilsSpec extends Specification {
         !XtextTypeUtils.isCompatible(namedType2, listType)
     }
 
-    void getFieldDefinitionThrowsExceptionForNonEntityExtensionTypes(){
+    def "get Field Definition Throws Exception For Non Entity Extension Types"(){
         given:
         EnumTypeExtensionDefinition badExtension = GraphQLFactoryDelegate.createEnumTypeExtensionDefinition()
 
@@ -313,7 +313,7 @@ class XtextTypeUtilsSpec extends Specification {
         thrown(IllegalArgumentException)
     }
 
-    void getFieldDefinitionReturnsEmptyListForNonEntityExtensionTypesWithDefaultSet(){
+    def "get Field Definition Returns Empty List For Non Entity Extension Types With Default Set"(){
         given:
         EnumTypeExtensionDefinition badExtension = GraphQLFactoryDelegate.createEnumTypeExtensionDefinition()
         List<FieldDefinition> fields = getFieldDefinitions(badExtension, true)
@@ -322,7 +322,7 @@ class XtextTypeUtilsSpec extends Specification {
         fields.size() == 0
     }
 
-    void getFieldDefinitionReturnsFieldsForObjectTypeExtensionDefinition(){
+    def "get Field Definition Returns Fields For Object Type Extension Definition"(){
         given:
         String fieldName = "Test Field"
         ObjectTypeExtensionDefinition objectTypeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition()
@@ -338,7 +338,7 @@ class XtextTypeUtilsSpec extends Specification {
         fieldDefinitionList.get(0).getName() == fieldName
     }
 
-    void getFieldDefinitionReturnsFieldsForInterfaceTypeExtensionDefinition(){
+    def "get Field Definition Returns Fields For Interface Type Extension Definition"(){
         given:
         String fieldName = "Test Interface Field"
         InterfaceTypeExtensionDefinition interfaceTypeExtensionDefinition = GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition()
@@ -354,32 +354,32 @@ class XtextTypeUtilsSpec extends Specification {
         fieldDefinitionList.get(0).getName() == fieldName
     }
 
-    void isObjectTypeExtensionDefinitionReturnsTrueForObjectTypeExtension() {
+    def "is Object Type Extension Definition Returns True For Object Type Extension"() {
         expect:
         isObjectTypeExtensionDefinition(GraphQLFactoryDelegate.createObjectTypeExtensionDefinition())
     }
 
-    void isObjectTypeExtensionDefinitionReturnsFalseForInterfaceTypeExtension() {
+    def "is Object Type Extension Definition Returns False For Interface Type Extension"() {
         expect:
         !isObjectTypeExtensionDefinition(GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition())
     }
 
-    void isObjectTypeExtensionDefinitionReturnsFalseForNull() {
+    def "is Object Type Extension Definition Returns False For Null"() {
         expect:
         !isObjectTypeExtensionDefinition(null)
     }
 
-    void isInterfaceTypeExtensionDefinitionReturnsFalseForObjectTypeExtension() {
+    def "is Interface Type Extension Definition Returns False For Object Type Extension"() {
         expect:
         isInterfaceTypeExtensionDefinition(GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition())
     }
 
-    void isInterfaceTypeExtensionDefinitionReturnsTrueeForInterfaceTypeExtension() {
+    def "is Interface Type Extension Definition Returns Truee For Interface Type Extension"() {
         expect:
         !isInterfaceTypeExtensionDefinition(GraphQLFactoryDelegate.createObjectTypeExtensionDefinition())
     }
 
-    void isInterfaceTypeExtensionDefinitionReturnsFalseForNull() {
+    def "is Interface Type Extension Definition Returns False For Null"() {
         expect:
         !isInterfaceTypeExtensionDefinition(null)
     }

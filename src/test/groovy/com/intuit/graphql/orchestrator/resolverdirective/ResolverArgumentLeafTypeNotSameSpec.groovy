@@ -5,7 +5,7 @@ import spock.lang.Specification
 
 class ResolverArgumentLeafTypeNotSameSpec extends Specification {
 
-    void producesCorrectErrorMessageWithoutParentContext() {
+    def "produces Correct Error Message Without Parent Context"() {
         given:
         final ResolverArgumentLeafTypeNotSame error = new ResolverArgumentLeafTypeNotSame(
                 "argName", new FieldContext("rootObject", "rootField"), "String", "ObjectType")
@@ -14,7 +14,7 @@ class ResolverArgumentLeafTypeNotSameSpec extends Specification {
         error.message.contains("Resolver argument 'argName' in 'rootObject:rootField': Expected 'String' to be 'ObjectType'.")
     }
 
-    void producesCorrectErrorMessageWithParentContext() {
+    def "produces Correct Error Message With Parent Context"() {
         given:
         final ResolverArgumentLeafTypeNotSame error = new ResolverArgumentLeafTypeNotSame(
                 "argName", new FieldContext("rootObject", "rootField"), new FieldContext("parentObject", "parentField"),

@@ -16,30 +16,34 @@ class TypeMetadataSpec extends Specification {
 
     FieldResolverContext fieldResolverContextMock
 
-    void setup() {
+    def setup() {
         typeDefinitionMock = Mock(TypeDefinition.class)
         fieldResolverContextMock = Mock(FieldResolverContext.class)
 
         subjectUnderTest = new TypeMetadata(typeDefinitionMock)
     }
 
-    def "getFieldResolverContext with no FieldResolvers returns Null"() {
-        when:
+    def "get Field Resolver Context with No Field Resolvers returns Null"() {
+        given:
         subjectUnderTest.addFieldResolverContext(fieldResolverContextMock)
+
+        when:
         def actual = subjectUnderTest.getFieldResolverContext(TEST_FIELD_NAME)
 
         then:
         actual == null
     }
 
-    def "getFieldResolverContext with FieldResolvers can return Object"() {
-        when:
+    def "get Field Resolver Context with Field Resolvers can return Object"() {
+        given:
         fieldResolverContextMock.getFieldName() >> TEST_FIELD_NAME
         subjectUnderTest.addFieldResolverContext(fieldResolverContextMock)
+
+        when:
         def actual = subjectUnderTest.getFieldResolverContext(TEST_FIELD_NAME)
 
         then:
-        actual == fieldResolverContextMock
+        actual.is(fieldResolverContextMock)
     }
 
 }

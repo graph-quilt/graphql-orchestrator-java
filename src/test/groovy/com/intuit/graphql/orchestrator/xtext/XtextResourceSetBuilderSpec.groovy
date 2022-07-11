@@ -7,7 +7,7 @@ import spock.lang.Specification
 
 class XtextResourceSetBuilderSpec extends Specification {
 
-    void buildsEmptyResourceSet() {
+    def "builds Empty Resource Set"() {
         given:
         XtextResourceSet emptyResourceSet = XtextResourceSetBuilder.newBuilder().build()
 
@@ -15,7 +15,7 @@ class XtextResourceSetBuilderSpec extends Specification {
         emptyResourceSet != null
     }
 
-    void buildsSingleFileResourceSet() {
+    def "builds Single File Resource Set"() {
         given:
         XtextResourceSet resourceSet = XtextResourceSetBuilder.newBuilder()
                 .file("top_level/eps/schema2.graphqls",TestHelper.getResourceAsString("top_level/eps/schema2.graphqls"))
@@ -26,7 +26,7 @@ class XtextResourceSetBuilderSpec extends Specification {
         resourceSet.getResources().size() == 1
     }
 
-    void buildsMultipleFileResourceSet() {
+    def "builds Multiple File Resource Set"() {
         given:
         XtextResourceSet resourceSet = XtextResourceSetBuilder.newBuilder()
                 .files(TestHelper.getFileMapFromList("top_level/eps/schema2.graphqls", "top_level/person/schema1.graphqls"))
@@ -37,7 +37,7 @@ class XtextResourceSetBuilderSpec extends Specification {
         resourceSet.getResources().size() == 2
     }
 
-    void throwsNullPointerExceptionWhenFileIsNull() {
+    def "throws Null Pointer Exception When File Is Null"() {
         given:
         XtextResourceSetBuilder builder = XtextResourceSetBuilder.newBuilder()
 
@@ -48,7 +48,7 @@ class XtextResourceSetBuilderSpec extends Specification {
         thrown(NullPointerException)
     }
 
-    void throwsExceptionWhenFileNameIsNull() {
+    def "throws Exception When File Name Is Null"() {
         given:
         XtextResourceSetBuilder builder = XtextResourceSetBuilder.newBuilder()
 
@@ -59,7 +59,7 @@ class XtextResourceSetBuilderSpec extends Specification {
         thrown(NullPointerException)
     }
 
-    void throwsExceptionWhenValidationFailsWhenTypeIsUndefined() {
+    def "throws Exception When Validation Fails When Type Is Undefined"() {
         given:
         XtextResourceSetBuilder builder = XtextResourceSetBuilder.newBuilder()
                 .file("foo",  "type foo { abc: Inta }")
@@ -72,7 +72,7 @@ class XtextResourceSetBuilderSpec extends Specification {
         exception.message.contains("ERROR:Couldn't resolve reference to TypeDefinition 'Inta'")
     }
 
-    void throwsExceptionWhenValidationFailsWithDuplicateTypes() {
+    def "throws Exception When Validation Fails With Duplicate Types"() {
         given:
         XtextResourceSetBuilder builder = XtextResourceSetBuilder.newBuilder()
                 .file("foo",  "type foo { bar: String } type foo { abc: Int }")
