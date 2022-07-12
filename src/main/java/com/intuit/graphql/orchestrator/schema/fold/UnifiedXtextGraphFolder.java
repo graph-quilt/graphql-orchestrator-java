@@ -5,7 +5,6 @@ import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescri
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isEntityExtensionType;
-import static com.intuit.graphql.orchestrator.utils.TypeReferenceUtil.updateTypeReferencesInAnXtextGraph;
 import static com.intuit.graphql.orchestrator.utils.TypeReferenceUtil.updateTypeReferencesInObjectType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isEntity;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.objectTypeContainsFieldWithName;
@@ -176,10 +175,16 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
 
   private void mergeEntityTypes(TypeDefinition existingType, TypeDefinition incomingType,
       UnifiedXtextGraph accumulator, XtextGraph incomingXtextGraph) {
+    /*
+      Accumulator contains some fields that refer to Entity Base type and some to Entity
+      Extension.  The goal is to have all fields refer to the Base Type since fields of
+      Entity extension will be merged to the Base Type.
+
+      Either the base type or extension type may come first in the accumulator.  The reason
+      for the if else below.
+     */
     if(isBaseType(existingType) && isEntityExtensionType(incomingType)) {
-      // TODO consider calling EntityTypeMerging here
       incomingXtextGraph.getTypes().put(existingType.getName(), existingType);
-      updateTypeReferencesInAnXtextGraph(incomingType, existingType, incomingXtextGraph);
       updateTypeReferencesInUnifiedXtextGraph(incomingType, existingType, accumulator);
     } else if (isBaseType(incomingType) && isEntityExtensionType(existingType)) {
       accumulator.getTypes().put(incomingType.getName(), incomingType);
