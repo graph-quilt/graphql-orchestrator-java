@@ -114,7 +114,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
           );
     }
 
-    resolveTypeConflicts(accumulator.getTypes(), current.getTypes(), accumulator, current);
+    resolveTypeConflicts(accumulator, current);
 
     // transform the current graph with the new operation and code registry builder
     return accumulator.transform(
@@ -136,11 +136,12 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
   }
 
   private void resolveTypeConflicts(
-      final Map<String, TypeDefinition> existing,
-      final Map<String, TypeDefinition> current,
       final UnifiedXtextGraph accumulator,
       final XtextGraph currentGraph)
       throws TypeConflictException {
+
+    final Map<String, TypeDefinition> existing = accumulator.getTypes();
+    final Map<String, TypeDefinition> current = currentGraph.getTypes();
 
     final Set<String> operationTypeNames =
         currentGraph.getOperationMap().values().stream()
