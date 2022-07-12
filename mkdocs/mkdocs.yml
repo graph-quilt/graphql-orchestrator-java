@@ -44,10 +44,12 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Key Concepts:
-      - GraphQL Query Execution: key-concepts/graphql-query-execution.md
       - High Level Algorithm: key-concepts/algorithm.md
-      - Interfaces and Unions: key-concepts/interface-union-types.md
-      - Field Links: key-concepts/field-links.md
-  - Usage:
-      - Getting Started: usage/getting_started.md
+      - Recursive Schema Stitching: key-concepts/merging-types.md
+      - GraphQL Query Execution: key-concepts/graphql-query-execution.md
+      - Handling Interfaces and Unions: key-concepts/interface-union-types.md
+      - Remote Type Extensions: key-concepts/field-links.md
+      - Conflict Resolution: key-concepts/conflict-resolution.md
+  - Specifications:
+      - Custom Directives: specifications/custom-directives.md
 
