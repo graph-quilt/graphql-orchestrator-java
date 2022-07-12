@@ -29,6 +29,10 @@ class EntityMultiServiceFieldReferences extends BaseIntegrationTestSpecification
             topField4(id: String): A
         }
         
+        type Mutation {
+            addData(id: String): A
+        }
+        
         type A @key(fields: "a1") @extends {
             a1: String @external
             a3: [B]
@@ -64,6 +68,9 @@ class EntityMultiServiceFieldReferences extends BaseIntegrationTestSpecification
         queryType.getFieldDefinition("topField2").getType() == typeA
         queryType.getFieldDefinition("topField3").getType() == typeA
         queryType.getFieldDefinition("topField4").getType() == typeA
+
+        GraphQLObjectType mutationType = actualRuntimeGraph.getOperation(Operation.MUTATION)
+        mutationType.getFieldDefinition("addData").getType() == typeA
 
         where:
         SCHEMA_A                     | SCHEMA_B
