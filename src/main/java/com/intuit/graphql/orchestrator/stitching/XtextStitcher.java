@@ -130,6 +130,7 @@ public class XtextStitcher implements Stitcher {
       FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
           .builder()
           .fieldResolverContext(fieldResolverContext)
+          .serviceMetadata(serviceMetadataMap.get(fieldResolverContext.getTargetServiceNamespace()))
           .build();
 
       String batchLoaderKey = DataLoaderKeyUtil.createDataLoaderKeyFrom(fieldResolverContext);

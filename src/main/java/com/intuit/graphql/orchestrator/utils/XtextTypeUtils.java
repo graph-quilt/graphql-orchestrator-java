@@ -78,6 +78,18 @@ public class XtextTypeUtils {
     }
   }
 
+  public static String getNamedTypeName(NamedType namedType) {
+    if(isObjectType(namedType)) {
+      return ((ObjectType) namedType).getType().getName();
+    } else if (isPrimitiveType(namedType)) {
+      return ((PrimitiveType) namedType).getType();
+    } else if( isListType(namedType)) {
+      return  getNamedTypeName(((ListType) namedType).getType());
+    } else {
+      return null;
+    }
+  }
+
   /**
    * returns true if any type is a leaf node (scalar or enum)
    *
@@ -343,8 +355,14 @@ public class XtextTypeUtils {
   public static boolean objectTypeContainsFieldWithName(TypeDefinition typeDefinition, String fieldName) {
     return getFieldDefinitions(typeDefinition, true)
             .stream()
+            .map(FieldDefinition::getName)
+            .anyMatch(fieldDefinition -> fieldDefinition.equals(fieldName));
+  }
+  public static FieldDefinition getFieldDefinitionFromObjectTypeDefinition(TypeDefinition typeDefinition, String fieldName) {
+    return getFieldDefinitions(typeDefinition, true)
+            .stream()
             .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
             .findFirst()
-            .isPresent();
+            .orElse(null);
   }
 }

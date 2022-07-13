@@ -1,23 +1,14 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_FIELD_SEPARATOR;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
-import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getParentTypeName;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
-import static java.util.stream.Collectors.toMap;
-
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InputValueDefinition;
 import com.intuit.graphql.graphQL.ListType;
 import com.intuit.graphql.graphQL.NamedType;
 import com.intuit.graphql.graphQL.ObjectType;
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverException;
+import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverGraphQLError;
 import com.intuit.graphql.orchestrator.fieldresolver.FieldResolverValidator;
 import com.intuit.graphql.orchestrator.fieldresolver.ResolverArgumentDefinitionValidator;
 import com.intuit.graphql.orchestrator.resolverdirective.ExternalTypeNotfoundException;
@@ -30,16 +21,30 @@ import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_FIELD_SEPARATOR;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
+import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitionFromObjectTypeDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getParentTypeName;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
+import static java.util.stream.Collectors.toMap;
 public class FieldResolverTransformerPostMerge implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
 
   @Override
@@ -118,13 +123,58 @@ public class FieldResolverTransformerPostMerge implements Transformer<UnifiedXte
     List<ResolverArgumentDefinition> updatedResolverArgumentDefinitions = updateWithInputType(
             resolverDirectiveDefinition.getArguments(), targetFieldInputValueDefinitions, fieldResolverContext);
 
+    FieldContext targetFieldContext = new FieldContext(getParentTypeName(targetFieldDefinition), targetFieldDefinition.getName());
+
+    //if it contains '.' must find correct targetContext to get namespace since it is nested
+    String namespace = (StringUtils.contains(resolverDirectiveDefinition.getField(), FQN_FIELD_SEPARATOR)) ?
+            getTargetNamespace(fieldResolverContext, resolverDirectiveDefinition, sourceXtextGraph) :
+            sourceXtextGraph.getCodeRegistry().get(targetFieldContext).getNamespace();
+
     String targetFieldFQN = resolverDirectiveDefinition.getField();
     return fieldResolverContext.transform(builder -> builder
             .targetFieldDefinition(targetFieldDefinition)
-            .targetFieldContext(new FieldContext(getParentTypeName(targetFieldDefinition), targetFieldDefinition.getName()))
+            .targetFieldContext(targetFieldContext)
+            .targetServiceNamespace(namespace)
             .resolverDirectiveDefinition(new ResolverDirectiveDefinition(targetFieldFQN, updatedResolverArgumentDefinitions))
     );
 
+  }
+
+  private String getTargetNamespace(final FieldResolverContext fieldResolverContext,
+                                    final ResolverDirectiveDefinition resolverDirectiveDefinition,
+                                    final UnifiedXtextGraph sourceXtextGraph) {
+    String namespace = fieldResolverContext.getServiceNamespace();
+    String[] resolverPath = resolverDirectiveDefinition.getField().split("\\.");
+    AtomicReference<String> parentTypeNameRef = new AtomicReference<>(Operation.QUERY.getName());
+    int start = (FQN_KEYWORD_QUERY.equals(resolverPath[0]) || Operation.QUERY.getName().equals(resolverPath[0])) ? 1 : 0;
+
+    //traverse through path to get the correct fieldContext
+    for (int i = start; i < resolverPath.length; i++) {
+      String fieldName = resolverPath[i];
+      FieldContext fieldContext = new FieldContext(parentTypeNameRef.get(), fieldName);
+      DataFetcherContext dfContext = sourceXtextGraph.getCodeRegistry().get(fieldContext);
+      if(dfContext != null) {
+        namespace = dfContext.getNamespace();
+      }
+
+      ObjectTypeDefinition currentParent = sourceXtextGraph.getObjectTypeDefinitions().get(parentTypeNameRef.get());
+      if(currentParent != null) {
+        FieldDefinition currentField = getFieldDefinitionFromObjectTypeDefinition(currentParent, fieldName);
+        if(currentField != null) {
+          parentTypeNameRef.set(com.intuit.graphql.utils.XtextTypeUtils.typeName(currentField.getNamedType()));
+        } else {
+          throw FieldResolverGraphQLError.builder()
+                  .errorMessage("Target service field not found.")
+                  .fieldName(fieldName)
+                  .parentTypeName(parentTypeNameRef.get())
+                  .resolverDirectiveDefinition(fieldResolverContext.getResolverDirectiveDefinition())
+                  .serviceNameSpace(fieldResolverContext.getServiceNamespace())
+                  .build();
+        }
+      }
+    }
+
+    return namespace;
   }
 
   private DataFetcherContext createDataFetcherContext(final FieldResolverContext fieldResolverContext) {

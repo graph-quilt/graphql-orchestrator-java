@@ -1,18 +1,19 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
+import lombok.Getter;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.Getter;
+
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 /**
  * This class holds data about a fieldDefinition with resolver directive.
@@ -34,6 +35,7 @@ public class FieldResolverContext {
 
   private final FieldContext targetFieldContext;
   private final FieldDefinition targetFieldDefinition;
+  private final String targetServiceNamespace;
 
   public FieldResolverContext(Builder builder) {
     this.fieldDefinition = builder.fieldDefinition;
@@ -45,6 +47,7 @@ public class FieldResolverContext {
     this.targetFieldContext = builder.targetFieldContext;
     this.targetFieldDefinition = builder.targetFieldDefinition;
     this.requiredFields = builder.requiredFields;
+    this.targetServiceNamespace = builder.targetServiceNamespace;
   }
 
   public String getFieldName() {
@@ -77,6 +80,7 @@ public class FieldResolverContext {
 
     private FieldContext targetFieldContext;
     private FieldDefinition targetFieldDefinition;
+    private String targetServiceNamespace;
     private Set<String> requiredFields;
 
     public Builder() {
@@ -91,6 +95,7 @@ public class FieldResolverContext {
       this.serviceNamespace = sourceObject.getServiceNamespace();
       this.targetFieldContext = sourceObject.getTargetFieldContext();
       this.targetFieldDefinition = sourceObject.getTargetFieldDefinition();
+      this.targetServiceNamespace = sourceObject.getTargetServiceNamespace();
       this.requiredFields = sourceObject.getRequiredFields();
     }
 
@@ -134,6 +139,11 @@ public class FieldResolverContext {
 
     public FieldResolverContext.Builder requiredFields(Set<String> requiredFields) {
       this.requiredFields = requiredFields;
+      return this;
+    }
+
+    public FieldResolverContext.Builder targetServiceNamespace(String targetServiceNamespace) {
+      this.targetServiceNamespace = targetServiceNamespace;
       return this;
     }
 
