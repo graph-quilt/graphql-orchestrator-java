@@ -38,6 +38,7 @@ import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDir
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.FQN_KEYWORD_QUERY;
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitionFromObjectTypeDefinition;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getParentTypeName;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectType;
@@ -158,23 +159,18 @@ public class FieldResolverTransformerPostMerge implements Transformer<UnifiedXte
 
       ObjectTypeDefinition currentParent = sourceXtextGraph.getObjectTypeDefinitions().get(parentTypeNameRef.get());
       if(currentParent != null) {
-        String currentFieldsTypeName =  currentParent.getFieldDefinition()
-          .stream()
-          .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
-          .findFirst()
-          .map(FieldDefinition::getNamedType)
-          .map(XtextTypeUtils::getNamedTypeName)
-          .orElseThrow ( () ->
-            FieldResolverGraphQLError.builder()
-            .errorMessage("Target service field not found.")
-            .fieldName(fieldName)
-            .parentTypeName(parentTypeNameRef.get())
-            .resolverDirectiveDefinition(fieldResolverContext.getResolverDirectiveDefinition())
-            .serviceNameSpace(fieldResolverContext.getServiceNamespace())
-            .build()
-          );
-
-        parentTypeNameRef.set(currentFieldsTypeName);
+        FieldDefinition currentField = getFieldDefinitionFromObjectTypeDefinition(currentParent, fieldName);
+        if(currentField != null) {
+          parentTypeNameRef.set(com.intuit.graphql.utils.XtextTypeUtils.typeName(currentField.getNamedType()));
+        } else {
+          throw FieldResolverGraphQLError.builder()
+                  .errorMessage("Target service field not found.")
+                  .fieldName(fieldName)
+                  .parentTypeName(parentTypeNameRef.get())
+                  .resolverDirectiveDefinition(fieldResolverContext.getResolverDirectiveDefinition())
+                  .serviceNameSpace(fieldResolverContext.getServiceNamespace())
+                  .build();
+        }
       }
     }
 

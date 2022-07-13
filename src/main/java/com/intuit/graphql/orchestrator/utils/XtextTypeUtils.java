@@ -355,8 +355,14 @@ public class XtextTypeUtils {
   public static boolean objectTypeContainsFieldWithName(TypeDefinition typeDefinition, String fieldName) {
     return getFieldDefinitions(typeDefinition, true)
             .stream()
+            .map(FieldDefinition::getName)
+            .anyMatch(fieldDefinition -> fieldDefinition.equals(fieldName));
+  }
+  public static FieldDefinition getFieldDefinitionFromObjectTypeDefinition(TypeDefinition typeDefinition, String fieldName) {
+    return getFieldDefinitions(typeDefinition, true)
+            .stream()
             .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
             .findFirst()
-            .isPresent();
+            .orElse(null);
   }
 }
