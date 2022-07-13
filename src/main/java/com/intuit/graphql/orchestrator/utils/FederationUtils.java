@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_FIELD_DIRECTIVE_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FED_TYPE_DIRECTIVES_NAMES_SET;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
@@ -35,6 +36,11 @@ public class FederationUtils {
     public static boolean isBaseType(TypeDefinition typeDefinition) {
         return !(typeDefinition instanceof ObjectTypeExtensionDefinition || typeDefinition instanceof InterfaceTypeExtensionDefinition) &&
                 !definitionContainsDirective(typeDefinition, FEDERATION_EXTENDS_DIRECTIVE);
+    }
+
+    public static boolean isEntityExtensionType(TypeDefinition typeDefinition) {
+        return definitionContainsDirective(typeDefinition, FEDERATION_KEY_DIRECTIVE) &&
+            !isBaseType(typeDefinition);
     }
 
     public static String getUniqueIdFromFieldSet(String fieldSet) {

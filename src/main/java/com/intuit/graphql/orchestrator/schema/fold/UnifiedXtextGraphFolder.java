@@ -1,5 +1,19 @@
 package com.intuit.graphql.orchestrator.schema.fold;
 
+import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligibility;
+import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isBaseType;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isEntityExtensionType;
+import static com.intuit.graphql.orchestrator.utils.TypeReferenceUtil.updateTypeReferencesInObjectType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isEntity;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.objectTypeContainsFieldWithName;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectiveWithNameFromDefinition;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.STATIC_DATAFETCHER_CONTEXT;
+import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
+
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
 import com.intuit.graphql.graphQL.EnumValueDefinition;
 import com.intuit.graphql.graphQL.FieldDefinition;
@@ -21,22 +35,19 @@ import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligibility;
-import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.objectTypeContainsFieldWithName;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectiveWithNameFromDefinition;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.STATIC_DATAFETCHER_CONTEXT;
-import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectType;
-import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 
 public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtextGraph> {
 
@@ -103,7 +114,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
           );
     }
 
-    resolveTypeConflicts(accumulator.getTypes(), current.getTypes(), current);
+    resolveTypeConflicts(accumulator, current);
 
     // transform the current graph with the new operation and code registry builder
     return accumulator.transform(
@@ -125,10 +136,12 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
   }
 
   private void resolveTypeConflicts(
-      final Map<String, TypeDefinition> existing,
-      final Map<String, TypeDefinition> current,
+      final UnifiedXtextGraph accumulator,
       final XtextGraph currentGraph)
       throws TypeConflictException {
+
+    final Map<String, TypeDefinition> existing = accumulator.getTypes();
+    final Map<String, TypeDefinition> current = currentGraph.getTypes();
 
     final Set<String> operationTypeNames =
         currentGraph.getOperationMap().values().stream()
@@ -148,8 +161,46 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
             conflictingType,
             existingType,
             currentGraph.getServiceProvider().isFederationProvider());
+        mergeSharedType(existingType, conflictingType, accumulator, currentGraph);
       }
     }
+  }
+
+  private void mergeSharedType(TypeDefinition existingType, TypeDefinition incomingType,
+      UnifiedXtextGraph accumulator, XtextGraph incomingXtextGraph) {
+    boolean isFederated = incomingXtextGraph.getServiceProvider().isFederationProvider();
+    if (isFederated && isEntity(existingType) && isEntity(incomingType)) {
+      mergeEntityTypes(existingType, incomingType, accumulator, incomingXtextGraph);
+    }
+  }
+
+  private void mergeEntityTypes(TypeDefinition existingType, TypeDefinition incomingType,
+      UnifiedXtextGraph accumulator, XtextGraph incomingXtextGraph) {
+    /*
+      Accumulator contains some fields that refer to Entity Base type and some to Entity
+      Extension.  The goal is to have all fields refer to the Base Type since fields of
+      Entity extension will be merged to the Base Type.
+
+      Either the base type or extension type may come first in the accumulator.  The reason
+      for the if else below.
+     */
+    if(isBaseType(existingType) && isEntityExtensionType(incomingType)) {
+      incomingXtextGraph.getTypes().put(existingType.getName(), existingType);
+      updateTypeReferencesInUnifiedXtextGraph(incomingType, existingType, accumulator);
+    } else if (isBaseType(incomingType) && isEntityExtensionType(existingType)) {
+      accumulator.getTypes().put(incomingType.getName(), incomingType);
+      updateTypeReferencesInUnifiedXtextGraph(existingType, incomingType, accumulator);
+    } // else do nothing
+  }
+
+  private void updateTypeReferencesInUnifiedXtextGraph(TypeDefinition targetType,
+      TypeDefinition replacementType, UnifiedXtextGraph unifiedXtextGraph) {
+    unifiedXtextGraph
+        .getOperationMap()
+        .forEach(
+            (operation, objectTypeDefinition) -> {
+              updateTypeReferencesInObjectType(targetType, replacementType, objectTypeDefinition);
+            });
   }
 
   /**
