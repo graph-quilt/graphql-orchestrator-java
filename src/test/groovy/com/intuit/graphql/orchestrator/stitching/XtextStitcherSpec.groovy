@@ -38,7 +38,7 @@ class XtextStitcherSpec extends Specification {
         directive @resolver(field: String) on ARGUMENT_DEFINITION
     '''
 
-    void buildsResolverArgumentDataFetchers() {
+    def "builds Resolver Argument Data Fetchers"() {
         given:
         FieldContext testFieldContext = new FieldContext("TestType", "test_field")
 
@@ -73,7 +73,7 @@ class XtextStitcherSpec extends Specification {
                 ResolverArgumentDataFetcher
     }
 
-    void testBatchLoadersArePresentInRuntimeGraph() {
+    def "test Batch Loaders Are Present In Runtime Graph"() {
         given:
         ServiceProvider sp1 = TestServiceProvider.newBuilder()
                 .serviceType(ServiceType.REST)
@@ -120,7 +120,7 @@ class XtextStitcherSpec extends Specification {
         runtimeGraph.getBatchLoaderMap().get("EPS") in GraphQLServiceBatchLoader
     }
 
-    void testThrowsExceptionOnDuplicateNamespace() {
+    def "test Throws Exception On Duplicate Namespace"() {
         given:
         ServiceProvider sp1 = TestServiceProvider.newBuilder()
                 .serviceType(ServiceType.REST)

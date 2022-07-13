@@ -3,11 +3,9 @@ package com.intuit.graphql.orchestrator.batch
 import graphql.execution.DataFetcherResult
 import spock.lang.Specification
 
-import static org.assertj.core.api.Assertions.assertThat
-
 class QueryResponseModifierSpec extends Specification {
 
-    void defaultResponseModifierReturnsDataFetcherResult() {
+    def "default Response Modifier Returns Data Fetcher Result"() {
         given:
         final HashMap<String, Object> queryResponse = new HashMap<>()
         final HashMap<Object, Object> internalData = new HashMap<>()
@@ -22,16 +20,16 @@ class QueryResponseModifierSpec extends Specification {
         final DataFetcherResult<Map<String, Object>> result = new DefaultQueryResponseModifier().modify(queryResponse)
 
         then:
-        assertThat(result.getData().get("field")).isEqualTo("value")
-        assertThat(result.getErrors()).hasSize(1)
+        result.getData().get("field") == "value"
+        result.getErrors().size() == 1
     }
 
-    void defaultResponseModifierReturnsDefaultCollections() {
+    def "default Response Modifier Returns Default Collections"() {
         when:
         final DataFetcherResult<Map<String, Object>> result = new DefaultQueryResponseModifier().modify(new HashMap<>())
 
         then:
-        assertThat(result.getData()).isNotNull()
-        assertThat(result.getErrors()).isNotNull()
+        result.getData() != null
+        result.getErrors() != null
     }
 }

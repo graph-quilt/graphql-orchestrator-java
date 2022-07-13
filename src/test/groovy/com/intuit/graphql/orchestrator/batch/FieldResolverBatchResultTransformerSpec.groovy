@@ -24,7 +24,7 @@ class FieldResolverBatchResultTransformerSpec extends Specification {
 
     private FieldResolverBatchResultTransformer subjectUnderTest
 
-    void setup() {
+    def setup() {
         fieldResolverContextMock = Mock(FieldResolverContext.class)
         dataFetchingEnvironmentMock = Mock(DataFetchingEnvironment.class)
 
@@ -38,7 +38,7 @@ class FieldResolverBatchResultTransformerSpec extends Specification {
                 .build()
     }
 
-    void constructorEmptyResolverSelectedFields() {
+    def "constructor Empty Resolver Selected Fields"() {
         when:
         new FieldResolverBatchResultTransformer(ArrayUtils.EMPTY_STRING_ARRAY, fieldResolverContextMock)
 
@@ -46,7 +46,7 @@ class FieldResolverBatchResultTransformerSpec extends Specification {
         thrown(IllegalArgumentException)
     }
 
-    void toBatchResult_success() {
+    def "to Batch Result success"() {
         given:
         DataFetcherResult<Map<String, Object>> dataFetcherResult =
                 DataFetcherResult.<Map<String, Object>>newResult()
@@ -64,7 +64,7 @@ class FieldResolverBatchResultTransformerSpec extends Specification {
         actualDataFetcherResult.getData() == "cValue"
     }
 
-    void toBatchResult_NoDataHasErrors_throwsException() {
+    def "to Batch Result No Data Has Errors throws Exception"() {
         given:
         DataFetcherResult<Map<String, Object>> dataFetcherResult =
                 DataFetcherResult.<Map<String, Object>>newResult()
@@ -82,7 +82,7 @@ class FieldResolverBatchResultTransformerSpec extends Specification {
         actualDataFetcherResult.getErrors().size() == 1
     }
 
-    void toBatchResult_nullData_throwsException() {
+    def "to Batch Result null Data throws Exception"() {
         given:
         Map<String, Object> data = new HashMap<>()
         data.put("a", null)

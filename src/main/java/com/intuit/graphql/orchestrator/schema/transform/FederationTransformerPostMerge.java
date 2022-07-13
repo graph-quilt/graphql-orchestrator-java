@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.graphQL.TypeExtensionDefinition;
@@ -18,6 +19,7 @@ import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,8 +27,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
 import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
@@ -52,7 +56,12 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
               .map(entityMergingContext ->  entityTypeMerger.mergeIntoBaseType(entityMergingContext, unifiedXtextGraph))
               .collect(Collectors.toList());
 
+      //prune inaccessible info from entity types
+      pruneInaccessibleInfo(unifiedXtextGraph, baseEntityTypes);
       baseEntityTypes.forEach(Federation2PureGraphQLUtil::makeAsPureGraphQL);
+
+      //prune inaccessible info from value types
+      pruneInaccessibleInfo(unifiedXtextGraph, unifiedXtextGraph.getValueTypesByName().values());
 
       for (FederationMetadata.EntityExtensionMetadata entityExtensionMetadata : unifiedXtextGraph.getEntityExtensionMetadatas()) {
           Optional<FederationMetadata.EntityMetadata> optionalEntityMetadata = unifiedXtextGraph.getFederationMetadataByNamespace()
@@ -109,6 +118,18 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
         return entityBaseType;
     }
 
+  private void pruneInaccessibleInfo(UnifiedXtextGraph xtextGraph, Collection<TypeDefinition> definitions) {
+    definitions.forEach(typeDefinition -> {
+        if(definitionContainsDirective(typeDefinition, FEDERATION_INACCESSIBLE_DIRECTIVE)) {
+            xtextGraph.getTypes().remove(typeDefinition.getName());
+            xtextGraph.getBlacklistedTypes().add(typeDefinition.getName());
+        } else {
+            getFieldDefinitions(typeDefinition, true)
+                    .removeIf(fieldDefinition -> definitionContainsDirective(fieldDefinition, FEDERATION_INACCESSIBLE_DIRECTIVE));
+        }
+    });
+  }
+
   private void validateBaseExtensionCompatibility(EntityMergingContext entityMergingContext) {
       TypeDefinition baseType = entityMergingContext.getBaseType();
       TypeSystemDefinition typeSystemDefinition = entityMergingContext.getExtensionSystemDefinition();
@@ -127,12 +148,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
               );
           }
 
-          typeExtension.getDirectives().forEach(directive -> {
-              String directiveName = directive.getDefinition().getName();
-              if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
-                  keyDirectiveValidator.validatePostMerge(entityMergingContext);
-              }
-          });
+          checkFederationTypeDirectives(typeExtension.getName(), typeExtension.getDirectives(), entityMergingContext);
       } else {
           TypeExtensionDefinition typeExtension = typeSystemDefinition.getTypeExtension();
 
@@ -147,12 +163,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
               );
           }
 
-          typeExtension.getDirectives().forEach(directive -> {
-              String directiveName = directive.getDefinition().getName();
-              if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
-                  keyDirectiveValidator.validatePostMerge(entityMergingContext);
-              }
-          });
+          checkFederationTypeDirectives(typeExtension.getName(),typeExtension.getDirectives(), entityMergingContext);
       }
 
       checkFederationFieldDirectives(entityMergingContext);
@@ -193,5 +204,17 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
           }
       });
 
+  }
+
+  private void checkFederationTypeDirectives(String typeName, List<Directive> typeDirectives, EntityMergingContext entityMergingContext) {
+    typeDirectives.forEach(directive -> {
+        String directiveName = directive.getDefinition().getName();
+        boolean isInaccessible = StringUtils.equals(directiveName, FEDERATION_INACCESSIBLE_DIRECTIVE);
+        if(isInaccessible && !StringUtils.equals(directiveName, FEDERATION_EXTENDS_DIRECTIVE)) {
+          throw new TypeConflictException(String.format("%s type definition cannot have both the extends and inaccessible directive ", typeName));
+        } else if(StringUtils.equals(directiveName, FEDERATION_KEY_DIRECTIVE)) {
+          keyDirectiveValidator.validatePostMerge(entityMergingContext);
+        }
+    });
   }
 }

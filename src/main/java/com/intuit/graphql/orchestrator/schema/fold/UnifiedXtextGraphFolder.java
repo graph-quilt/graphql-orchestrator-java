@@ -1,32 +1,41 @@
 package com.intuit.graphql.orchestrator.schema.fold;
 
-import com.intuit.graphql.graphQL.*;
+import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.EnumValueDefinition;
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
+import com.intuit.graphql.graphQL.InputValueDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.NamedType;
+import com.intuit.graphql.graphQL.ObjectType;
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.XtextTypeConflictResolver;
+import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.schema.fold.FieldMergeValidations.checkMergeEligibility;
 import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescriptions;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.objectTypeContainsFieldWithName;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectiveWithNameFromDefinition;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.STATIC_DATAFETCHER_CONTEXT;
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.createObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
 import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
 
 public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtextGraph> {
@@ -85,11 +94,13 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
                       current.getServiceProvider());
                 } else if (incomingSharedType instanceof InterfaceTypeDefinition) {
                   mergeSharedValueType(
+                      accumulator,
                       (InterfaceTypeDefinition) preexistingTypeDefinition,
                       (InterfaceTypeDefinition) incomingSharedType,
                       current.getServiceProvider());
                 }
-              });
+              }
+          );
     }
 
     resolveTypeConflicts(accumulator.getTypes(), current.getTypes(), current);
@@ -214,8 +225,6 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
 
               if (!currentEnum.isPresent()) {
                 addNewFieldToObject(current, enumValue, newComerServiceProvider);
-              } else {
-                // To be used for inaccessible check later on
               }
             });
 
@@ -241,12 +250,13 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
                       .filter(fieldName -> newField.getName().equals(fieldName.getName()))
                       .findFirst();
 
-              if (!currentField.isPresent()) {
-                addNewFieldToObject(current, newField, newComerServiceProvider);
-              } else {
-                // To be used for inaccessible check later on
-              }
-            });
+                if (!currentField.isPresent()) {
+                    addNewFieldToObject(current, newField, newComerServiceProvider);
+                } else {
+                    mergeInaccessibleDirectiveToField(newField, currentField.get());
+                }
+            }
+        );
 
     current.setDesc(mergeDescriptions(current.getDesc(), newComer.getDesc()));
 
@@ -254,6 +264,7 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
   }
 
   private TypeDefinition mergeSharedValueType(
+      UnifiedXtextGraph prexistingInfo,
       InterfaceTypeDefinition current,
       InterfaceTypeDefinition newComer,
       ServiceProvider newComerServiceProvider) {
@@ -270,16 +281,42 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
                       .filter(fieldName -> newField.getName().equals(fieldName.getName()))
                       .findFirst();
 
-              if (!currentField.isPresent()) {
-                addNewFieldToObject(current, newField, newComerServiceProvider);
-              } else {
-                // To be used for inaccessible check later on
-              }
+                if (!currentField.isPresent()) {
+                    List<String> implementingTypesNotContainingField = (prexistingInfo.getTypes() != null) ? prexistingInfo.getTypes()
+                            .values()
+                            .stream()
+                            .filter(ObjectTypeDefinition.class::isInstance)
+                            .map(ObjectTypeDefinition.class::cast)
+                            .filter(objectTypeDefinition -> objectTypeImplementsInterface(objectTypeDefinition, newComer))
+                            .filter(implementingObjectType -> !objectTypeContainsFieldWithName(implementingObjectType, newField.getName()))
+                            .map(ObjectTypeDefinition::getName)
+                            .collect(Collectors.toList()) : new ArrayList<>();
+
+                    //Based on federation spec, new fields for interfaces must be resolvable by all types implementing to be valid new fields
+                    if(!implementingTypesNotContainingField.isEmpty()) {
+                        throw new StitchingException( String.format(
+                                "Implementing types %s do not contain the new field %s from interface %s",
+                                StringUtils.join(implementingTypesNotContainingField, ","),
+                                newField.getName(),
+                                newComer.getName()
+                        )
+                        );
+                    } else {
+                        addNewFieldToObject(current, newField, newComerServiceProvider);
+                    }
+                } else {
+                    mergeInaccessibleDirectiveToField(newField, currentField.get());
+                }
             });
 
     current.setDesc(mergeDescriptions(current.getDesc(), newComer.getDesc()));
 
     return current;
+  }
+
+  private boolean objectTypeImplementsInterface(ObjectTypeDefinition typeDefinition, InterfaceTypeDefinition interfaceDefinition) {
+      return typeDefinition.getImplementsInterfaces().getNamedType()
+                .stream().anyMatch(namedType -> typeName(namedType).equals(interfaceDefinition.getName()));
   }
 
   /**
@@ -393,7 +430,17 @@ public class UnifiedXtextGraphFolder implements Foldable<XtextGraph, UnifiedXtex
     return copyCurrent;
   }
 
-  private void copyParentDataFetcher(
+    private void mergeInaccessibleDirectiveToField(FieldDefinition newFieldDef, FieldDefinition preexisitingFieldDef) {
+        getDirectiveWithNameFromDefinition(newFieldDef, FEDERATION_INACCESSIBLE_DIRECTIVE).ifPresent(
+                newInaccessibleDirective -> {
+                    if(!getDirectiveWithNameFromDefinition(preexisitingFieldDef, FEDERATION_INACCESSIBLE_DIRECTIVE).isPresent()) {
+                        preexisitingFieldDef.getDirectives().add(newInaccessibleDirective);
+                    }
+                }
+        );
+    }
+
+    private void copyParentDataFetcher(
       ObjectTypeDefinition objectTypeDefinition, DataFetcherContext dataFetcherContext) {
     objectTypeDefinition
         .getFieldDefinition()

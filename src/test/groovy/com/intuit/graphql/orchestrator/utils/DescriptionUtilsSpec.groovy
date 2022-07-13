@@ -7,13 +7,13 @@ import static com.intuit.graphql.orchestrator.utils.DescriptionUtils.mergeDescri
 
 class DescriptionUtilsSpec extends Specification {
 
-    void attachNameSpaceTest(){
+    def "attach Name Space Test"(){
         expect:
         attachNamespace("ns","desc") == "[ns] desc"
         attachNamespace("ns",null) == "[ns]"
     }
 
-    void mergeDescrtiptionTest(){
+    def "merge Descrtiption Test"(){
         given:
         String firstMerge = mergeDescriptions("[ns1] desc1", "[ns2] desc2")
 

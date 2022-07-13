@@ -8,7 +8,7 @@ import spock.lang.Specification
 
 class ResolverArgumentQueryBuilderSpec extends Specification {
 
-    void buildsQueryWithScalarType() {
+    def "builds Query With Scalar Type"() {
         given:
         GraphQLInputType graphQLInputType = Scalars.GraphQLInt;
 
@@ -21,7 +21,7 @@ class ResolverArgumentQueryBuilderSpec extends Specification {
         result == "query {consumer {finance {tax}}}"
     }
 
-    void buildsQueryWithNestedObjectType() {
+    def "builds Query With Nested Object Type"() {
         given:
         GraphQLInputObjectType nestedType = GraphQLInputObjectType
                 .newInputObject()
@@ -48,7 +48,7 @@ class ResolverArgumentQueryBuilderSpec extends Specification {
         result == "query {consumer {finance {tax {test_field_1 test_field_2 {test_nested_field_1}}}}}"
     }
 
-    void invalidResolverFields() {
+    def "invalid Resolver Fields"() {
         given:
         GraphQLInputType type = Scalars.GraphQLInt
 

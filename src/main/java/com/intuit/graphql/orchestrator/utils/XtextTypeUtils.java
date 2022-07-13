@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
@@ -217,8 +218,6 @@ public class XtextTypeUtils {
     Map<String,FieldDefinition> possibleConflictingFieldMap = getFieldDefinitions(conflictingTypeDefinition)
             .stream().collect(Collectors.toMap(FieldDefinition::getName, Function.identity()));
 
-    boolean entityComparison =  conflictingTypeisEntity && existingTypeIsEntity;
-
     for(FieldDefinition existingDefinition : existingFieldDefinitions) {
       FieldDefinition possibleConflictingSharedField = possibleConflictingFieldMap.get(existingDefinition.getName());
       if(possibleConflictingSharedField != null) {
@@ -235,7 +234,8 @@ public class XtextTypeUtils {
                   )
           );
         }
-      } else if(!federatedComparison || isIncompatibleUniqueField(existingDefinition, entityComparison)) {
+      } else if(!federatedComparison && !doesTypeAllowUniqueFields(existingTypeDefinition, existingTypeIsEntity)
+              && !isInaccessible(existingDefinition)) {
         throw new TypeConflictException(
                 format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
                         toDescriptiveString(conflictingTypeDefinition),
@@ -253,7 +253,7 @@ public class XtextTypeUtils {
       }
 
       for(FieldDefinition fieldDefinition :possibleConflictingFieldMap.values()) {
-        if(isIncompatibleUniqueField(fieldDefinition, entityComparison)) {
+        if(!doesTypeAllowUniqueFields(conflictingTypeDefinition, existingTypeIsEntity) && !isInaccessible(fieldDefinition)) {
           throw new TypeConflictException(
                   format("Type %s is conflicting with existing type %s. Type '%s' does not contain field %s",
                           toDescriptiveString(conflictingTypeDefinition),
@@ -294,8 +294,18 @@ public class XtextTypeUtils {
     return definitionContainsDirective(type, FEDERATION_KEY_DIRECTIVE);
   }
 
-  private static boolean isIncompatibleUniqueField(FieldDefinition fieldDefinition, boolean entityComparison) {
-    return !entityComparison && fieldDefinition.getNamedType().isNonNull();
+  public static boolean isInaccessible(final TypeDefinition type) {
+    return definitionContainsDirective(type, FEDERATION_INACCESSIBLE_DIRECTIVE);
+  }
+
+  public static boolean isInaccessible(final FieldDefinition fieldDefinition) {
+    return definitionContainsDirective(fieldDefinition, FEDERATION_INACCESSIBLE_DIRECTIVE);
+  }
+
+  private static boolean doesTypeAllowUniqueFields(TypeDefinition typeDefinition, boolean isEntity) {
+    return isEntity || typeDefinition instanceof InterfaceTypeDefinition
+            || typeDefinition instanceof EnumTypeDefinition
+            || typeDefinition instanceof UnionTypeDefinition;
   }
 
   public static boolean areCompatibleSharedFields(FieldDefinition fieldDefinition1, FieldDefinition fieldDefinition2) {
@@ -340,5 +350,13 @@ public class XtextTypeUtils {
 
   public static boolean isInterfaceTypeExtensionDefinition(TypeExtensionDefinition typeDefinition) {
     return Objects.nonNull(typeDefinition) && typeDefinition instanceof InterfaceTypeExtensionDefinition;
+  }
+
+  public static boolean objectTypeContainsFieldWithName(TypeDefinition typeDefinition, String fieldName) {
+    return getFieldDefinitions(typeDefinition, true)
+            .stream()
+            .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
+            .findFirst()
+            .isPresent();
   }
 }

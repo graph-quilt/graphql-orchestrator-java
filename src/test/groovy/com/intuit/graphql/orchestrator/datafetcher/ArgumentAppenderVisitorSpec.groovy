@@ -23,7 +23,7 @@ class ArgumentAppenderVisitorSpec extends Specification {
             .type("NestedType", { builder -> builder.defaultDataFetcher({ env -> null }) })
             .build()
 
-    void addsArgumentToField() {
+    def "adds Argument To Field"() {
         given:
         final String schema = "schema { query: Query } type Query { needs_arguments: Int }"
         GraphQLSchema graphQLSchema = TestHelper.schema(schema, schemaRuntimeWiring)
@@ -51,7 +51,7 @@ class ArgumentAppenderVisitorSpec extends Specification {
                 .isEmpty()
     }
 
-    void addsArgumentToNestedField() {
+    def "adds Argument To Nested Field"() {
         given:
         final String nestedSchema = "schema { query: Query } type Query { root : NestedType } type NestedType { needs_arguments: Int }"
         GraphQLSchema graphQLSchema = TestHelper.schema(nestedSchema, nestedSchemaRuntimeWiring)

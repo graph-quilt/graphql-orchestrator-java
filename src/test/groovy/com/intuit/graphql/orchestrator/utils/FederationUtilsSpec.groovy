@@ -5,7 +5,7 @@ import spock.lang.Specification
 import static com.intuit.graphql.orchestrator.utils.FederationUtils.getUniqueIdFromFieldSet
 
 class FederationUtilsSpec extends Specification {
-    void canCreateUniqueIdFromFieldSetWithoutChildren() {
+    def "can Create Unique Id From Field Set Without Children"() {
         given:
         String fieldSet = "{ foo bar c1}"
 
@@ -16,7 +16,7 @@ class FederationUtilsSpec extends Specification {
         id == "barc1foo"
     }
 
-    void canCreateUniqueIdFromFieldSetWithChildren() {
+    def "can Create Unique Id From Field Set With Children"() {
         given:
         String fieldSet = "{ foo bar c1 { d1 d2 d3 { e1 e2}}}"
 
@@ -27,7 +27,7 @@ class FederationUtilsSpec extends Specification {
         id == "barc1food1d2d3e1e2"
     }
 
-    void reorderedFieldSetResultInSameUniqueId() {
+    def "reordered Field Set Result In Same Unique Id"() {
         given:
         String fieldSet1 = "{ foo bar c1 { d1 d2 d3 { e1 e2 } } }"
         String fieldSet2 = "{ bar foo c1 { d2 d1 d3 { e2 e1 } } }"

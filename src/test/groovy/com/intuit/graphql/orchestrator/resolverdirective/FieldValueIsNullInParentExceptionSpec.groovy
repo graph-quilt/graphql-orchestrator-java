@@ -9,7 +9,7 @@ class FieldValueIsNullInParentExceptionSpec extends Specification {
     static final String TEST_FIELD_NAME = "testFieldName"
     static final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
 
-    void canCreateFieldNotFoundInParentException() {
+    def "can Create Field Not Found In Parent Exception"() {
         given:
         def mockResolverDirectiveDefinition = Mock(ResolverDirectiveDefinition.class)
 

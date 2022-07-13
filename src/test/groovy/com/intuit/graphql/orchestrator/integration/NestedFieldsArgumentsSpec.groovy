@@ -9,7 +9,7 @@ import helpers.BaseIntegrationTestSpecification
 
 class NestedFieldsArgumentsSpec extends BaseIntegrationTestSpecification {
 
-    void cannotBuildDueToQueryNestedFieldsHasMismatchedArguments() {
+    def "cannot Build Due To Query Nested Fields Has Mismatched Arguments"() {
         when:
         ServiceProvider[] services = [ new ServiceA(), new ServiceB() ]
         GraphQLOrchestrator orchestrator = createGraphQLOrchestrator(services)

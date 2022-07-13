@@ -5,7 +5,7 @@ import spock.lang.Specification
 
 class ResolverArgumentFieldRootObjectDoesNotExistSpec extends Specification {
 
-    void producesCorrectErrorMessage() {
+    def "produces Correct Error Message"() {
         given:
         final ResolverArgumentFieldRootObjectDoesNotExist error = new ResolverArgumentFieldRootObjectDoesNotExist(
                 "argName", new FieldContext("rootObject", "rootField"), "tax")

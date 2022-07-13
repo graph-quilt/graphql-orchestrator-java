@@ -13,7 +13,7 @@ type Car implements Vehicle {
     wheels: Int
     type: String
     features: String
-
+    color: String
     make: Manufacturer
     model: String
 }

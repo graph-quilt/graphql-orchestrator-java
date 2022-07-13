@@ -11,7 +11,7 @@ interface Vehicle {
 type Car implements Vehicle {
     wheels: Int
     type: String
-
+    features: String
     make: Manufacturer
     model: String
     color: String
