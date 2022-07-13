@@ -1,4 +1,4 @@
-package com.intuit.graphql.orchestrator.integration.schemastitcher
+package com.intuit.graphql.orchestrator.integration.schemabuild
 
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.schema.Operation
