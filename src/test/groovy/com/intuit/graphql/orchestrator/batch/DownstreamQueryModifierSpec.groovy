@@ -96,11 +96,10 @@ class DownstreamQueryModifierSpec extends Specification {
 
     def "can Remove Field"() {
         given:
-        //AstTransformer astTransformer = new AstTransformer()
-
-        when:
         // test 'a1 { af1 af2 b1 b2 b3 b4 b5 }' and remove b1..b5
         Field a1 = Field.newField("a1").selectionSet(selectionSet).build()
+
+        when:
         Field newA1 = (Field) astTransformer.transform(a1, subjectUnderTest)
 
         Field f = (Field) newA1.getSelectionSet().getSelections().get(0)
@@ -287,6 +286,7 @@ class DownstreamQueryModifierSpec extends Specification {
         // a1 { renamedId1 } should be sent as a1 { id2: customAlias }
         Field aliasField = Field.newField("renamedId1").alias("customAlias").build()
         SelectionSet aliasSelectionSet = SelectionSet.newSelectionSet().selection(aliasField).build()
+
         Field a1 = Field.newField("a1", aliasSelectionSet).build()
 
         when:
