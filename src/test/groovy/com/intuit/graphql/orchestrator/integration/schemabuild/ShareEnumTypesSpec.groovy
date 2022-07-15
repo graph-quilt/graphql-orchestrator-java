@@ -91,9 +91,13 @@ class ShareEnumTypesSpec extends BaseIntegrationTestSpecification {
                 .services(services).build().stitchGraph();
 
         then:
-        thrown TypeConflictException.class
+        actualRuntimeGraph != null
+        GraphQLEnumType enumType = actualRuntimeGraph.getType("EnumType")
+        enumType.getValues().size() == 2
+        enumType.getValue("ENUM1").getValue() == "ENUM1"
+        enumType.getValue("ENUM2").getValue() == "ENUM2"
+        enumType == actualRuntimeGraph.getExecutableSchema().getType("EnumType")
     }
-
 
 
 }
