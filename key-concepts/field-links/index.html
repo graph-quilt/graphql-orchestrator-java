@@ -15,7 +15,7 @@
     
     
       
-        <title>Recursive Schema Stitching - GraphQL Orchestrator Documentation</title>
+        <title>Remote Type Extensions - GraphQL Orchestrator Documentation</title>
       
     
     
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#recursive-schema-stitching" class="md-skip">
+        <a href="#field-links" class="md-skip">
           Skip to content
         </a>
       
@@ -97,7 +97,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Recursive Schema Stitching
+              Remote Type Extensions
             
           </span>
         </div>
@@ -262,66 +262,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Recursive Schema Stitching
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../merging-types/" class="md-nav__link">
         Recursive Schema Stitching
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#operation-type-merging" class="md-nav__link">
-    Operation type merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recursive-merging" class="md-nav__link">
-    Recursive merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#directives-and-arguments" class="md-nav__link">
-    Directives and Arguments
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -359,11 +304,73 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../field-links/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Remote Type Extensions
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Remote Type Extensions
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem" class="md-nav__link">
+    The problem
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#solution" class="md-nav__link">
+    Solution
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolver-directive" class="md-nav__link">
+    @resolver directive
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -464,22 +471,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#operation-type-merging" class="md-nav__link">
-    Operation type merging
+  <a href="#overview" class="md-nav__link">
+    Overview
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#recursive-merging" class="md-nav__link">
-    Recursive merging
+  <a href="#the-problem" class="md-nav__link">
+    The problem
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#directives-and-arguments" class="md-nav__link">
-    Directives and Arguments
+  <a href="#solution" class="md-nav__link">
+    Solution
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolver-directive" class="md-nav__link">
+    @resolver directive
   </a>
   
 </li>
@@ -496,92 +510,82 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/intuit/graphql-orchestrator-java/edit/master/docs/key-concepts/merging-types.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/intuit/graphql-orchestrator-java/edit/master/docs/key-concepts/field-links.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="recursive-schema-stitching">Recursive Schema Stitching<a class="headerlink" href="#recursive-schema-stitching" title="Permanent link">&para;</a></h1>
-<h2 id="operation-type-merging">Operation type merging<a class="headerlink" href="#operation-type-merging" title="Permanent link">&para;</a></h2>
-<p>GraphQL Orchestrator combines schema from multiple data providers into a unified schema at runtime. When a data consumer
-makes a graphql query to the orchestrator, the orchestrator is able to split the query to appropriate providers, execute
-the query and combine the results accurately. The orchestrator performs recursive merging of types using the stitching
-algorithm.</p>
-<p>Take an example of two providers:</p>
-<p>Pet Service
+<h1 id="field-links">Field Links<a class="headerlink" href="#field-links" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>There will be instances where data from different <strong><em>Service Providers</em></strong> are related, like how tables are related in 
+relational databases.  As an example, let’s look at these GraphQL Schemas from two different services:</p>
+<p>Prediction Service
 <div class="highlight"><pre><span></span><code>type Query {
-    allPets: [PetType]
+    topThreeCustomers: [RatedCustomer]
 }
 
-type PetType{ ... }
+type RatedCustomer {
+    customerId: String
+    ratingResult: Int
+}
 </code></pre></div></p>
-<p>User Service
+<p>Customer Service
 <div class="highlight"><pre><span></span><code>type Query {
-    user(id: ID!): UserType!
+    customerById(id: String): Customer
 }
 
-type UserType{ ... }
+type Customer {
+    id: String
+    name: String
+}
 </code></pre></div></p>
-<p>The orchestrator starts the stitching process at the Operation i.e the <code>Query</code> type. It merges the fields of
-provider 1 with provider 2 and creates the final <code>Query</code> type.</p>
-<div class="highlight"><pre><span></span><code>type Query {
-    allPets: [PetType]
-    user(id: ID!): UserType!
+<h2 id="the-problem">The problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
+<p>Let’s say an Application wants to display the top three customers including the name of each customer.
+There will be several calls to GraphQL Orchestrator:</p>
+<ol>
+<li>Query prediction service: 
+    <div class="highlight"><pre><span></span><code>query {
+    topThreeCustomers: {
+        customerId
+        ratingResult
+    }
 }
-
-type UserType { ... }
-
-type PetType { ... }
+</code></pre></div></li>
+<li>Query customer service for each rated customer:  <code>customerById(id: $CustomerId)</code></li>
+</ol>
+<p>The application needs multiple calls and defeats the purpose of having a single call to a graphql endpoint.</p>
+<h2 id="solution">Solution<a class="headerlink" href="#solution" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>extend type RatedCustomer {
+    # $customerId is a reference to a sibling field
+    customerInfo : Customer @resolver(field: &quot;customerById&quot; arguments: [{name : &quot;id&quot;, value: &quot;$customerId&quot;}])    
+}
 </code></pre></div>
-<h2 id="recursive-merging">Recursive merging<a class="headerlink" href="#recursive-merging" title="Permanent link">&para;</a></h2>
-<p>Nested Object types are also merged according to the strategy above as long as the field name and the type name matches. 
-Take a look at the example below.</p>
-<p>Person Name Service
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
+<p><a href="#resolver-directive">@resolver directive</a> section further explains each element in detail.</p>
+<p>With the extended <code>RatedCustomer</code> type, the application can make <strong>SINGLE CALL</strong> to achieve the objective:</p>
+<div class="highlight"><pre><span></span><code>query {
+    topThreeCustomers: {
+        customerId
+        ratingResult
+        customerInfo: { name }
+    }
 }
-
-type PersonType {
-    firstName: String
-    lastName: String
+</code></pre></div>
+<p>Can you guess what happen under the hood? </p>
+<ol>
+<li>For field <code>topThreeCustomers</code>, orchestrator will call the Prediction Service first which shall return a list of RatedCustomer</li>
+<li>Then it will resolve <code>topThreeCustomers.customerInfo</code> by executing the <code>@resolver</code> directive which basically calls the
+   Customer Service passing the value of <code>$customerId</code>.  Even if the list is of size 3, the orchestrator will only make one
+   call to the Customer Service and batch the list together using an alias as shown below</li>
+</ol>
+<div class="highlight"><pre><span></span><code>query {
+    id0_O: customerInfo: { name }
+    id01_1: customerInfo: { name }
+    id02_2: customerInfo: { name }
 }
-</code></pre></div></p>
-<p>Person Address Service
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
-
-type PersonType {
-    address: AddressType
-}
-
-type AddressType {...}
-</code></pre></div></p>
-<p>GraphQL Orchestrator Schema
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
-
-type PersonType {
-    firstName: String
-    lastName: String
-    address: AddressType # address type is merged
-}
-
-type AddressType {...}
-</code></pre></div></p>
-<p>In the above example, type <code>Person</code> is merged because the field name <code>person</code>, 
-the type name <code>Person</code> and the argument list matches.</p>
-<h2 id="directives-and-arguments">Directives and Arguments<a class="headerlink" href="#directives-and-arguments" title="Permanent link">&para;</a></h2>
-<p>The recursive merging strategy does not apply </p>
-<ul>
-<li>if the nested type (<code>PersonType</code>) being merged has directives.</li>
-<li>if the nested type (<code>PersonType</code>) being merged has different argument name or type.</li>
-</ul>
-<p>Note: The strategy's sole purpose is to have some structure to the final unified schema so that it is easy to explore.</p>
-<hr />
-<p>&copy; Copyright 2021 Intuit Inc.</p>
+</code></pre></div>
+<h2 id="resolver-directive">@resolver directive<a class="headerlink" href="#resolver-directive" title="Permanent link">&para;</a></h2>
+<p>resolver directive on field definition defines how to resolve a field that belongs to a different provider.</p>
 
               
             </article>
@@ -597,7 +601,7 @@ the type name <code>Person</code> and the argument list matches.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../algorithm/" class="md-footer__link md-footer__link--prev" aria-label="Previous: High Level Algorithm" rel="prev">
+        <a href="../interface-union-types/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Handling Interfaces and Unions" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -606,20 +610,20 @@ the type name <code>Person</code> and the argument list matches.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              High Level Algorithm
+              Handling Interfaces and Unions
             </div>
           </div>
         </a>
       
       
         
-        <a href="../graphql-query-execution/" class="md-footer__link md-footer__link--next" aria-label="Next: GraphQL Query Execution" rel="next">
+        <a href="../conflict-resolution/" class="md-footer__link md-footer__link--next" aria-label="Next: Conflict Resolution" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              GraphQL Query Execution
+              Conflict Resolution
             </div>
           </div>
           <div class="md-footer__button md-icon">

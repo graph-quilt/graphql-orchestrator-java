@@ -15,7 +15,7 @@
     
     
       
-        <title>Recursive Schema Stitching - GraphQL Orchestrator Documentation</title>
+        <title>Custom Directives - GraphQL Orchestrator Documentation</title>
       
     
     
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#recursive-schema-stitching" class="md-skip">
+        <a href="#rename" class="md-skip">
           Skip to content
         </a>
       
@@ -97,7 +97,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Recursive Schema Stitching
+              Custom Directives
             
           </span>
         </div>
@@ -220,14 +220,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
       
       
       
@@ -250,7 +248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../algorithm/" class="md-nav__link">
+      <a href="../../key-concepts/algorithm/" class="md-nav__link">
         High Level Algorithm
       </a>
     </li>
@@ -262,66 +260,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Recursive Schema Stitching
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../key-concepts/merging-types/" class="md-nav__link">
         Recursive Schema Stitching
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#operation-type-merging" class="md-nav__link">
-    Operation type merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recursive-merging" class="md-nav__link">
-    Recursive merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#directives-and-arguments" class="md-nav__link">
-    Directives and Arguments
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -333,7 +276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graphql-query-execution/" class="md-nav__link">
+      <a href="../../key-concepts/graphql-query-execution/" class="md-nav__link">
         GraphQL Query Execution
       </a>
     </li>
@@ -347,7 +290,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interface-union-types/" class="md-nav__link">
+      <a href="../../key-concepts/interface-union-types/" class="md-nav__link">
         Handling Interfaces and Unions
       </a>
     </li>
@@ -361,7 +304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../field-links/" class="md-nav__link">
+      <a href="../../key-concepts/field-links/" class="md-nav__link">
         Remote Type Extensions
       </a>
     </li>
@@ -375,7 +318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../conflict-resolution/" class="md-nav__link">
+      <a href="../../key-concepts/conflict-resolution/" class="md-nav__link">
         Conflict Resolution
       </a>
     </li>
@@ -395,12 +338,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
       
       
       
@@ -421,11 +366,82 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../specifications/custom-directives/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Custom Directives
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Custom Directives
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rename" class="md-nav__link">
+    @rename
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolver" class="md-nav__link">
+    @resolver
+  </a>
+  
+    <nav class="md-nav" aria-label="@resolver">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field" class="md-nav__link">
+    field
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    arguments
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -454,8 +470,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -464,23 +478,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#operation-type-merging" class="md-nav__link">
-    Operation type merging
+  <a href="#rename" class="md-nav__link">
+    @rename
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#recursive-merging" class="md-nav__link">
-    Recursive merging
+  <a href="#resolver" class="md-nav__link">
+    @resolver
+  </a>
+  
+    <nav class="md-nav" aria-label="@resolver">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field" class="md-nav__link">
+    field
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#directives-and-arguments" class="md-nav__link">
-    Directives and Arguments
+        
+          <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    arguments
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -496,92 +530,86 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/intuit/graphql-orchestrator-java/edit/master/docs/key-concepts/merging-types.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/intuit/graphql-orchestrator-java/edit/master/docs/specifications/custom-directives.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="recursive-schema-stitching">Recursive Schema Stitching<a class="headerlink" href="#recursive-schema-stitching" title="Permanent link">&para;</a></h1>
-<h2 id="operation-type-merging">Operation type merging<a class="headerlink" href="#operation-type-merging" title="Permanent link">&para;</a></h2>
-<p>GraphQL Orchestrator combines schema from multiple data providers into a unified schema at runtime. When a data consumer
-makes a graphql query to the orchestrator, the orchestrator is able to split the query to appropriate providers, execute
-the query and combine the results accurately. The orchestrator performs recursive merging of types using the stitching
-algorithm.</p>
-<p>Take an example of two providers:</p>
-<p>Pet Service
-<div class="highlight"><pre><span></span><code>type Query {
-    allPets: [PetType]
-}
+  <h1>Custom Directives</h1>
 
-type PetType{ ... }
-</code></pre></div></p>
-<p>User Service
-<div class="highlight"><pre><span></span><code>type Query {
-    user(id: ID!): UserType!
-}
-
-type UserType{ ... }
-</code></pre></div></p>
-<p>The orchestrator starts the stitching process at the Operation i.e the <code>Query</code> type. It merges the fields of
-provider 1 with provider 2 and creates the final <code>Query</code> type.</p>
-<div class="highlight"><pre><span></span><code>type Query {
-    allPets: [PetType]
-    user(id: ID!): UserType!
-}
-
-type UserType { ... }
-
-type PetType { ... }
+<h2 id="rename"><em>@rename</em><a class="headerlink" href="#rename" title="Permanent link">&para;</a></h2>
+<p><div class="highlight"><pre><span></span><code># Directive used to rename a type or field when registration with Data Api
+directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
 </code></pre></div>
-<h2 id="recursive-merging">Recursive merging<a class="headerlink" href="#recursive-merging" title="Permanent link">&para;</a></h2>
-<p>Nested Object types are also merged according to the strategy above as long as the field name and the type name matches. 
-Take a look at the example below.</p>
-<p>Person Name Service
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
+See <a href="../../key-concepts/conflict-resolution/#_rename_-directive-resolution-strategy">Usage</a></p>
+<h2 id="resolver"><em>@resolver</em><a class="headerlink" href="#resolver" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>    # @resolver directive definition
+    directive @resolver(field: String, arguments: [ResolverArgument!]) on FIELD_DEFINITION
 
-type PersonType {
-    firstName: String
-    lastName: String
-}
-</code></pre></div></p>
-<p>Person Address Service
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
-
-type PersonType {
-    address: AddressType
-}
-
-type AddressType {...}
-</code></pre></div></p>
-<p>GraphQL Orchestrator Schema
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
-
-type PersonType {
-    firstName: String
-    lastName: String
-    address: AddressType # address type is merged
-}
-
-type AddressType {...}
-</code></pre></div></p>
-<p>In the above example, type <code>Person</code> is merged because the field name <code>person</code>, 
-the type name <code>Person</code> and the argument list matches.</p>
-<h2 id="directives-and-arguments">Directives and Arguments<a class="headerlink" href="#directives-and-arguments" title="Permanent link">&para;</a></h2>
-<p>The recursive merging strategy does not apply </p>
+    # Input type for @resolver arguments.
+    input ResolverArgument {
+        name : String!
+        value : String!
+    }
+</code></pre></div>
+<p>It defines the target field, its arguments and argument values.  Under the hood, this
+will call the backend service that owns the target field.</p>
+<h4 id="field">field<a class="headerlink" href="#field" title="Permanent link">&para;</a></h4>
+<p>This parameter defines the path of the target field.   The target field should be owned by
+a data provider that is already registered in GraphQL Orchestrator.  It has the following syntax</p>
+<p><code>{rootField}.{childField1}.{childField2}...{targetField}</code></p>
+<p>where it forms a path from rootField to targetField.</p>
+<h4 id="arguments">arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h4>
+<p>the targetField can have zero or more arguments.  This is an array of <code>ResolverArgument</code> where
+each defines</p>
 <ul>
-<li>if the nested type (<code>PersonType</code>) being merged has directives.</li>
-<li>if the nested type (<code>PersonType</code>) being merged has different argument name or type.</li>
+<li>argument name.  This should match an argument name of the targetField</li>
+<li>argument value.  The value should conform to <a href="https://spec.graphql.org/June2018/#sec-Input-Values">Input Values</a> syntax.</li>
 </ul>
-<p>Note: The strategy's sole purpose is to have some structure to the final unified schema so that it is easy to explore.</p>
-<hr />
-<p>&copy; Copyright 2021 Intuit Inc.</p>
+<h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>target field without parameters</p>
+<div class="codehilite"><pre><span></span><code><span class="n">extend</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="k">User</span><span class="w"> </span><span class="err">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">allPets</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">Pet</span><span class="w"> </span><span class="nv">@resolver</span><span class="p">(</span><span class="nl">field</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;allPets&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="err">}</span><span class="w"></span>
+</code></pre></div>
+
+</li>
+<li>
+<p>target field with scalar type argument</p>
+<div class="codehilite"><pre><span></span><code><span class="n">extend</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="k">User</span><span class="w"> </span><span class="err">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pet</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">Pet</span><span class="w"> </span><span class="nv">@resolver</span><span class="p">(</span><span class="nl">field</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;petById&quot;</span><span class="w"> </span><span class="nl">arguments</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">{name : &quot;id&quot;, value: &quot;$petId&quot;}</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
+<span class="err">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>where $petId is a variable reference to <code>petId</code> field in type <code>User</code>.</p>
+<p></br>Note:</br> During execution, parent field will be resolved first.  In this example, will call
+User service.  The User object/field will be resolved first before resolving the child fields. Thus
+guarantees that petId will have value.</p>
+</li>
+<li>
+<p>target field with object argument</p>
+<p>Let's say that the target field argument is</p>
+<div class="codehilite"><pre><span></span><code>type Query {
+    petById(petId: PetId): Pet
+}
+input PetId {
+    id: ID
+}
+</code></pre></div>
+
+<p>One can define @resolver like</p>
+<div class="codehilite"><pre><span></span><code><span class="n">extend</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="k">User</span><span class="w"> </span><span class="err">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">petById</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">Pet</span><span class="w"> </span><span class="nv">@resolver</span><span class="p">(</span><span class="nl">field</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;petById&quot;</span><span class="w"> </span><span class="nl">arguments</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">{name : &quot;petId&quot;, value: &quot;{id : \&quot;$petId\&quot;}&quot;}</span><span class="o">]</span><span class="p">)</span><span class="w"></span>
+<span class="err">}</span><span class="w"></span>
+</code></pre></div>
+
+<p>where <code>$petId</code> is a variable reference to a field of type <code>User</code></p>
+</li>
+</ol>
+<p>See <a href="../../key-concepts/field-links/">Usage</a></p>
 
               
             </article>
@@ -597,7 +625,7 @@ the type name <code>Person</code> and the argument list matches.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../algorithm/" class="md-footer__link md-footer__link--prev" aria-label="Previous: High Level Algorithm" rel="prev">
+        <a href="../../key-concepts/conflict-resolution/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Conflict Resolution" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -606,26 +634,11 @@ the type name <code>Person</code> and the argument list matches.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              High Level Algorithm
+              Conflict Resolution
             </div>
           </div>
         </a>
       
-      
-        
-        <a href="../graphql-query-execution/" class="md-footer__link md-footer__link--next" aria-label="Next: GraphQL Query Execution" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              GraphQL Query Execution
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
       
     </nav>
   

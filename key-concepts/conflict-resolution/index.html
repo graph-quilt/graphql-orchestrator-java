@@ -15,7 +15,7 @@
     
     
       
-        <title>Recursive Schema Stitching - GraphQL Orchestrator Documentation</title>
+        <title>Conflict Resolution - GraphQL Orchestrator Documentation</title>
       
     
     
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#recursive-schema-stitching" class="md-skip">
+        <a href="#type-conflict-resolution" class="md-skip">
           Skip to content
         </a>
       
@@ -97,7 +97,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Recursive Schema Stitching
+              Conflict Resolution
             
           </span>
         </div>
@@ -262,66 +262,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Recursive Schema Stitching
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../merging-types/" class="md-nav__link">
         Recursive Schema Stitching
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#operation-type-merging" class="md-nav__link">
-    Operation type merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recursive-merging" class="md-nav__link">
-    Recursive merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#directives-and-arguments" class="md-nav__link">
-    Directives and Arguments
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -373,11 +318,82 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../conflict-resolution/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Conflict Resolution
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Conflict Resolution
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#type-conflict-resolution" class="md-nav__link">
+    Type Conflict Resolution
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Conflict Resolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resolution-strategies" class="md-nav__link">
+    Resolution Strategies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-renaming-resolution-strategy" class="md-nav__link">
+    Type Renaming Resolution Strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rename-directive-resolution-strategy" class="md-nav__link">
+    @rename Directive Resolution Strategy
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-conflict-resolution" class="md-nav__link">
+    Field Conflict Resolution
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -454,8 +470,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -464,22 +478,42 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#operation-type-merging" class="md-nav__link">
-    Operation type merging
+  <a href="#type-conflict-resolution" class="md-nav__link">
+    Type Conflict Resolution
   </a>
+  
+    <nav class="md-nav" aria-label="Type Conflict Resolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resolution-strategies" class="md-nav__link">
+    Resolution Strategies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-renaming-resolution-strategy" class="md-nav__link">
+    Type Renaming Resolution Strategy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rename-directive-resolution-strategy" class="md-nav__link">
+    @rename Directive Resolution Strategy
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#recursive-merging" class="md-nav__link">
-    Recursive merging
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#directives-and-arguments" class="md-nav__link">
-    Directives and Arguments
+  <a href="#field-conflict-resolution" class="md-nav__link">
+    Field Conflict Resolution
   </a>
   
 </li>
@@ -496,92 +530,105 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/intuit/graphql-orchestrator-java/edit/master/docs/key-concepts/merging-types.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/intuit/graphql-orchestrator-java/edit/master/docs/key-concepts/conflict-resolution.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="recursive-schema-stitching">Recursive Schema Stitching<a class="headerlink" href="#recursive-schema-stitching" title="Permanent link">&para;</a></h1>
-<h2 id="operation-type-merging">Operation type merging<a class="headerlink" href="#operation-type-merging" title="Permanent link">&para;</a></h2>
-<p>GraphQL Orchestrator combines schema from multiple data providers into a unified schema at runtime. When a data consumer
-makes a graphql query to the orchestrator, the orchestrator is able to split the query to appropriate providers, execute
-the query and combine the results accurately. The orchestrator performs recursive merging of types using the stitching
-algorithm.</p>
-<p>Take an example of two providers:</p>
-<p>Pet Service
+  <h1>Conflict Resolution</h1>
+
+<h2 id="type-conflict-resolution">Type Conflict Resolution<a class="headerlink" href="#type-conflict-resolution" title="Permanent link">&para;</a></h2>
+<p>In a distributed GraphQL world, your GraphQL schema is developed, parsed, and validated independently of other
+GraphQL schemas. Your schema is eventually integrated with other GraphQL schemas in the orchestrator, where 
+we merge and stitch schemas together to produce a single executable schema.</p>
+<p>The orchestrator performs validations to ensure the merged schema conforms to the GraphQL specification, and ensures that your
+schema can be correctly merged into the single schema. Your schema could be validated against hundreds of other schemas
+that already exist in the orchestrator! Thus, how you define your types becomes important because you could be clashing with
+many different providers all with similar type names and schema structures.</p>
+<p>With many different providers producing GraphQL types, you are bound to run into collisions when trying to merge schemas
+together.</p>
+<h3 id="resolution-strategies">Resolution Strategies<a class="headerlink" href="#resolution-strategies" title="Permanent link">&para;</a></h3>
+<p>Let's say you have an object-type <code>Profile</code> which is conflicting with the orchestrator.
+When we say a type conflicts with the orchestrator, it really means that it is conflicting with some other provider that 
+has already registered type <code>Profile</code>. You can contact the provider and discuss the conflicting type with them and see if it qualifies
+for type extension. But let's say, the type <code>Profile</code> is <em>semantically</em> different from the other providers <code>Profile</code> type.
+Below are some of the strategies you can use to resolve conflicts.</p>
+<h3 id="type-renaming-resolution-strategy">Type Renaming Resolution Strategy<a class="headerlink" href="#type-renaming-resolution-strategy" title="Permanent link">&para;</a></h3>
+<p>Suppose you are a User service trying to expose a <code>Profile</code> type representing a user's profile.</p>
 <div class="highlight"><pre><span></span><code>type Query {
-    allPets: [PetType]
+  userProfile: Profile
 }
 
-type PetType{ ... }
-</code></pre></div></p>
-<p>User Service
-<div class="highlight"><pre><span></span><code>type Query {
-    user(id: ID!): UserType!
+type Profile {
+  userId: ID
+  firstName: String
+  lastName: String
+  age: Int
 }
-
-type UserType{ ... }
-</code></pre></div></p>
-<p>The orchestrator starts the stitching process at the Operation i.e the <code>Query</code> type. It merges the fields of
-provider 1 with provider 2 and creates the final <code>Query</code> type.</p>
-<div class="highlight"><pre><span></span><code>type Query {
-    allPets: [PetType]
-    user(id: ID!): UserType!
-}
-
-type UserType { ... }
-
-type PetType { ... }
 </code></pre></div>
-<h2 id="recursive-merging">Recursive merging<a class="headerlink" href="#recursive-merging" title="Permanent link">&para;</a></h2>
-<p>Nested Object types are also merged according to the strategy above as long as the field name and the type name matches. 
-Take a look at the example below.</p>
-<p>Person Name Service
+<p>Looks good on paper, but when you try to integrate with the orchestrator, it rejects your schema because Profile is conflicting
+with another type <code>Profile</code> defined by another service!</p>
 <div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
+  financialProfile: Profile
 }
 
-type PersonType {
-    firstName: String
-    lastName: String
+type Profile {
+  income: Float
+  debt: Float
 }
-</code></pre></div></p>
-<p>Person Address Service
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
-
-type PersonType {
-    address: AddressType
-}
-
-type AddressType {...}
-</code></pre></div></p>
-<p>GraphQL Orchestrator Schema
-<div class="highlight"><pre><span></span><code>type Query {
-    person(id:ID!): PersonType
-}
-
-type PersonType {
-    firstName: String
-    lastName: String
-    address: AddressType # address type is merged
-}
-
-type AddressType {...}
-</code></pre></div></p>
-<p>In the above example, type <code>Person</code> is merged because the field name <code>person</code>, 
-the type name <code>Person</code> and the argument list matches.</p>
-<h2 id="directives-and-arguments">Directives and Arguments<a class="headerlink" href="#directives-and-arguments" title="Permanent link">&para;</a></h2>
-<p>The recursive merging strategy does not apply </p>
+</code></pre></div>
+<p><strong>How do we fix this?</strong></p>
+<p>Be as specific as possible when building your schema types. For example, a <code>Profile</code> type can be made more specific by
+answering the following questions:</p>
 <ul>
-<li>if the nested type (<code>PersonType</code>) being merged has directives.</li>
-<li>if the nested type (<code>PersonType</code>) being merged has different argument name or type.</li>
+<li>What specific profile is this (Finance, User)?</li>
+<li>Does your type belong to a specific product (TurboTax, Mint)?</li>
 </ul>
-<p>Note: The strategy's sole purpose is to have some structure to the final unified schema so that it is easy to explore.</p>
-<hr />
-<p>&copy; Copyright 2021 Intuit Inc.</p>
+<p>The results of answering the questions above and applying it to the <code>Profile</code> type could be:</p>
+<ul>
+<li><code>TurboTaxUserProfile</code></li>
+<li><code>MintUserProfile</code></li>
+</ul>
+<h3 id="rename-directive-resolution-strategy"><em>@rename</em> Directive Resolution Strategy<a class="headerlink" href="#rename-directive-resolution-strategy" title="Permanent link">&para;</a></h3>
+<p>This resolution strategy is useful for initial on-boarding purposes where you have clients that already call your
+service's GraphQL endpoint, but you need to rename conflicting types in order to register with the orchestrator.</p>
+<p>Suppose that you need to change your <code>Profile</code> type to <code>TurboTaxUserProfile</code>. However, you have existing clients that
+query your profile with fragments and fragment definitions which require the actual type name:</p>
+<div class="highlight"><pre><span></span><code>query {
+  profile {
+    ...userProfile
+  }
+}
+
+fragment userProfile on Profile {
+  userId
+  firstName
+  lastName
+}
+</code></pre></div>
+<p>You cannot rename the type <code>Profile</code> to something else because the new type will cause the queries of existing clients
+with these fragments to fail!</p>
+<p><strong>How do we fix this?</strong></p>
+<p>With <strong><em>@rename</em></strong> directive, you can expose type <code>Profile</code> in your service (and accept queries that specify the
+<code>Profile</code> type), but expose that type as something else through the orchestrator. For example, an introspection on your
+service would yield <code>Profile</code>, but an introspection on the orchestrator would yield <code>Finance_Profile</code></p>
+<div class="highlight"><pre><span></span><code>type Query {
+  financialProfile: Profile
+}
+
+type Profile @rename(to: &quot;Financial_Profile&quot;){
+  income: Float
+  debt: Float
+}
+</code></pre></div>
+<p>In the example configuration below, types <code>Profile</code> will become <code>Financial_Profile</code> in the orchestrator schema, 
+but will remain <code>Profile</code> in your service. Subsequently, at runtime, when the orchestrator calls your service to resolve <code>Financial_Profile</code>, 
+the namespace information will be stripped away, and your service will receive queries for <code>Profile</code>.</p>
+<h2 id="field-conflict-resolution">Field Conflict Resolution<a class="headerlink" href="#field-conflict-resolution" title="Permanent link">&para;</a></h2>
+<p>When the number of providers increase, you might run into a scenario where 2 providers provide
+the same field names. To get past it, you can use the <em>@rename</em> directive at the field level and resolve 
+such field level naming conflicts. </p>
 
               
             </article>
@@ -597,7 +644,7 @@ the type name <code>Person</code> and the argument list matches.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../algorithm/" class="md-footer__link md-footer__link--prev" aria-label="Previous: High Level Algorithm" rel="prev">
+        <a href="../field-links/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Remote Type Extensions" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -606,20 +653,20 @@ the type name <code>Person</code> and the argument list matches.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              High Level Algorithm
+              Remote Type Extensions
             </div>
           </div>
         </a>
       
       
         
-        <a href="../graphql-query-execution/" class="md-footer__link md-footer__link--next" aria-label="Next: GraphQL Query Execution" rel="next">
+        <a href="../../specifications/custom-directives/" class="md-footer__link md-footer__link--next" aria-label="Next: Custom Directives" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              GraphQL Query Execution
+              Custom Directives
             </div>
           </div>
           <div class="md-footer__button md-icon">
