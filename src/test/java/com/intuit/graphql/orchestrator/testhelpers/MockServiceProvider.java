@@ -1,18 +1,19 @@
 package com.intuit.graphql.orchestrator.testhelpers;
 
-import static com.intuit.graphql.orchestrator.testhelpers.JsonTestUtils.jsonToMap;
-
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.TestHelper;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
+import org.apache.commons.collections4.MapUtils;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.apache.commons.collections4.MapUtils;
+
+import static com.intuit.graphql.orchestrator.testhelpers.JsonTestUtils.jsonToMap;
 
 public class MockServiceProvider implements ServiceProvider {
 
@@ -101,7 +102,10 @@ public class MockServiceProvider implements ServiceProvider {
     }
 
     public Builder mockResponse(ServiceProviderMockResponse serviceProviderMockResponse) {
-      String jsonString = TestHelper.getResourceAsString(serviceProviderMockResponse.getExpectResponse());
+      String jsonString = (serviceProviderMockResponse.getExpectResponseRaw() != null) ?
+              serviceProviderMockResponse.getExpectResponseRaw() :
+              TestHelper.getResourceAsString(serviceProviderMockResponse.getExpectResponse());
+
       this.responseMap.put(serviceProviderMockResponse.getForExecutionInput().getQuery(),
           jsonToMap(jsonString));
       return this;

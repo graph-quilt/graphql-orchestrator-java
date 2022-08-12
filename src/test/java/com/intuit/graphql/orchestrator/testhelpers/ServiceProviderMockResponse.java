@@ -8,5 +8,6 @@ import lombok.Getter;
 @Getter
 public class ServiceProviderMockResponse {
   private String expectResponse;
+  private String expectResponseRaw;
   private ExecutionInput forExecutionInput;
 }
