@@ -142,6 +142,94 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         createGraphQLOrchestrator(emptyProvider)
 
         then:
-        thrown(StitchingException)
+        thrown(StitchingException.class)
+    }
+
+    def "Provider with empty file cannot stitch successfully"() {
+        given:
+        def emptyProvider = TestServiceProvider.newBuilder()
+                .namespace("Empty")
+                .serviceType(ServiceProvider.ServiceType.GRAPHQL)
+                .sdlFiles(ImmutableMap.of("schema.graphqls", ""))
+                .build()
+
+        when:
+        createGraphQLOrchestrator(emptyProvider)
+
+        then:
+        thrown(StitchingException.class)
+    }
+
+    def "Provider with only empty operation cannot stitch successfully"() {
+        given:
+        String schema = "type Query {} type Mutation {} type Subscription {}"
+        def emptyProvider = TestServiceProvider.newBuilder()
+                .namespace("Empty")
+                .serviceType(ServiceProvider.ServiceType.GRAPHQL)
+                .sdlFiles(ImmutableMap.of("schema.graphqls", schema))
+                .build()
+
+        when:
+        createGraphQLOrchestrator(emptyProvider)
+
+        then:
+        thrown(StitchingException.class)
+    }
+
+    def "Provider with empty operation and extending operation can stitch"() {
+        given:
+
+        String schema = "type Query {} extend type Query {getID: ID}"
+        def emptyProvider = TestServiceProvider.newBuilder()
+                .namespace("Empty")
+                .serviceType(ServiceProvider.ServiceType.GRAPHQL)
+                .sdlFiles(ImmutableMap.of("schema.graphqls", schema))
+                .build()
+
+        when:
+        specUnderTest = createGraphQLOrchestrator(emptyProvider)
+
+        then:
+        specUnderTest != null
+    }
+
+    def "Non-Federation graph with only extending types fails to stitch"() {
+        given:
+        String schema = "type entityA @extends @key(fields\"a\") { a: String @external b: ID }"
+        def emptyProvider = TestServiceProvider.newBuilder()
+                .namespace("BAD")
+                .serviceType(ServiceProvider.ServiceType.GRAPHQL)
+                .sdlFiles(ImmutableMap.of("schema.graphqls", schema))
+                .build()
+
+        when:
+        specUnderTest = createGraphQLOrchestrator(emptyProvider)
+
+        then:
+        thrown(StitchingException.class)
+    }
+
+    def "Federation graph with only extending types can stitch"() {
+        given:
+        String schema = "type Query { getA: entityA } type entityA @key(fields:\"a\") { a:String }"
+        String extSchema = "type entityA @extends @key(fields:\"a\") { a: String @external b: ID }"
+        def baseProvider = TestServiceProvider.newBuilder()
+                .namespace("BASE")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("schema.graphqls", schema))
+                .build()
+
+        def extProvider = TestServiceProvider.newBuilder()
+                .namespace("EXT")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("schema.graphqls", extSchema))
+                .build()
+
+        when:
+        specUnderTest = createGraphQLOrchestrator(baseProvider, extProvider)
+
+        then:
+        notThrown(StitchingException.class)
+        specUnderTest != null
     }
 }

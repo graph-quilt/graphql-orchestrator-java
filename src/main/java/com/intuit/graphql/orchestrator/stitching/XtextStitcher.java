@@ -175,7 +175,9 @@ public class XtextStitcher implements Stitcher {
                 getAllTypes(xtextGraph.getXtextResourceSet()).findAny().isPresent()
         )
     ) {
-      throw new StitchingException("Graph cannot be empty");
+      throw new StitchingException(
+              String.format("%s graph is invalid. Graph cannot be empty.", xtextGraph.getServiceProvider().getNameSpace())
+      );
     }
   }
 
