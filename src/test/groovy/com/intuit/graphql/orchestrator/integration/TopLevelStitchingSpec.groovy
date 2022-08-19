@@ -1,7 +1,10 @@
 package com.intuit.graphql.orchestrator.integration
 
+import com.google.common.collect.ImmutableMap
+import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.TestHelper
-import com.intuit.graphql.orchestrator.VirtualOrchestratorProvider
+import com.intuit.graphql.orchestrator.TestServiceProvider
+import com.intuit.graphql.orchestrator.stitching.StitchingException
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
@@ -125,5 +128,20 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         data.upsertProfile?.prefFirstName instanceof String && data.upsertProfile?.prefFirstName == "First Name"
         data.upsertProfile?.prefLastName instanceof String && data.upsertProfile?.prefLastName == "Last Name"
         data.upsertProfile?.version instanceof Integer && data.upsertProfile?.version == Short.MAX_VALUE
+    }
+
+    def "Empty provider cannot stitch"() {
+        given:
+        def emptyProvider = TestServiceProvider.newBuilder()
+                .namespace("Empty")
+                .serviceType(ServiceProvider.ServiceType.GRAPHQL)
+                .sdlFiles(ImmutableMap.of())
+                .build()
+
+        when:
+        createGraphQLOrchestrator(emptyProvider)
+
+        then:
+        thrown(StitchingException)
     }
 }
