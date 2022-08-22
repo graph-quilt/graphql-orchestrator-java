@@ -6,6 +6,7 @@ import com.intuit.graphql.graphQL.TypeSystemDefinition;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefin
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 import static org.apache.commons.collections4.CollectionUtils.containsAny;
 
+@Slf4j
 public class EntityTypeMerger {
 
   public TypeDefinition mergeIntoBaseType(EntityMergingContext entityMergingContext, UnifiedXtextGraph unifiedXtextGraph) {
@@ -78,6 +80,15 @@ public class EntityTypeMerger {
     List<FieldDefinition> newFieldDefinitions =
         typeExtensionFields.stream()
             .filter(fieldDefinition -> !containsAny(baseTypeFieldNames, fieldDefinition.getName()))
+            .peek(fieldDefinition -> {
+              if(log.isDebugEnabled()) {
+                log.debug("Service {} added field {} to entity {}",
+                        entityMergingContext.serviceNamespace,
+                        fieldDefinition.getName(),
+                        entityMergingContext.typename
+                );
+              }
+            })
             .collect(Collectors.toList());
     baseTypeFields.addAll(newFieldDefinitions);
   }
