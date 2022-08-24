@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.stitching;
 
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
@@ -63,6 +64,7 @@ import java.util.stream.Collectors;
 import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
 import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
@@ -106,6 +108,7 @@ public class XtextStitcher implements Stitcher {
     Map<String, XtextGraph> xtextGraphMap = serviceProviders.stream()
         .map(XtextGraphBuilder::build)
         .map(xtextGraph -> transform(xtextGraph, preMergeTransformers))
+        .peek(this::validateGraph)
         .collect(Collectors.toMap(graph -> graph.getServiceProvider().getNameSpace(), Function.identity(),
             (g1, g2) -> {
               throw new StitchingException(
@@ -159,6 +162,23 @@ public class XtextStitcher implements Stitcher {
     runtimeGraph.getExecutableSchema();
 
     return runtimeGraph;
+  }
+
+  private void validateGraph(XtextGraph xtextGraph) {
+    boolean emptyGraph = xtextGraph.getOperationMap().values()
+            .stream()
+            .map(ObjectTypeDefinition::getFieldDefinition)
+            .allMatch(List::isEmpty);
+
+    if(emptyGraph &&
+        !(xtextGraph.getServiceProvider().isFederationProvider() &&
+                getAllTypes(xtextGraph.getXtextResourceSet()).findAny().isPresent()
+        )
+    ) {
+      throw new StitchingException(
+              String.format("%s graph is invalid. Graph cannot be empty.", xtextGraph.getServiceProvider().getNameSpace())
+      );
+    }
   }
 
   /**
