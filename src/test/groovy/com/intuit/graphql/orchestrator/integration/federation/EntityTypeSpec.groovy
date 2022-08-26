@@ -84,6 +84,10 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     String CAR_DOWNSTREAM_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Vehicle {carInfo {carId capacity reviews {rating comment} __typename}}}}"
     String REVIEWS_DOWNSTREAM_QUERY = "query mix_type_providers_Resolver_Directive_Query {getReviewsById_0:getReviewsById(id:\"test-car\") {rating comment}}"
 
+    String MULTI_KEY_SCHEMA = "type Query { getEntity: EntityA } type EntityA @key(fields: \"id1\") @key(fields: \"id2\") {id1: ID id2:ID}"
+    String MULTI_KEY_EXT_SCHEMA1 = "type EntityA @key(fields: \"id1\") @extends {id1: ID @external ext1Field:ID}"
+    String MULTI_KEY_EXT_SCHEMA2 = "type EntityA @key(fields: \"id2\") @extends {id2: ID @external ext2Field:ID}"
+
     @Subject
     def specUnderTest
 
@@ -214,7 +218,6 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
         reviewQueryType?.getFieldDefinition("submittedBy") != null
     }
 
-
     def "Federation and resolver providers can be executed together"(){
         given:
         vehicleEI = ExecutionInput.newExecutionInput().query(VEHICLE_DOWNSTREAM_QUERY).build()
@@ -321,5 +324,150 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
         LinkedHashMap reviewResolver = carEntity.get("reviews")
         reviewResolver.get("rating") == 5
         reviewResolver.get("comment") == "test review"
+    }
+
+    def "Entity with multiple keys is stitched"() {
+        given:
+        def testProvider = TestServiceProvider.newBuilder()
+                .namespace("TEST")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_SCHEMA))
+                .build()
+        when:
+        specUnderTest = createGraphQLOrchestrator(testProvider)
+
+        then:
+        specUnderTest != null
+    }
+
+    def "Multiple extensions for multiple key entity with different keys is stitched"() {
+        given:
+        def testProvider = TestServiceProvider.newBuilder()
+                .namespace("TEST")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_SCHEMA))
+                .build()
+
+        def extProvider1 = TestServiceProvider.newBuilder()
+                .namespace("EXT1")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_EXT_SCHEMA1))
+                .build()
+
+        def extProvider2 = TestServiceProvider.newBuilder()
+                .namespace("EXT2")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_EXT_SCHEMA2))
+                .build()
+        when:
+        specUnderTest = createGraphQLOrchestrator(testProvider, extProvider1, extProvider2)
+
+        then:
+        specUnderTest != null
+    }
+
+    def "Correct downstream representation query when entity has multiple keys"() {
+        given:
+        def entityFetchQuery = ExecutionInput.newExecutionInput()
+                .query("query QUERY {getEntity {id1 id2}}")
+                .build()
+
+        def entityFetchResponse = """
+            {
+              "data": {
+                "getEntity": {
+                  "id1": "MOCK_ID1",
+                  "id2": "MOCK_ID2"
+                }
+              }
+            }
+        """
+
+        def testProvider = MockServiceProvider.builder()
+                .namespace("TEST")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_SCHEMA))
+                .mockResponse(
+                    ServiceProviderMockResponse.builder()
+                    .forExecutionInput(entityFetchQuery)
+                    .expectResponseRaw(entityFetchResponse)
+                    .build()
+                )
+                .build()
+
+        def downstreamExt1EI = ExecutionInput.newExecutionInput()
+        .query("query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on EntityA {ext1Field}}}")
+        .build()
+
+        def ext1Response = """
+            {
+                "data": {
+                    "_entities": [
+                        {
+                            "_typename": "EntityA",
+                            "ext1Field": "EXT1_SUCCESS"
+                        }
+                    ]
+                }
+            }
+        """
+
+        def extProvider1 = MockServiceProvider.builder()
+                .namespace("EXT1")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_EXT_SCHEMA1))
+                .mockResponse(
+                    ServiceProviderMockResponse.builder()
+                    .forExecutionInput(downstreamExt1EI)
+                    .expectResponseRaw(ext1Response)
+                    .build()
+                )
+                .build()
+
+        def downstreamExt2EI = ExecutionInput.newExecutionInput()
+                .query("query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on EntityA {ext2Field}}}")
+                .build()
+
+        def ext2Response = """
+            {
+                "data": {
+                    "_entities": [
+                        {
+                            "_typename": "EntityA",
+                            "ext2Field": "EXT2_SUCCESS"
+                        }
+                    ]
+                }
+            }
+        """
+
+        def extProvider2 = MockServiceProvider.builder()
+                .namespace("EXT2")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_EXT_SCHEMA2))
+                .mockResponse(
+                    ServiceProviderMockResponse.builder()
+                    .forExecutionInput(downstreamExt2EI)
+                    .expectResponseRaw(ext2Response)
+                    .build()
+                )
+                .build()
+
+        specUnderTest = createGraphQLOrchestrator(testProvider, extProvider1, extProvider2)
+
+        def query =  ExecutionInput.newExecutionInput()
+                .query("query { getEntity { ext1Field ext2Field } }")
+                .build()
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(query).get();
+
+        then:
+        executionResult?.errors?.size() == 0
+        executionResult?.data?.size() != 0
+        LinkedHashMap getEntity = executionResult?.data?.get("getEntity")
+        getEntity.get("ext1Field") == "EXT1_SUCCESS"
+        getEntity.get("ext2Field") == "EXT2_SUCCESS"
+
     }
 }
