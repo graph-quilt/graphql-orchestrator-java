@@ -79,7 +79,9 @@ public class FederationTransformerPreMerge implements Transformer<XtextGraph, Xt
                     .collect(Collectors.toList());
 
                     validateFieldDefinitions(source, typeDefinition);
-                    log.info("Service {} creating entity {}", source.getServiceProvider().getNameSpace(), typeDefinitionName);
+                    if(log.isDebugEnabled()) {
+                        log.debug("Service {} created entity {}", source.getServiceProvider().getNameSpace(), typeDefinitionName);
+                    }
                 } else {
                     TypeExtensionDefinition typeExtensionDefinition = typeSystemDefinition.getTypeExtension();
                     typeDefinitionName = typeExtensionDefinition.getName();

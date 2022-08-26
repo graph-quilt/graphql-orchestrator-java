@@ -80,9 +80,15 @@ public class EntityTypeMerger {
     List<FieldDefinition> newFieldDefinitions =
         typeExtensionFields.stream()
             .filter(fieldDefinition -> !containsAny(baseTypeFieldNames, fieldDefinition.getName()))
-            .peek(fieldDefinition -> log.info("Service {} added field {} to entity {}",
-                    entityMergingContext.serviceNamespace, fieldDefinition.getName(), entityMergingContext.typename)
-            )
+            .peek(fieldDefinition -> {
+              if(log.isDebugEnabled()) {
+                log.debug("Service {} added field {} to entity {}",
+                        entityMergingContext.serviceNamespace,
+                        fieldDefinition.getName(),
+                        entityMergingContext.typename
+                );
+              }
+            })
             .collect(Collectors.toList());
     baseTypeFields.addAll(newFieldDefinitions);
   }
