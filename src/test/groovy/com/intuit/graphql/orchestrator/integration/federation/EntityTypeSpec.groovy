@@ -368,7 +368,10 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
 
     def "Correct downstream representation query when entity has multiple keys"() {
         given:
-        def entityFetchQuery = ExecutionInput.newExecutionInput()
+        def entityFetchQuery1 = ExecutionInput.newExecutionInput()
+                .query("query QUERY {getEntity {id1 id2}}")
+                .build()
+        def entityFetchQuery2 = ExecutionInput.newExecutionInput()
                 .query("query QUERY {getEntity {id2 id1}}")
                 .build()
 
@@ -388,8 +391,14 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
                 .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
                 .sdlFiles(ImmutableMap.of("test.graphqls", MULTI_KEY_SCHEMA))
                 .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(entityFetchQuery1)
+                                .expectResponseRaw(entityFetchResponse)
+                                .build()
+                )
+                .mockResponse(
                     ServiceProviderMockResponse.builder()
-                    .forExecutionInput(entityFetchQuery)
+                    .forExecutionInput(entityFetchQuery2)
                     .expectResponseRaw(entityFetchResponse)
                     .build()
                 )
