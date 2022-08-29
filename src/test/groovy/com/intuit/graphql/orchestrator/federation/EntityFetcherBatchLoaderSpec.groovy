@@ -11,6 +11,7 @@ import com.intuit.graphql.orchestrator.batch.BatchResultTransformer
 import com.intuit.graphql.orchestrator.batch.EntityFetcherBatchLoader
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import graphql.ExecutionInput
 import graphql.GraphQLContext
 import graphql.execution.DataFetcherResult
@@ -29,6 +30,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
     private ServiceProvider serviceProviderMock
     private FederationMetadata.EntityExtensionMetadata metadataMock
+    private ServiceMetadata serviceMetadata;
 
     final private String extEntityField = "requestedExtEntityField"
 
@@ -37,6 +39,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
     def setup(){
         serviceProviderMock = Mock(ServiceProvider)
         metadataMock = Mock(FederationMetadata.EntityExtensionMetadata)
+        serviceMetadata = Mock(ServiceMetadata)
 
         metadataMock.getServiceProvider() >> serviceProviderMock
         metadataMock.getTypeName() >> "MOCK_ENTITY"
@@ -48,7 +51,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         metadataMock.getKeyDirectives() >> Collections.emptyList()
 
         when:
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         then:
         def exception = thrown(RuntimeException)
@@ -61,7 +64,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         when:
         ServiceProvider  entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
@@ -89,7 +92,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         metadataMock.getRequiredFields(extEntityField) >> requiredFields
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         when:
         ServiceProvider  entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
@@ -119,7 +122,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         when:
         ServiceProvider  entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
@@ -143,7 +146,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         DataFetchingEnvironment dfeMock = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfeDataSource = new HashMap<>()
@@ -197,7 +200,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         DataFetchingEnvironment dfeMock = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfeDataSource = new HashMap<>()
@@ -247,7 +250,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         DataFetchingEnvironment dfeMock1 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe1DataSource = new HashMap<>()
@@ -329,7 +332,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
 
         DataFetchingEnvironment dfeMock1 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe1DataSource = new HashMap<>()
