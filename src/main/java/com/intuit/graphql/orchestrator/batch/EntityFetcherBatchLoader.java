@@ -5,14 +5,18 @@ import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import com.intuit.graphql.orchestrator.federation.EntityQuery;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
 import graphql.introspection.Introspection;
 import graphql.language.Field;
 import graphql.language.InlineFragment;
+import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import graphql.language.TypeName;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLObjectType;
 import org.apache.commons.collections4.CollectionUtils;
 import org.dataloader.BatchLoader;
 
@@ -34,11 +38,14 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
     private final List<String> representationFieldTemplate;
     private final ServiceProvider entityServiceProvider;
 
-    public EntityFetcherBatchLoader(FederationMetadata.EntityExtensionMetadata metadata, String fieldName) {
+    private ServiceMetadata entityServiceMetadata;
+
+    public EntityFetcherBatchLoader(FederationMetadata.EntityExtensionMetadata metadata, ServiceMetadata entityServiceMetadata, String fieldName) {
         this.entityServiceProvider = metadata.getServiceProvider();
         this.entityTypeName = metadata.getTypeName();
         this.representationFieldTemplate = generateRepresentationTemplate(metadata, fieldName);
         this.batchResultTransformer = new EntityFetcherBatchResultTransformer(metadata.getServiceProvider().getNameSpace(), metadata.getTypeName(), fieldName);
+        this.entityServiceMetadata = entityServiceMetadata;
     }
 
     @Override
@@ -101,9 +108,13 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
 
         SelectionSet fieldSelectionSet = dfe.getField().getSelectionSet();
         if (fieldSelectionSet != null) {
+            List<Selection> prunedSelections = pruneExternalResolvers(((GraphQLObjectType) dfe.getFieldType()).getName(), originalField);
+
             // is an object
             fieldSelectionSet =
-                    fieldSelectionSet.transform(builder -> builder.selection(__typenameField));
+                    fieldSelectionSet.transform(builder -> builder
+                            .selections(prunedSelections)
+                            .selection(__typenameField));
         }
 
         InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
@@ -129,5 +140,15 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                 .forEach(fieldName -> entityRepresentation.put(fieldName, dataSource.get(fieldName)));
 
         return entityRepresentation;
+    }
+
+    private List<Selection> pruneExternalResolvers(String parentTypeName, Field field) {
+        return field.getSelectionSet().getSelections().stream()
+        .filter(selection -> {
+            Field selectionField = (Field) selection;
+            FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentTypeName, selectionField.getName());
+
+            return entityServiceMetadata.getFieldResolverContext(fieldCoordinates) == null;
+        }).collect(Collectors.toList());
     }
 }

@@ -81,7 +81,7 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     """
 
     String VEHICLE_DOWNSTREAM_QUERY = "query mix_type_providers {getVehicleById(id:\"mockVehicle\") {id color}}"
-    String CAR_DOWNSTREAM_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Vehicle {carInfo {carId capacity reviews {rating comment} __typename}}}}"
+    String CAR_DOWNSTREAM_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Vehicle {carInfo {carId capacity __typename}}}}"
     String REVIEWS_DOWNSTREAM_QUERY = "query mix_type_providers_Resolver_Directive_Query {getReviewsById_0:getReviewsById(id:\"test-car\") {rating comment}}"
 
     String MULTI_KEY_SCHEMA = "type Query { getEntity: EntityA } type EntityA @key(fields: \"id1\") @key(fields: \"id2\") {id1: ID id2:ID}"
@@ -369,7 +369,7 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     def "Correct downstream representation query when entity has multiple keys"() {
         given:
         def entityFetchQuery = ExecutionInput.newExecutionInput()
-                .query("query QUERY {getEntity {id1 id2}}")
+                .query("query QUERY {getEntity {id2 id1}}")
                 .build()
 
         def entityFetchResponse = """

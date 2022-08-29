@@ -143,7 +143,12 @@ public class XtextStitcher implements Stitcher {
 
     stitchedGraph.getEntityExtensionMetadatas().forEach(metadata ->
       metadata.getRequiredFieldsByFieldName().forEach((fieldName, fields) -> {
-        EntityFetcherBatchLoader entityFetcherBatchLoader = new EntityFetcherBatchLoader(metadata, fieldName);
+        EntityFetcherBatchLoader entityFetcherBatchLoader = new EntityFetcherBatchLoader(
+                metadata,
+                serviceMetadataMap.get(metadata.getServiceProvider().getNameSpace()),
+                fieldName
+        );
+
         String batchLoaderKey = createDataLoaderKey(metadata.getTypeName(), fieldName);
         batchLoaders.put(batchLoaderKey, entityFetcherBatchLoader);
       })
