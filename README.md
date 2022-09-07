@@ -4,13 +4,13 @@
 
 </div>
 
-[![CircleCI](https://circleci.com/gh/intuit/graphql-orchestrator-java/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/intuit/graphql-orchestrator-java)  
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/graph-quilt/graphql-orchestrator-java/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/graph-quilt/graphql-orchestrator-java/tree/master)
 
-![Master Build](https://github.com/intuit/graphql-orchestrator-java/actions/workflows/main.yml/badge.svg)
+![Master Build](https://github.com/graph-quilt/graphql-orchestrator-java/actions/workflows/main.yml/badge.svg)
 
 
 
-[Builds](https://circleci.com/gh/intuit/graphql-orchestrator-java)
+[Builds](https://circleci.com/gh/graph-quilt/graphql-orchestrator-java)
 
 
 **graphql-orchestrator-java** is a library that exposes data from various GraphQL microservices using a single unified GraphQL schema.
@@ -93,7 +93,7 @@ class TemplateServiceProvider implements ServiceProvider {
 
 ### Documentation
 
-Detailed [Documentation](https://intuit.github.io/graphql-orchestrator-java/) can be found here
+Detailed [Documentation](https://graph-quilt.github.io/graphql-orchestrator-java/) can be found here
 
 ### Contributing
 
