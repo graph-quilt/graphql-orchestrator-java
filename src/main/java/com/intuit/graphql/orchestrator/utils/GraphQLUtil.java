@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
 import static graphql.schema.GraphQLTypeUtil.isNotWrapped;
 import static graphql.schema.GraphQLTypeUtil.unwrapOne;
 
@@ -96,4 +97,12 @@ public class GraphQLUtil {
     }
     return Optional.of(fieldDefinition.getType());
   }
+
+  public static GraphQLFieldDefinition getFieldDefinition(String name, GraphQLFieldsContainer parentType) {
+    if (TypeNameMetaFieldDef.getName().equals(name)) {
+      return TypeNameMetaFieldDef;
+    }
+    return parentType.getFieldDefinition(name);
+  }
+
 }

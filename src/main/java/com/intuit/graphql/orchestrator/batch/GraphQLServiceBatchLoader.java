@@ -6,13 +6,16 @@ import static graphql.language.OperationDefinition.Operation.QUERY;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 
-import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
-import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactor;
+import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactorResult;
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
+import graphql.GraphqlErrorException;
 import graphql.VisibleForTesting;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
@@ -46,13 +49,16 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
-  private final BatchFieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultBatchFieldAuthorization();
+  private final FieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultFieldAuthorization();
   private final QueryExecutor queryExecutor;
   private final QueryResponseModifier queryResponseModifier;
   private final BatchResultTransformer batchResultTransformer;
@@ -77,22 +83,21 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> keys) {
     GraphQLContext graphQLContext = getContext(keys);
-    BatchFieldAuthorization batchFieldAuthorization = getDefaultOrCustomFieldAuthorization(graphQLContext);
-    CompletableFuture<Object> futureAuthData = batchFieldAuthorization.getFutureAuthData();
+    FieldAuthorization fieldAuthorization = getDefaultOrCustomFieldAuthorization(graphQLContext);
+    CompletableFuture<Object> futureAuthData = fieldAuthorization.getFutureAuthData();
     return futureAuthData.thenCompose(authData -> load(keys, graphQLContext, authData,
-        batchFieldAuthorization));
+        fieldAuthorization));
   }
 
-  private BatchFieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
-    BatchFieldAuthorization ctxBatchFieldAuthorization = graphQLContext.get(BatchFieldAuthorization.class);
-    return Objects.isNull(ctxBatchFieldAuthorization)
-        ? DEFAULT_FIELD_AUTHORIZATION : ctxBatchFieldAuthorization;
+  private FieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
+    FieldAuthorization ctxFieldAuthorization = graphQLContext.get(FieldAuthorization.class);
+    return Objects.isNull(ctxFieldAuthorization)
+        ? DEFAULT_FIELD_AUTHORIZATION : ctxFieldAuthorization;
   }
 
   private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
-      GraphQLContext context, Object authData, BatchFieldAuthorization batchFieldAuthorization) {
+      GraphQLContext context, Object authData, FieldAuthorization fieldAuthorization) {
 
-    batchFieldAuthorization.batchAuthorizeOrThrowGraphQLError(authData, keys);
     hooks.onBatchLoadStart(context, keys);
 
     Optional<OperationDefinition> operation = getFirstOperation(keys);
@@ -110,15 +115,39 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
     Map<String, FragmentDefinition> mergedFragmentDefinitions = new HashMap<>();
 
+    MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey = new ArrayListValuedHashMap<>();
+
     for (final DataFetchingEnvironment key : keys) {
       MergedFieldModifierResult result = new MergedFieldModifier(key).getFilteredRootField();
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
+        String keyPath = key.getExecutionStepInfo().getPath().toString();
         filteredRootField.getFields().stream()
-          .map(field -> (serviceMetadata.shouldModifyDownStreamQuery())
-            ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(),
-                key.getFragmentsByName(), graphQLSchema)
-            : field)
+//          .map(field -> (serviceMetadata.shouldModifyDownStreamQuery())
+//            ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(),
+//                key.getFragmentsByName(), graphQLSchema)
+//            : field)
+          .map(field -> {
+              if (shouldRedactQuery(fieldAuthorization)) {
+                DownstreamQueryRedactor downstreamQueryRedactor = DownstreamQueryRedactor.builder()
+                    .root(field)
+                    .rootType(unwrapAll(getRootFieldDefinition(key.getExecutionStepInfo()).getType()))
+                    .rootParentType(operationObjectType)
+                    .authData(authData)
+                    .fieldAuthorization(fieldAuthorization)
+                    .dataFetchingEnvironment(key)
+                    .serviceMetadata(serviceMetadata)
+                    .build();
+                DownstreamQueryRedactorResult redactResult = downstreamQueryRedactor.redact();
+                if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
+                  queryRedactErrorsByKey.putAll(keyPath, redactResult.getErrors());
+                }
+                return (Field) redactResult.getNode();
+              } else {
+                return field;
+              }
+            })
+          .filter(Objects::nonNull) // TODO this happens when?
           .forEach(selectionSetBuilder::selection);
       }
 
@@ -141,13 +170,15 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
       Map<String, FragmentDefinition> svcFragmentDefinitions = filterFragmentDefinitionByService(
           key.getFragmentsByName());
-      if (serviceMetadata.hasFieldResolverDirective() || serviceMetadata.isFederationService()) {
+      if (shouldRedactQuery(fieldAuthorization) || serviceMetadata.isFederationService()) {
         Map<String, FragmentDefinition> finalServiceFragmentDefinitions = new HashMap<>();
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
-          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition,
-              parentType, key.getFragmentsByName(), graphQLSchema);
+//          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition,
+//              parentType, key.getFragmentsByName(), graphQLSchema);
+          FragmentDefinition transformedFragment = redactFragmentDefinition(fragmentDefinition, parentType,
+              authData, fieldAuthorization, key, queryRedactErrorsByKey, operationObjectType);
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
         mergedFragmentDefinitions.putAll(finalServiceFragmentDefinitions);
@@ -213,6 +244,11 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
+  }
+
+  private boolean shouldRedactQuery(FieldAuthorization fieldAuthorization) {
+    return serviceMetadata.shouldModifyDownStreamQuery() ||
+        !(fieldAuthorization instanceof DefaultFieldAuthorization);
   }
 
   private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
@@ -282,20 +318,43 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         });
   }
 
-  /**
-   * remove fields with external type from a fragment definition.
-   *
-   * @param origFragmentDefinition original fragment definition
-   * @param typeCondition type condition of the original fragment definition.  This will be used as
-   *                      the root type for {@link DownstreamQueryModifier}
-   * @return a modified fragment definition
-   */
-  private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
-      GraphQLType typeCondition, Map<String, FragmentDefinition> fragmentsByName, GraphQLSchema graphQLSchema) {
-    // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
-        new DownstreamQueryModifier(unwrapAll(typeCondition), serviceMetadata, fragmentsByName, graphQLSchema));
+//  /**
+//   * remove fields with external type from a fragment definition.
+//   *
+//   * @param origFragmentDefinition original fragment definition
+//   * @param typeCondition type condition of the original fragment definition.  This will be used as
+//   *                      the root type for {@link DownstreamQueryModifier}
+//   * @return a modified fragment definition
+//   */
+//  private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
+//      GraphQLType typeCondition, Map<String, FragmentDefinition> fragmentsByName, GraphQLSchema graphQLSchema) {
+//    // call serviceMetadata.hasFieldResolverDirective() before calling this method
+//    return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
+//        new DownstreamQueryModifier(unwrapAll(typeCondition), serviceMetadata, fragmentsByName, graphQLSchema));
+//
+//  }
 
+  private FragmentDefinition redactFragmentDefinition(final FragmentDefinition origFragmentDefinition,
+      GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
+      DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey,
+      GraphQLObjectType operationType) {
+
+    DownstreamQueryRedactor fragmentDefinitionRedactor = DownstreamQueryRedactor.builder()
+        .root(origFragmentDefinition)
+        .rootType(unwrapAll(typeCondition))
+        .rootParentType(operationType)
+        .authData(authData)
+        .fieldAuthorization(fieldAuthorization)
+        .dataFetchingEnvironment(dataFetchingEnvironment)
+        .serviceMetadata(serviceMetadata)
+        .build();
+
+    DownstreamQueryRedactorResult redactResult = fragmentDefinitionRedactor.redact();
+    if (CollectionUtils.isNotEmpty(redactResult.getErrors())) {
+      String keyPath = dataFetchingEnvironment.getExecutionStepInfo().getPath().toString();
+      queryRedactErrorsByKey.putAll(keyPath, redactResult.getErrors());
+    }
+    return (FragmentDefinition) redactResult.getNode();
   }
 
   /**
@@ -317,20 +376,20 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     return origFragmentDefinition;
   }
 
-  /**
-   * remove fields with external type from selections of a given field.
-   *
-   * @param origField field to be processed.
-   * @param fieldType the type of origField.  This will be used as the root type for {@link
-   * DownstreamQueryModifier}
-   * @return a modified field
-   */
-  private Field removeFieldsWithExternalTypes(Field origField, GraphQLType fieldType, Map<String, FragmentDefinition> fragmentsByName,
-      GraphQLSchema graphQLSchema) {
-    // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    return (Field) AST_TRANSFORMER.transform(origField,
-        new DownstreamQueryModifier(unwrapAll(fieldType), serviceMetadata, fragmentsByName, graphQLSchema));
-  }
+//  /**
+//   * remove fields with external type from selections of a given field.
+//   *
+//   * @param origField field to be processed.
+//   * @param fieldType the type of origField.  This will be used as the root type for {@link
+//   * DownstreamQueryModifier}
+//   * @return a modified field
+//   */
+//  private Field removeFieldsWithExternalTypes(Field origField, GraphQLType fieldType, Map<String, FragmentDefinition> fragmentsByName,
+//      GraphQLSchema graphQLSchema) {
+//    // call serviceMetadata.hasFieldResolverDirective() before calling this method
+//    return (Field) AST_TRANSFORMER.transform(origField,
+//        new DownstreamQueryModifier(unwrapAll(fieldType), serviceMetadata, fragmentsByName, graphQLSchema));
+//  }
 
   private GraphQLSchema getSchema(List<DataFetchingEnvironment> environments) {
     return environments.stream()

@@ -8,7 +8,7 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveTy
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static graphql.schema.InputValueWithState.newExternalValue;
 
-import com.intuit.graphql.orchestrator.batch.DownstreamQueryModifier;
+import com.intuit.graphql.orchestrator.batch.LegacyDownstreamQueryModifier;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
@@ -78,7 +78,7 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
         GraphQLType parentType, Map<String, FragmentDefinition> fragmentsByName, GraphQLSchema graphQLSchema) {
         // call serviceMetadata.hasFieldResolverDirective() before calling this method
         return (Field) AST_TRANSFORMER.transform(field,
-            new DownstreamQueryModifier(unwrapAll(parentType), serviceMetadata, fragmentsByName, graphQLSchema));
+            new LegacyDownstreamQueryModifier(unwrapAll(parentType), serviceMetadata, fragmentsByName, graphQLSchema));
     }
 
     private  List<Argument> createFieldArguments(ResolverDirectiveDefinition resolverDirectiveDefinition, DataFetchingEnvironment dataFetchingEnvironment) {

@@ -2,7 +2,6 @@ package com.intuit.graphql.orchestrator.batch
 
 import com.google.common.collect.ImmutableSet
 import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata.EntityMetadata
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata
@@ -11,31 +10,20 @@ import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifier
 import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.TestService
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
-import com.intuit.graphql.orchestrator.utils.SelectionCollector
-import graphql.GraphQLContext
-import graphql.language.AstTransformer
-import graphql.language.Field
-import graphql.language.FragmentDefinition
-import graphql.language.InlineFragment
-import graphql.language.Selection
-import graphql.language.SelectionSet
-import graphql.language.TypeName
+import graphql.language.*
 import graphql.schema.FieldCoordinates
 import graphql.schema.GraphQLFieldsContainer
 import graphql.schema.GraphQLScalarType
 import graphql.schema.GraphQLSchema
 import spock.lang.Specification
 
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.aSchema
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.bSchema
-import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.cSchema
+import static com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.*
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll
 import static graphql.schema.FieldCoordinates.coordinates
 
-class DownstreamQueryModifierSpec extends Specification {
+class LegacyDownstreamQueryModifierSpec extends Specification {
 
     private ServiceMetadataImpl serviceMetadataMock
-    private GraphQLContext graphqlContextMock
 
     private Field af1, af2
     private Field b1, b2, b3, b4, b5
@@ -47,13 +35,12 @@ class DownstreamQueryModifierSpec extends Specification {
     private SelectionSet renamedFieldSelectionSet
     private SelectionSet renamedResolverSelectionSet
 
-    private DownstreamQueryModifier subjectUnderTest
+    private LegacyDownstreamQueryModifier subjectUnderTest
 
     private AstTransformer astTransformer = new AstTransformer()
 
     def setup() {
         serviceMetadataMock = Mock(ServiceMetadataImpl)
-        graphqlContextMock = Mock(GraphQLContext)
 
         ServiceProvider serviceA = new TestService("serviceA", aSchema, null)
         ServiceProvider serviceB = new TestService("serviceB", bSchema, null)
@@ -96,17 +83,7 @@ class DownstreamQueryModifierSpec extends Specification {
         serviceMetadataMock.isOwnedByEntityExtension(_) >> false
         serviceMetadataMock.shouldModifyDownStreamQuery() >> true
 
-        //subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema)
-        subjectUnderTest = DownstreamQueryModifier.builder()
-          .rootType(aType)
-          .serviceMetadata(serviceMetadataMock)
-          .selectionCollector(new SelectionCollector(Collections.emptyMap()))
-          .fieldAuthorization(new DefaultFieldAuthorization())
-          //.authData(null)
-          .graphQLContext(graphqlContextMock)
-          .queryVariables(Collections.emptyMap())
-          .graphQLSchema(graphQLSchema)
-          .build();
+        subjectUnderTest = new LegacyDownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema)
     }
 
     def "can Remove Field"() {

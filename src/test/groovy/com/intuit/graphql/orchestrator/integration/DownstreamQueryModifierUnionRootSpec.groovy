@@ -1,8 +1,11 @@
 package com.intuit.graphql.orchestrator.integration
 
+import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization
 import com.intuit.graphql.orchestrator.batch.DownstreamQueryModifier
 import com.intuit.graphql.orchestrator.metadata.RenamedMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
+import com.intuit.graphql.orchestrator.utils.SelectionCollector
+import graphql.GraphQLContext
 import graphql.Scalars
 import graphql.language.*
 import graphql.schema.*
@@ -49,6 +52,7 @@ class DownstreamQueryModifierUnionRootSpec extends Specification {
     private ServiceMetadata serviceMetadataMock
     private GraphQLSchema graphQLSchemaMock
     private RenamedMetadata renamedMetadataMock
+    private GraphQLContext graphqlContextMock
 
     private DownstreamQueryModifier queryModifierWithUnionRootType
 
@@ -72,8 +76,18 @@ class DownstreamQueryModifierUnionRootSpec extends Specification {
                 .build()
 
         Map<String, FragmentDefinition> emptyFragmentsByName = emptyMap()
-        queryModifierWithUnionRootType = new DownstreamQueryModifier(rootType, serviceMetadataMock,
-                emptyFragmentsByName, graphQLSchemaMock)
+//        queryModifierWithUnionRootType = new DownstreamQueryModifier(rootType, serviceMetadataMock,
+//                emptyFragmentsByName, graphQLSchemaMock)
+        graphqlContextMock = Mock(GraphQLContext)
+        queryModifierWithUnionRootType = DownstreamQueryModifier.builder()
+          .rootType(rootType)
+          .serviceMetadata(serviceMetadataMock)
+          .selectionCollector(new SelectionCollector(emptyFragmentsByName))
+          .fieldAuthorization(new DefaultFieldAuthorization())
+          .graphQLContext(graphqlContextMock)
+          .queryVariables(emptyMap())
+          .graphQLSchema(graphQLSchemaMock)
+          .build();
     }
 
 
