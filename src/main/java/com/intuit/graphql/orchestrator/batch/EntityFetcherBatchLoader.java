@@ -188,25 +188,10 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
 
         if(originalSelection instanceof Field) {
             Field field = ((Field) originalSelection);
-            return newField()
-                    .name(field.getName())
-                    .alias(field.getAlias())
-                    .selectionSet(selectionSet)
-                    .directives(field.getDirectives())
-                    .arguments(field.getArguments())
-                    .sourceLocation(field.getSourceLocation())
-                    .additionalData(field.getAdditionalData())
-                    .build();
+            return field.transform( builder-> builder.selectionSet(selectionSet));
         } else if(originalSelection instanceof InlineFragment) {
             InlineFragment inlineFragment = ((InlineFragment) originalSelection);
-
-            return newInlineFragment()
-                    .selectionSet(selectionSet)
-                    .directives(inlineFragment.getDirectives())
-                    .additionalData(inlineFragment.getAdditionalData())
-                    .sourceLocation(inlineFragment.getSourceLocation())
-                    .typeCondition(inlineFragment.getTypeCondition())
-                    .build();
+            return inlineFragment.transform( builder-> builder.selectionSet(selectionSet));
         } else return originalSelection;
     }
 }
