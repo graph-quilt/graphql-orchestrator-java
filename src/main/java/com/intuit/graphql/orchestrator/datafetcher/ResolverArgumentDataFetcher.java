@@ -17,13 +17,15 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 /**
  * This class is responsible for executing data fetching for resolver arguments by querying downstream resovler services
  * for argument data, injecting the data as arguments to the original query, and sending it to the downstream service
  * that needs the data.
  */
-public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFuture<DataFetcherResult<Object>>> {
+@Getter
+public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFuture<DataFetcherResult<Object>>>, ServiceContext {
 
   private final String namespace;
   private final Map<ResolverArgumentDirective, OperationDefinition> resolverQueryByDirective;

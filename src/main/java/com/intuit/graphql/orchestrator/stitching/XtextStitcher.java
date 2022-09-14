@@ -177,8 +177,8 @@ public class XtextStitcher implements Stitcher {
         final XtextGraph serviceMetadata = graphsByNamespace.get(dataFetcherContext.getNamespace());
         builder.dataFetcher(coordinates,
             dataFetcherContext.getServiceType() == ServiceType.REST
-                ? new RestDataFetcher(serviceMetadata)
-                : new ServiceDataFetcher(serviceMetadata)
+                ? new RestDataFetcher(serviceMetadata, dataFetcherContext.getNamespace())
+                : new ServiceDataFetcher(serviceMetadata, dataFetcherContext.getNamespace())
         );
       } else if (type == RESOLVER_ARGUMENT) {
         final XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();

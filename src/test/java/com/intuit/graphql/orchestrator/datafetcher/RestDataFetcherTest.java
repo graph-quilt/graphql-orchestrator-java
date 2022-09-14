@@ -83,14 +83,16 @@ public class RestDataFetcherTest {
       return CompletableFuture.completedFuture(responseMap);
     };
 
-    TestServiceProvider testServiceProvider = TestServiceProvider.newBuilder().queryFunction(queryExecutor)
-        .serviceType(ServiceType.REST).build();
+    TestServiceProvider testServiceProvider = TestServiceProvider.newBuilder().namespace("TEST")
+        .queryFunction(queryExecutor).serviceType(ServiceType.REST).build();
     ServiceMetadata serviceMetadata = mock(XtextGraph.class);
     when(serviceMetadata.getServiceProvider()).thenReturn(testServiceProvider);
 
-    RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata);
+    RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata,
+        testServiceProvider.getNameSpace());
 
-    ((CompletableFuture<DataFetcherResult<Map<String, Object>>>) restDataFetcher.get(dataFetchingEnvironment))
+    ((CompletableFuture<DataFetcherResult<Map<String, Object>>>) restDataFetcher.get(
+        dataFetchingEnvironment))
         .whenComplete((dataFetcherResult, throwable) -> {
           assertThat(throwable).isNull();
           assertThat(dataFetcherResult).isNotNull();
@@ -105,7 +107,8 @@ public class RestDataFetcherTest {
   // public void canExecuteRequestWithEmptySelectionSet() {
   // }
 
-  private DataFetchingEnvironment createTestDataFetchingEnvironment(OperationDefinition opDef, MergedField field,
+  private DataFetchingEnvironment createTestDataFetchingEnvironment(OperationDefinition opDef,
+      MergedField field,
       Map<String, Object> variables) {
     return newDataFetchingEnvironment()
         .context(GraphQLContext.newContext().build())

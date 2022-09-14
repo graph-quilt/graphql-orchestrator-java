@@ -16,14 +16,18 @@ import graphql.language.VariableDefinition;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.List;
+import lombok.Getter;
 
-public class RestDataFetcher implements DataFetcher {
+@Getter
+public class RestDataFetcher implements DataFetcher, ServiceContext {
 
   private final ServiceMetadata serviceMetadata;
+  private final String namespace;
   private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
 
-  public RestDataFetcher(final ServiceMetadata serviceMetadata) {
+  public RestDataFetcher(final ServiceMetadata serviceMetadata, String namespace) {
     this.serviceMetadata = serviceMetadata;
+    this.namespace = namespace;
   }
 
   @Override

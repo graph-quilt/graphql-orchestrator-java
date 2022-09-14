@@ -7,16 +7,18 @@ import graphql.schema.DataFetchingEnvironment;
 import lombok.Getter;
 
 @Getter
-public class ServiceDataFetcher implements DataFetcher {
+public class ServiceDataFetcher implements DataFetcher, ServiceContext {
 
   /**
    * One of Query or Mutation or Subscription
    */
   private final ServiceMetadata serviceMetadata;
+  private final String namespace;
 
 
-  public ServiceDataFetcher(ServiceMetadata serviceMetadata) {
+  public ServiceDataFetcher(ServiceMetadata serviceMetadata, String namespace) {
     this.serviceMetadata = serviceMetadata;
+    this.namespace = namespace;
   }
 
   @Override
