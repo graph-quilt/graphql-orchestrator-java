@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import com.intuit.graphql.graphQL.FieldDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import com.intuit.graphql.orchestrator.federation.EntityQuery;
@@ -16,7 +18,7 @@ import graphql.language.SelectionSet;
 import graphql.language.TypeName;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLNamedType;
 import org.apache.commons.collections4.CollectionUtils;
 import org.dataloader.BatchLoader;
 
@@ -28,7 +30,12 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
 import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getNamedTypeName;
+import static graphql.language.Field.newField;
+import static graphql.language.InlineFragment.newInlineFragment;
 
 public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -38,14 +45,20 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
     private final List<String> representationFieldTemplate;
     private final ServiceProvider entityServiceProvider;
 
+    private final Map<String, TypeDefinition> typeDefinitionMap;
+
     private ServiceMetadata entityServiceMetadata;
 
-    public EntityFetcherBatchLoader(FederationMetadata.EntityExtensionMetadata metadata, ServiceMetadata entityServiceMetadata, String fieldName) {
+    public EntityFetcherBatchLoader(FederationMetadata.EntityExtensionMetadata metadata,
+                                    ServiceMetadata entityServiceMetadata,
+                                    Map<String, TypeDefinition> typeDefinitionMap,
+                                    String fieldName) {
         this.entityServiceProvider = metadata.getServiceProvider();
         this.entityTypeName = metadata.getTypeName();
         this.representationFieldTemplate = generateRepresentationTemplate(metadata, fieldName);
         this.batchResultTransformer = new EntityFetcherBatchResultTransformer(metadata.getServiceProvider().getNameSpace(), metadata.getTypeName(), fieldName);
         this.entityServiceMetadata = entityServiceMetadata;
+        this.typeDefinitionMap = typeDefinitionMap;
     }
 
     @Override
@@ -108,7 +121,9 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
 
         SelectionSet fieldSelectionSet = dfe.getField().getSelectionSet();
         if (fieldSelectionSet != null) {
-            List<Selection> prunedSelections = pruneExternalResolvers(((GraphQLObjectType) dfe.getFieldType()).getName(), originalField);
+            String typeName = ((GraphQLNamedType) unwrapAll(dfe.getFieldType())).getName();
+            TypeDefinition typeDefinition = this.typeDefinitionMap.get(typeName);
+            List<Selection> prunedSelections = pruneExternalResolvers(typeDefinition, originalField);
 
             // is an object
             fieldSelectionSet =
@@ -117,12 +132,12 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                             .selection(__typenameField));
         }
 
-        InlineFragment.Builder inlineFragmentBuilder = InlineFragment.newInlineFragment();
+        InlineFragment.Builder inlineFragmentBuilder = newInlineFragment();
         inlineFragmentBuilder.typeCondition(TypeName.newTypeName().name(this.entityTypeName).build());
         inlineFragmentBuilder.selectionSet(
                 SelectionSet.newSelectionSet()
                         .selection(
-                                Field.newField()
+                                newField()
                                         .selectionSet(fieldSelectionSet)
                                         .name(originalField.getName())
                                         .build())
@@ -142,13 +157,41 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         return entityRepresentation;
     }
 
-    private List<Selection> pruneExternalResolvers(String parentTypeName, Field field) {
+    private List<Selection> pruneExternalResolvers(TypeDefinition parentTypeDefinition, Field field) {
         return field.getSelectionSet().getSelections().stream()
         .filter(selection -> {
             Field selectionField = (Field) selection;
-            FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentTypeName, selectionField.getName());
+            FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentTypeDefinition.getName(), selectionField.getName());
 
             return entityServiceMetadata.getFieldResolverContext(fieldCoordinates) == null;
-        }).collect(Collectors.toList());
+        })
+        .map(selection -> {
+            if(!selection.getChildren().isEmpty()) {
+                String fieldName = ((Field) selection).getName();
+                FieldDefinition selectedFieldDefinition = getFieldDefinitions(parentTypeDefinition, true).stream()
+                        .filter(fieldDefinition -> fieldDefinition.getName().equals(fieldName))
+                        .findFirst().get();
+
+                String typeName  = getNamedTypeName(selectedFieldDefinition.getNamedType());
+
+                List<Selection> prunedFields = pruneExternalResolvers(this.typeDefinitionMap.get(typeName), (Field) selection);
+                return getSelectionWithNewFields(selection, prunedFields);
+            } else {
+                return selection;
+            }
+        })
+        .collect(Collectors.toList());
+    }
+
+    private Selection getSelectionWithNewFields(Selection originalSelection, List<Selection> prunedFields) {
+        SelectionSet selectionSet = SelectionSet.newSelectionSet(prunedFields).build();
+
+        if(originalSelection instanceof Field) {
+            Field field = ((Field) originalSelection);
+            return field.transform( builder-> builder.selectionSet(selectionSet));
+        } else if(originalSelection instanceof InlineFragment) {
+            InlineFragment inlineFragment = ((InlineFragment) originalSelection);
+            return inlineFragment.transform( builder-> builder.selectionSet(selectionSet));
+        } else return originalSelection;
     }
 }

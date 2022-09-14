@@ -26,8 +26,13 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
         
         type AObjectType {
             aObjectField: String
+            aObjectField2: NestedType
+        }
+        
+        type NestedType {
+            typeId: String
             cTopField: CObjectType @resolver(field: "cTopField")
-        }   
+        }
         
         type CObjectType
         
@@ -38,12 +43,12 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
         }         
     """
 
-    def QUERY_A = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on BObjectType {aTopField {aObjectField __typename}}}}"
+    def QUERY_A = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on BObjectType {aTopField {aObjectField aObjectField2 {typeId} __typename}}}}"
     def mockServiceResponseA = [
             (QUERY_A): [data: [
                     _entities : [
-                            [aTopField: [ aObjectField: "aObjectFieldValue1", __typename: "AObjectType"]],
-                            [aTopField: [ aObjectField: "aObjectFieldValue2", __typename: "AObjectType"]]
+                            [aTopField: [ aObjectField: "aObjectFieldValue1", aObjectField2: [typeId: "type1"], __typename: "AObjectType"]],
+                            [aTopField: [ aObjectField: "aObjectFieldValue2", aObjectField2: [typeId: "type2"], __typename: "AObjectType"]]
                     ]
             ]]
     ]
@@ -103,10 +108,13 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
                 bTopField {
                     bObjectField
                     aTopField {
-                        aObjectField  
-                        cTopField {
-                            cObjectField
-                        }                                              
+                        aObjectField
+                        aObjectField2 {
+                            typeId
+                            cTopField {
+                                cObjectField
+                            }   
+                        }                                                                    
                     }
                 }
             }
@@ -124,13 +132,15 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
         executionResult?.data?.bTopField[0]?.bObjectField == "bObjectFieldValue1"
         executionResult?.data?.bTopField[0]?.aTopField?.size() == 2
         executionResult?.data?.bTopField[0]?.aTopField?.aObjectField == "aObjectFieldValue1"
-        executionResult?.data?.bTopField[0]?.aTopField?.cTopField?.size() == 1
-        executionResult?.data?.bTopField[0]?.aTopField?.cTopField?.cObjectField == "cObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.typeId == "type1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopField?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopField?.cObjectField == "cObjectFieldValue1"
         executionResult?.data?.bTopField[1]?.bObjectField == "bObjectFieldValue2"
         executionResult?.data?.bTopField[1]?.aTopField?.size() == 2
         executionResult?.data?.bTopField[1]?.aTopField?.aObjectField == "aObjectFieldValue2"
-        executionResult?.data?.bTopField[1]?.aTopField?.cTopField?.size() == 1
-        executionResult?.data?.bTopField[1]?.aTopField?.cTopField?.cObjectField == "cObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.typeId == "type2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopField?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopField?.cObjectField == "cObjectFieldValue2"
     }
 
 }
