@@ -10,7 +10,7 @@ theme:
     code: Menlo
   favicon: img/graphql.ico
 extra_css: ["css/css-override.css"]
-repo_url: "https://github.intuit.com/data-orchestration/graphql-orchestrator-java"
+repo_url: "https://github.com/intuit/graphql-orchestrator-java"
 repo_name: 'graphql-orchestrator-java'
 copyright: 'Copyright &copy; 2021 Intuit'
 
@@ -44,9 +44,12 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Key Concepts:
-      - GraphQL Query Execution: key-concepts/graphql-query-execution.md
       - High Level Algorithm: key-concepts/algorithm.md
-      - Interfaces and Unions: key-concepts/interface-union-types.md
-  - Usage:
-      - Getting Started: usage/getting_started.md
+      - Recursive Schema Stitching: key-concepts/merging-types.md
+      - GraphQL Query Execution: key-concepts/graphql-query-execution.md
+      - Handling Interfaces and Unions: key-concepts/interface-union-types.md
+      - Remote Type Extensions: key-concepts/field-links.md
+      - Conflict Resolution: key-concepts/conflict-resolution.md
+  - Specifications:
+      - Custom Directives: specifications/custom-directives.md
 

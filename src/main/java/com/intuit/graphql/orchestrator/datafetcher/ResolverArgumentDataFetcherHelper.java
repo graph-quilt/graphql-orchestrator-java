@@ -105,11 +105,13 @@ public class ResolverArgumentDataFetcherHelper implements ServiceContext{
 
     final OperationDefinition queryOperation = env.getOperationDefinition();
 
-    final MergedField newMergedField = env.getMergedField()
-        .transform(builder ->
-            builder.fields(singletonList(env.getField()
-                .transform(fieldBuilder -> fieldBuilder.arguments(fieldArguments))))
-        );
+    // the old code was to transform env.getMergedField() which basically
+    // replaces the list of fields.  In graphql-java 16.2., MergedBuild builder adds
+    // compared to < 15.0 which replaces the field list.
+    final MergedField newMergedField = MergedField
+        .newMergedField(singletonList(env.getField()
+            .transform(fieldBuilder -> fieldBuilder.arguments(fieldArguments))))
+        .build();
 
     final OperationDefinition opDefWithVariables = queryOperation
         .transform(builder -> builder.variableDefinitions(variableDefinitions));

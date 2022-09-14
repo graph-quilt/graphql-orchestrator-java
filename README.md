@@ -1,46 +1,99 @@
-# graphql-orchestrator-java
+<div align="center">
 
-### Overview
+  ![graphql-orchestrator-java](./logo.png)
 
-**GraphQL Orchestrator** is a library that exposes data from various data providers using a single unified GraphQL schema.
-It aggregates and combines the schemas from these data providers and orchestrates the graphql queries to the appropriate services.
+</div>
+
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/graph-quilt/graphql-orchestrator-java/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/graph-quilt/graphql-orchestrator-java/tree/master)
+
+![Master Build](https://github.com/graph-quilt/graphql-orchestrator-java/actions/workflows/main.yml/badge.svg)
+
+
+
+[Builds](https://circleci.com/gh/graph-quilt/graphql-orchestrator-java)
+
+
+**graphql-orchestrator-java** is a library that exposes data from various GraphQL microservices using a single unified GraphQL schema.
+It uses [a recursive strategy](./mkdocs/docs/key-concepts/merging-types.md) to aggregate and combine the schemas from these micro-services 
+and [orchestrates the graphql queries](./mkdocs/docs/key-concepts/graphql-query-execution.md) to the appropriate services
+at runtime.
+
+
 It uses the [graphql-java](https://github.com/graphql-java/graphql-java) library as the runtime execution engine on the unified schema.
 
-### Getting Started
+## Getting Started
 
-Requirement:
-* Java 8
-* Maven 3
+### Dependency
 
-1.  Add this library to your project  
-    ```
-    <dependency>
-      <groupId>com.intuit.graphql</groupId>
-      <artifactId>graphql-orchestrator-java</artifactId>
-      <version>${version}</version>
-    </dependency>
+```xml
+<dependency>
+    <groupId>com.intuit.graphql</groupId>
+    <artifactId>graphql-orchestrator-java</artifactId>
+    <version>${graphql.orchestrator.version}</version>
+</dependency>
+```
+
+### Usage in code
+
+* Implement the ServiceProvider interface. You will a new instance for
+each GraphQL Service.
+```java
+class TemplateServiceProvider implements ServiceProvider {
+
+  public static final String TEMPLATE = "type Query { nested: Nested } type Nested { %s: String}";
+  private String field;
+
+  public TemplateServiceProvider(String field) { this.field = field; }
+
+  // Unique namespace for the service
+  @Override
+  public String getNameSpace() { return field; }
+
+  // GraphQL Schema
+  @Override
+  public Map<String, String> sdlFiles() {
+    return ImmutableMap.of(field + ".graphqls", String.format(TEMPLATE, field));
+  }
+
+  // Query execution at runtime, the response needs to have data and error objects as per GraphQL Spec
+  @Override
+  public CompletableFuture<Map<String, Object>> query(final ExecutionInput executionInput, 
+      final GraphQLContext context) {
+    //{'data':{'nested':{'%s':'%s'}}}"
+    Map<String, Object> data = ImmutableMap
+        .of("data", ImmutableMap.of("nested", ImmutableMap.of(field, field)));
+    return CompletableFuture.completedFuture(data);
+  }
+}
+```
+
+* Create an instance of Orchestrator and execute the query as below.
+```java
+    // create a runtimeGraph by stitching service providers
+    RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
+        .service(new TemplateServiceProvider("foo"))   
+        .service(new TemplateServiceProvider("bar"))  
+        .build()
+        .stitchGraph();
+
+    // pass the runtime graph to GraphQLOrchestrator
+    GraphQLOrchestrator graphQLOrchestrator = GraphQLOrchestrator.newOrchestrator()
+        .runtimeGraph(runtimeGraph).build();
     
-2.  Implement the [ServiceProvider](https://github.intuit.com/data-orchestration/stitching/blob/master/src/main/java/com/intuit/graphql/stitching/ServiceProvider.java) interface for the services you want to stitch.
-    
-3.  Use the library in your code.  Example:
-    ```
-    // Build the stitcher with multiple services. Service interface in progress
-    final GraphQLOrchestrator orchestrator = GraphQLOrchestrator.newOrchestrator()
-            .instrumentations(Collections.emptyList())
-            .services(Collections.emptyList())   // Implemented in Step 2
-            .executionIdProvider(ExecutionIdProvider.DEFAULT_EXECUTION_ID_PROVIDER)
-            .queryExecutionStrategy(new AsyncExecutionStrategy())
-            .mutationExecutionStrategy(new AsyncExecutionStrategy())
-            .build();
-            
-    //execute the request
-    orchestrator.execute(executionInput);      
-    
-    ```
+    //Execute the query 
+    CompletableFuture<ExecutionResult> execute = graphQLOrchestrator
+        .execute(ExecutionInput.newExecutionInput().query("query {nested {foo bar}}").build());
+
+    ExecutionResult executionResult = execute.get();
+    System.out.println(executionResult.getData().toString());
+    // Output: {nested={foo=foo, bar=bar}}
+```
+
+------------------------------
 
 ### Documentation
 
-Coming soon...
+Detailed [Documentation](https://graph-quilt.github.io/graphql-orchestrator-java/) can be found here
 
 ### Contributing
 

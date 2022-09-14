@@ -6,6 +6,8 @@ import static graphql.language.OperationDefinition.Operation.QUERY;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 
+import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -31,9 +33,9 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +46,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
+  private final BatchFieldAuthorization DEFAULT_FIELD_AUTHORIZATION = new DefaultBatchFieldAuthorization();
   private final QueryExecutor queryExecutor;
   private final QueryResponseModifier queryResponseModifier;
   private final BatchResultTransformer batchResultTransformer;
@@ -70,11 +74,25 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     this.hooks = builder.hooks;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> keys) {
-    GraphQLContext context = getContext(keys);
+    GraphQLContext graphQLContext = getContext(keys);
+    BatchFieldAuthorization batchFieldAuthorization = getDefaultOrCustomFieldAuthorization(graphQLContext);
+    CompletableFuture<Object> futureAuthData = batchFieldAuthorization.getFutureAuthData();
+    return futureAuthData.thenCompose(authData -> load(keys, graphQLContext, authData,
+        batchFieldAuthorization));
+  }
 
+  private BatchFieldAuthorization getDefaultOrCustomFieldAuthorization(GraphQLContext graphQLContext) {
+    BatchFieldAuthorization ctxBatchFieldAuthorization = graphQLContext.get(BatchFieldAuthorization.class);
+    return Objects.isNull(ctxBatchFieldAuthorization)
+        ? DEFAULT_FIELD_AUTHORIZATION : ctxBatchFieldAuthorization;
+  }
+
+  private CompletableFuture<List<DataFetcherResult<Object>>> load(List<DataFetchingEnvironment> keys,
+      GraphQLContext context, Object authData, BatchFieldAuthorization batchFieldAuthorization) {
+
+    batchFieldAuthorization.batchAuthorizeOrThrowGraphQLError(authData, keys);
     hooks.onBatchLoadStart(context, keys);
 
     Optional<OperationDefinition> operation = getFirstOperation(keys);
@@ -97,11 +115,11 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       MergedField filteredRootField = result.getMergedField();
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
-            .map(field -> serviceMetadata.hasFieldResolverDirective()
-                ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType())
-                : field
-            )
-            .forEach(selectionSetBuilder::selection);
+          .map(field -> (serviceMetadata.shouldModifyDownStreamQuery())
+            ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(),
+                key.getFragmentsByName(), graphQLSchema)
+            : field)
+          .forEach(selectionSetBuilder::selection);
       }
 
       for (final FragmentDefinition fragmentDefinition : result.getFragmentDefinitions().values()) {
@@ -109,7 +127,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           FragmentDefinition old = mergedFragmentDefinitions.get(fragmentDefinition.getName());
 
           List<Selection> newSelections = fragmentDefinition.getSelectionSet().getSelections();
-          List<Selection> oldSelections = old.getSelectionSet().getSelections();
+          List<Selection> oldSelections = new ArrayList<>(old.getSelectionSet().getSelections());
 
           oldSelections.addAll(newSelections);
 
@@ -123,12 +141,13 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
       Map<String, FragmentDefinition> svcFragmentDefinitions = filterFragmentDefinitionByService(
           key.getFragmentsByName());
-      if (serviceMetadata.hasFieldResolverDirective()) {
+      if (serviceMetadata.hasFieldResolverDirective() || serviceMetadata.isFederationService()) {
         Map<String, FragmentDefinition> finalServiceFragmentDefinitions = new HashMap<>();
         svcFragmentDefinitions.forEach((fragmentName, fragmentDefinition) -> {
           String typeConditionName = fragmentDefinition.getTypeCondition().getName();
           GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) graphQLSchema.getType(typeConditionName);
-          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition, parentType);
+          FragmentDefinition transformedFragment = removeFieldsWithExternalTypes(fragmentDefinition,
+              parentType, key.getFragmentsByName(), graphQLSchema);
           finalServiceFragmentDefinitions.put(fragmentName, removeDomainTypeFromFragment(transformedFragment));
         });
         mergedFragmentDefinitions.putAll(finalServiceFragmentDefinitions);
@@ -163,6 +182,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         .directives(operationDirectives)
         .build();
 
+    Map<String, Object> filteredVariables = mergedVariables;
+
     if (!variableDefinitions.isEmpty()) {
       final Set<String> foundVariableReferences = variableDefinitionFilter.getVariableReferencesFromNode(
           graphQLSchema,
@@ -176,20 +197,39 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           .filter(variableDefinition -> foundVariableReferences.contains(variableDefinition.getName()))
           .collect(Collectors.toList());
 
+      filteredVariables = filterVariables(filteredVariableDefinitions, mergedVariables);
+
       query = query.transform(builder -> builder.variableDefinitions(filteredVariableDefinitions));
     }
 
     if (serviceMetadata.requiresTypenameInjection()) {
-      query = queryOperationModifier.modifyQuery(graphQLSchema, query, mergedFragmentDefinitions, mergedVariables);
+      query = queryOperationModifier.modifyQuery(graphQLSchema, query, mergedFragmentDefinitions, filteredVariables);
     }
 
-    return execute(context, query, mergedVariables, fragmentsAsDefinitions)
+    return execute(context, query, filteredVariables, fragmentsAsDefinitions)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, keys))
         .thenApply(batchResult -> {
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
+  }
+
+  private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
+      Map<String, Object> mergedVariables) {
+    if (MapUtils.isEmpty(mergedVariables)) {
+      return mergedVariables;
+    }
+
+    Map<String, Object> output = new HashMap<>();
+    filteredVariableDefinitions
+        .forEach(variableDefinition -> {
+          String variableDefinitionName = variableDefinition.getName();
+          if (mergedVariables.containsKey(variableDefinitionName)) {
+            output.put(variableDefinitionName, mergedVariables.get(variableDefinitionName));
+          }
+        });
+    return output;
   }
 
   private GraphQLFieldDefinition getRootFieldDefinition(ExecutionStepInfo executionStepInfo) {
@@ -247,14 +287,14 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    *
    * @param origFragmentDefinition original fragment definition
    * @param typeCondition type condition of the original fragment definition.  This will be used as
-   *                      the root type for {@link NoExternalReferenceSelectionSetModifier}
+   *                      the root type for {@link DownstreamQueryModifier}
    * @return a modified fragment definition
    */
   private FragmentDefinition removeFieldsWithExternalTypes(final FragmentDefinition origFragmentDefinition,
-      GraphQLType typeCondition) {
+      GraphQLType typeCondition, Map<String, FragmentDefinition> fragmentsByName, GraphQLSchema graphQLSchema) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(typeCondition)));
+        new DownstreamQueryModifier(unwrapAll(typeCondition), serviceMetadata, fragmentsByName, graphQLSchema));
 
   }
 
@@ -282,13 +322,14 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
    *
    * @param origField field to be processed.
    * @param fieldType the type of origField.  This will be used as the root type for {@link
-   * NoExternalReferenceSelectionSetModifier}
+   * DownstreamQueryModifier}
    * @return a modified field
    */
-  private Field removeFieldsWithExternalTypes(Field origField, GraphQLOutputType fieldType) {
+  private Field removeFieldsWithExternalTypes(Field origField, GraphQLType fieldType, Map<String, FragmentDefinition> fragmentsByName,
+      GraphQLSchema graphQLSchema) {
     // call serviceMetadata.hasFieldResolverDirective() before calling this method
     return (Field) AST_TRANSFORMER.transform(origField,
-        new NoExternalReferenceSelectionSetModifier((GraphQLFieldsContainer) unwrapAll(fieldType)));
+        new DownstreamQueryModifier(unwrapAll(fieldType), serviceMetadata, fragmentsByName, graphQLSchema));
   }
 
   private GraphQLSchema getSchema(List<DataFetchingEnvironment> environments) {

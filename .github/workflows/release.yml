@@ -1,0 +1,41 @@
+name: Release to maven-central
+on:
+  workflow_dispatch:
+    inputs:
+      releaseversion:
+        description: 'Release version'
+        required: false
+        default: 'X.Y.Z'
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Will release to central maven"
+
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.REPO_GIT_TOKEN }}
+
+      - name: Set up Maven Central Repository
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Configure Git User
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+      #      - name: Set projects Maven version to GitHub Action GUI set version
+      #        run: mvn versions:set "-DnewVersion=${{ github.event.inputs.releaseversion }}"
+
+      - name: Publish package
+        run: mvn --batch-mode release:prepare release:perform -P release -DskipTests=true
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSS_SONATYPE_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSS_SONATYPE_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}

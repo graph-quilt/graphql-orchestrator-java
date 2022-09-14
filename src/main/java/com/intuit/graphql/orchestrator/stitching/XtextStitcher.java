@@ -1,39 +1,42 @@
 package com.intuit.graphql.orchestrator.stitching;
 
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static java.util.Objects.requireNonNull;
-
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
+import com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil;
+import com.intuit.graphql.orchestrator.batch.EntityFetcherBatchLoader;
 import com.intuit.graphql.orchestrator.batch.FieldResolverBatchLoader;
 import com.intuit.graphql.orchestrator.batch.GraphQLServiceBatchLoader;
 import com.intuit.graphql.orchestrator.datafetcher.FieldResolverDirectiveDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.ResolverArgumentDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.RestDataFetcher;
 import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher;
-import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDataLoaderUtil;
+import com.intuit.graphql.orchestrator.federation.EntityDataFetcher;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentQueryBuilder;
 import com.intuit.graphql.orchestrator.schema.Operation;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
-import com.intuit.graphql.orchestrator.schema.fold.XtextGraphFolder;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl;
+import com.intuit.graphql.orchestrator.schema.fold.UnifiedXtextGraphFolder;
 import com.intuit.graphql.orchestrator.schema.transform.AllTypesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DirectivesTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPostMerge;
+import com.intuit.graphql.orchestrator.schema.transform.FederationTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPostMerge;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverTransformerPreMerge;
 import com.intuit.graphql.orchestrator.schema.transform.GraphQLAdapterTransformer;
+import com.intuit.graphql.orchestrator.schema.transform.RenameTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.ResolverArgumentTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.Transformer;
 import com.intuit.graphql.orchestrator.schema.transform.TypeExtensionTransformer;
 import com.intuit.graphql.orchestrator.schema.transform.UnionAndInterfaceTransformer;
 import com.intuit.graphql.orchestrator.utils.XtextToGraphQLJavaVisitor;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.orchestrator.xtext.XtextGraphBuilder;
 import graphql.execution.DataFetcherResult;
@@ -46,6 +49,8 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
 import graphql.schema.StaticDataFetcher;
+import org.dataloader.BatchLoader;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -55,7 +60,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The type Xtext stitcher.
@@ -65,7 +81,7 @@ public class XtextStitcher implements Stitcher {
   private static final ResolverArgumentQueryBuilder queryBuilder = new ResolverArgumentQueryBuilder();
 
   private final List<Transformer<XtextGraph, XtextGraph>> preMergeTransformers;
-  private final List<Transformer<XtextGraph, XtextGraph>> postMergeTransformers;
+  private final List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> postMergeTransformers;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> batchLoaderHooks;
 
   private XtextStitcher(final Builder builder) {
@@ -92,6 +108,7 @@ public class XtextStitcher implements Stitcher {
     Map<String, XtextGraph> xtextGraphMap = serviceProviders.stream()
         .map(XtextGraphBuilder::build)
         .map(xtextGraph -> transform(xtextGraph, preMergeTransformers))
+        .peek(this::validateGraph)
         .collect(Collectors.toMap(graph -> graph.getServiceProvider().getNameSpace(), Function.identity(),
             (g1, g2) -> {
               throw new StitchingException(
@@ -99,15 +116,47 @@ public class XtextStitcher implements Stitcher {
             }));
 
     //Stitch Graphs
-    XtextGraph stitchedGraph = new XtextGraphFolder().fold(XtextGraph.emptyGraph(), xtextGraphMap.values());
+    UnifiedXtextGraph stitchedGraph = new UnifiedXtextGraphFolder().fold(UnifiedXtextGraph.emptyGraph(), xtextGraphMap.values());
+
+    //Service Metadata
+    final Map<String, ServiceMetadata> serviceMetadataMap = xtextGraphMap.values().stream()
+        .map(this::buildServiceMetadata)
+        .collect(Collectors.toMap(metadata -> metadata.getServiceProvider().getNameSpace(), Function.identity()));
 
     //Transform after merge
-    XtextGraph stitchedTransformedGraph = transform(stitchedGraph, postMergeTransformers);
+    UnifiedXtextGraph stitchedTransformedGraph = transform(stitchedGraph, postMergeTransformers);
 
     //Executable RuntimeGraph with BatchLoaders and DataFetchers
-    final Map<String, BatchLoader> batchLoaders = getBatchLoaders(xtextGraphMap);
+    final Map<String, BatchLoader> batchLoaders = getBatchLoaders(serviceMetadataMap);
 
-    final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph, xtextGraphMap);
+    stitchedTransformedGraph.getFieldResolverContexts().forEach(fieldResolverContext -> {
+      FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
+          .builder()
+          .fieldResolverContext(fieldResolverContext)
+          .serviceMetadata(serviceMetadataMap.get(fieldResolverContext.getTargetServiceNamespace()))
+          .build();
+
+      String batchLoaderKey = DataLoaderKeyUtil.createDataLoaderKeyFrom(fieldResolverContext);
+      batchLoaders.put(batchLoaderKey, fieldResolverDataLoader);
+
+    });
+
+    stitchedGraph.getEntityExtensionMetadatas().forEach(metadata ->
+      metadata.getRequiredFieldsByFieldName().forEach((fieldName, fields) -> {
+        EntityFetcherBatchLoader entityFetcherBatchLoader = new EntityFetcherBatchLoader(
+                metadata,
+                serviceMetadataMap.get(metadata.getServiceProvider().getNameSpace()),
+                stitchedGraph.getTypes(),
+                fieldName
+        );
+
+        String batchLoaderKey = createDataLoaderKey(metadata.getTypeName(), fieldName);
+        batchLoaders.put(batchLoaderKey, entityFetcherBatchLoader);
+      })
+    );
+
+    final GraphQLCodeRegistry.Builder codeRegistryBuilder = getCodeRegistry(stitchedTransformedGraph,
+        serviceMetadataMap);
 
     final RuntimeGraph.Builder runtimeGraphBuilder = createRuntimeGraph(stitchedTransformedGraph);
 
@@ -121,49 +170,69 @@ public class XtextStitcher implements Stitcher {
     return runtimeGraph;
   }
 
+  private void validateGraph(XtextGraph xtextGraph) {
+    boolean emptyGraph = xtextGraph.getOperationMap().values()
+            .stream()
+            .map(ObjectTypeDefinition::getFieldDefinition)
+            .allMatch(List::isEmpty);
+
+    if(emptyGraph &&
+        !(xtextGraph.getServiceProvider().isFederationProvider() &&
+                getAllTypes(xtextGraph.getXtextResourceSet()).findAny().isPresent()
+        )
+    ) {
+      throw new StitchingException(
+              String.format("%s graph is invalid. Graph cannot be empty.", xtextGraph.getServiceProvider().getNameSpace())
+      );
+    }
+  }
+
   /**
    * Creates a namespace vs batch loader map for corresponding data providers per graph
    *
-   * @param xtextGraphMap map of namespace vs xtext graph for all data providers
+   * @param serviceMetadataMap map of namespace vs xtext graph for all data providers
    * @return map of namespace vs batch loader
    */
-  private Map<String, BatchLoader> getBatchLoaders(Map<String, XtextGraph> xtextGraphMap) {
+  private Map<String, BatchLoader> getBatchLoaders(Map<String, ServiceMetadata> serviceMetadataMap) {
 
+    //created an entity batch loader here
     HashMap<String, BatchLoader> batchLoaderMap = new HashMap<>();
-    xtextGraphMap.forEach((namespace, graph) -> {
-      if (graph.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL) {
+    serviceMetadataMap.forEach((namespace, serviceMetadata) -> {
+      if (serviceMetadata.getServiceProvider().getSeviceType() == ServiceType.GRAPHQL || serviceMetadata
+          .getServiceProvider()
+          .isFederationProvider()) {
         batchLoaderMap.put(namespace,
             GraphQLServiceBatchLoader
                 .newQueryExecutorBatchLoader()
-                .queryExecutor(graph.getServiceProvider())
-                .serviceMetadata(graph)
+                .queryExecutor(serviceMetadata.getServiceProvider())
+                .serviceMetadata(serviceMetadata)
                 .batchLoaderExecutionHooks(batchLoaderHooks)
                 .build());
-
-        graph.getFieldWithResolverMetadatas().forEach(fieldWithResolverMetadata -> {
-          FieldResolverBatchLoader fieldResolverDataLoader = FieldResolverBatchLoader
-              .builder()
-              .fieldWithResolverMetadata(fieldWithResolverMetadata)
-              .build();
-
-          String batchLoaderKey = FieldResolverDataLoaderUtil.createDataLoaderKeyFrom(fieldWithResolverMetadata);
-          batchLoaderMap.put(batchLoaderKey, fieldResolverDataLoader);
-
-        });
       }
     });
     return batchLoaderMap;
   }
 
+  private ServiceMetadata buildServiceMetadata(XtextGraph xtextGraph) {
+    return ServiceMetadataImpl.newBuilder()
+        .serviceProvider(xtextGraph.getServiceProvider())
+        .typeMetadataMap(xtextGraph.getTypeMetadatas())
+        .federationMetadata(xtextGraph.getFederationServiceMetadata())
+        .hasFieldResolverDefinition(xtextGraph.isHasFieldResolverDefinition())
+        .hasInterfaceOrUnion(xtextGraph.isHasInterfaceOrUnion())
+        .renamedMetadata(xtextGraph.getRenamedMetadata())
+        .build();
+  }
+
   /**
-   * Builds GraphQL Code Registry for a xtext graph using field context and data fetcher context
+   * Builds GraphQL Code Registry for a unified xtext graph using field context and data fetcher context
    *
    * @param mergedGraph the post-merged and post-transformed graph
-   * @param graphsByNamespace the individual graphs that were used to build the merged graph
+   * @param serviceMetadataMap the individual graphs that were used to build the merged graph
    * @return GraphQL Code Registry Builder
    */
-  private GraphQLCodeRegistry.Builder getCodeRegistry(XtextGraph mergedGraph,
-      Map<String, XtextGraph> graphsByNamespace) {
+  private GraphQLCodeRegistry.Builder getCodeRegistry(UnifiedXtextGraph mergedGraph,
+                                                      Map<String, ServiceMetadata> serviceMetadataMap) {
 
     GraphQLCodeRegistry.Builder builder = GraphQLCodeRegistry.newCodeRegistry();
 
@@ -174,7 +243,8 @@ public class XtextStitcher implements Stitcher {
       if (type == STATIC) {
         builder.dataFetcher(coordinates, new StaticDataFetcher(Collections.emptyMap()));
       } else if (type == SERVICE) {
-        final XtextGraph serviceMetadata = graphsByNamespace.get(dataFetcherContext.getNamespace());
+        final ServiceMetadata serviceMetadata = serviceMetadataMap.get(dataFetcherContext.getNamespace());
+
         builder.dataFetcher(coordinates,
             dataFetcherContext.getServiceType() == ServiceType.REST
                 ? new RestDataFetcher(serviceMetadata, dataFetcherContext.getNamespace())
@@ -199,6 +269,9 @@ public class XtextStitcher implements Stitcher {
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
+      } else if (type == ENTITY_FETCHER && mergedGraph.getType(fieldContext.getParentType()) != null) {
+        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata().getTypeName())
+        );
       }
     });
     return builder;
@@ -207,67 +280,70 @@ public class XtextStitcher implements Stitcher {
   /**
    * Creates a {@link RuntimeGraph} from an {@link XtextGraph} by converting xtext AST to GraphQL Java AST
    *
-   * @param xtextGraph xtext graph
+   * @param unifiedXtextGraph unified xtext graph
    * @return RuntimeGraph Builder
    */
-  private RuntimeGraph.Builder createRuntimeGraph(XtextGraph xtextGraph) {
+  private RuntimeGraph.Builder createRuntimeGraph(UnifiedXtextGraph unifiedXtextGraph) {
 
-    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder().build();
-
+    XtextToGraphQLJavaVisitor visitor = XtextToGraphQLJavaVisitor.newBuilder()
+            .graphqlBlackList(unifiedXtextGraph.getBlacklistedTypes())
+            .build();
     //fill operations
     final Map<Operation, GraphQLObjectType> operationMap = new EnumMap<>(Operation.class);
 
-    xtextGraph.getOperationMap()
+    unifiedXtextGraph.getOperationMap()
         .forEach((operation, objectTypeDefinition) ->
             operationMap.put(operation, (GraphQLObjectType) visitor.doSwitch(objectTypeDefinition)));
 
     return RuntimeGraph.newBuilder()
         .operationMap(operationMap)
         .objectTypes(visitor.getGraphQLObjectTypes())
-        .additionalTypes(getAdditionalTypes(xtextGraph, visitor.getGraphQLObjectTypes()))
-        .additionalDirectives(getAdditionalDirectives(xtextGraph, visitor.getDirectiveDefinitions()));
+        .additionalTypes(getAdditionalTypes(unifiedXtextGraph, visitor.getGraphQLObjectTypes()))
+        .additionalDirectives(getAdditionalDirectives(unifiedXtextGraph, visitor.getDirectiveDefinitions()));
   }
 
   /**
    * Collects additional types (not referenced from schema top level) by filtering visited types from all types in
    * schema.
    *
-   * @param xtextGraph the xtext graph
+   * @param unifiedXtextGraph the unified xtext graph
    * @param visited types referenced from schema top level
    * @return map of type names to additional types
    */
-  private Map<String, GraphQLType> getAdditionalTypes(XtextGraph xtextGraph, Map<String, GraphQLType> visited) {
+  private Map<String, GraphQLType> getAdditionalTypes(UnifiedXtextGraph unifiedXtextGraph, Map<String, GraphQLType> visited) {
 
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().graphqlObjectTypes(visited).build();
 
-    return xtextGraph.getTypes().values().stream()
-        .filter(type -> !xtextGraph.isOperationType(type))
+    return unifiedXtextGraph.getTypes().values().stream()
+        .filter(type -> !type.getName().endsWith(RESOLVER_ARGUMENT_INPUT_NAME))
+        .filter(type -> !unifiedXtextGraph.isOperationType(type))
         .filter(type -> !(visited.containsKey(type.getName())))
-        .collect(Collectors.toMap(type -> type.getName(), type -> (GraphQLType) localVisitor.doSwitch(type)));
+        .collect(Collectors.toMap(TypeDefinition::getName, type -> (GraphQLType) localVisitor.doSwitch(type)));
   }
 
-  private Set<GraphQLDirective> getAdditionalDirectives(XtextGraph xtextGraph, Map<String, GraphQLDirective> visited) {
+  private Set<GraphQLDirective> getAdditionalDirectives(UnifiedXtextGraph unifiedXtextGraph, Map<String, GraphQLDirective> visited) {
     XtextToGraphQLJavaVisitor localVisitor = XtextToGraphQLJavaVisitor.newBuilder().directiveDefinitions(visited)
         .build();
 
-    return xtextGraph.getDirectives().stream()
+    return unifiedXtextGraph.getDirectives().stream()
+        .filter(directiveDefinition -> !directiveDefinition.getName().equals(RESOLVER_DIRECTIVE_NAME))
         .map(localVisitor::doSwitch)
         .map(GraphQLDirective.class::cast)
         .collect(Collectors.toSet());
   }
 
-  private XtextGraph transform(XtextGraph xtextGraph, List<Transformer<XtextGraph, XtextGraph>> transformers) {
+  private <T> T transform(T graph, List<Transformer<T, T>> transformers) {
 
-    for (Transformer<XtextGraph, XtextGraph> transformer : transformers) {
-      xtextGraph = transformer.transform(xtextGraph);
+    for (Transformer<T, T> transformer : transformers) {
+      graph = transformer.transform(graph);
     }
-    return xtextGraph;
+    return graph;
   }
 
   public static final class Builder {
 
     private List<Transformer<XtextGraph, XtextGraph>> preMergeTransformers = defaultPreMergeTransformers();
-    private List<Transformer<XtextGraph, XtextGraph>> postMergeTransformers = defaultPostMergeTransformers();
+    private List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> postMergeTransformers = defaultPostMergeTransformers();
     private BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> batchLoaderHooks = BatchLoaderExecutionHooks.DEFAULT_HOOKS;
 
     /**
@@ -275,20 +351,23 @@ public class XtextStitcher implements Stitcher {
      */
     private List<Transformer<XtextGraph, XtextGraph>> defaultPreMergeTransformers() {
       return Arrays.asList(
+          new RenameTransformer(),
           new TypeExtensionTransformer(),
           new DomainTypesTransformer(),
           new AllTypesTransformer(),
           new DirectivesTransformer(),
           new UnionAndInterfaceTransformer(),
-          new FieldResolverTransformerPreMerge()
+          new FieldResolverTransformerPreMerge(),
+          new FederationTransformerPreMerge()
       );
     }
 
     /**
      * Provides the default post-merge transformers that operate on the stitched and merged graph.
      */
-    private List<Transformer<XtextGraph, XtextGraph>> defaultPostMergeTransformers() {
+    private List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> defaultPostMergeTransformers() {
       return Arrays.asList(
+          new FederationTransformerPostMerge(),
           new ResolverArgumentTransformer(),
           new FieldResolverTransformerPostMerge(),
           new GraphQLAdapterTransformer()
@@ -303,7 +382,7 @@ public class XtextStitcher implements Stitcher {
       return this;
     }
 
-    public Builder postMergeTransformers(final List<Transformer<XtextGraph, XtextGraph>> val) {
+    public Builder postMergeTransformers(final List<Transformer<UnifiedXtextGraph, UnifiedXtextGraph>> val) {
       postMergeTransformers = requireNonNull(val);
       return this;
     }

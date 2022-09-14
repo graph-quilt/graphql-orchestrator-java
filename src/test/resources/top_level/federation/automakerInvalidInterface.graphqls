@@ -1,0 +1,28 @@
+type Query {
+    getMakers: [Manufacturer]
+    getAutos: [Car]
+}
+
+interface Vehicle {
+    wheels: Int
+    type: String
+    features: String
+    newField: String
+}
+
+type Car implements Vehicle {
+    wheels: Int
+    type: String
+    features: String
+    make: Manufacturer
+    model: String
+    color: String
+    newField: String
+}
+
+
+enum Manufacturer {
+    FORD
+    HONDA
+    VOLVO
+}

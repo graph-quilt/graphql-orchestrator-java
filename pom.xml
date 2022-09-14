@@ -2,15 +2,32 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.intuit.graphql</groupId>
   <artifactId>graphql-orchestrator-java</artifactId>
-  <version>4.0.0-SNAPSHOT</version>
+  <version>5.0.11-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>graphql-orchestrator-java</name>
   <description>GraphQL Orchestrator combines multiple graphql services into a single unified schema</description>
+  <url>https://github.com/intuit/graphql-orchestrator-java</url>
 
+  <licenses>
+    <license>
+      <name>Apache 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Ashpak Shaikh</name>
+      <id>Shaikh</id>
+      <organization>Intuit, Inc.</organization>
+      <organizationUrl>http://www.intuit.com</organizationUrl>
+    </developer>
+  </developers>
   
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
     <jacoco.enabled>true</jacoco.enabled>
     <jacoco.version>0.8.4</jacoco.version>
     <central.repo>https://nexus.intuit.com/nexus/content/groups/public</central.repo>
@@ -19,10 +36,65 @@
     <java.version>1.8</java.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <awssdk2.version>2.7.2</awssdk2.version>
-    <graphql-sdl-version>3.0.0</graphql-sdl-version>
-    <xtextVersion>2.25.0</xtextVersion>
-    <graphQLVersion>14.1</graphQLVersion>
+    <graphql-sdl-version>3.0.1</graphql-sdl-version>
+    <xtextVersion>2.26.0</xtextVersion>
+    <graphQLVersion>17.3</graphQLVersion>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven-gpg-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <configuration>
+                  <!-- This is necessary for gpg to not try to use the pinentry programs -->
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-deploy</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>deploy</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://oss.sonatype.org</nexusUrl>
+              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>
@@ -34,7 +106,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>1.3.2</version>
+      <version>2.7</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
     <dependency>
@@ -54,7 +126,11 @@
       <artifactId>graphql-java</artifactId>
       <version>${graphQLVersion}</version>
     </dependency>
-
+    <dependency>
+      <groupId>com.graphql-java</groupId>
+      <artifactId>graphql-java-extended-scalars</artifactId>
+      <version>17.0</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
@@ -66,6 +142,22 @@
       <artifactId>lombok</artifactId>
       <version>1.18.8</version>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>30.1-jre</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.12.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.12.6.1</version>
     </dependency>
 
     <!-- TEST DEPENDENCIES -->
@@ -84,7 +176,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <version>4.13.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -106,27 +198,27 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>30.1-jre</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>2.12.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.12.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
       <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-core</artifactId>
+      <version>1.3-groovy-2.5</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+      <version>2.4.21</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility-groovy</artifactId>
+      <version>3.0.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -208,9 +300,12 @@
           <systemPropertyVariables>
             <jacoco-agent.destfile>${project.build.directory}/coverage.exec</jacoco-agent.destfile>
           </systemPropertyVariables>
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*Spec.java</include>
+          </includes>
         </configuration>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -237,29 +332,63 @@
           </annotationProcessorPaths>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.gmavenplus</groupId>
+        <artifactId>gmavenplus-plugin</artifactId>
+        <version>1.12.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compileTests</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <scm>
-    <connection>scm:git:https://github.intuit.com/data-orchestration/graphql-orchestrator-java
+    <connection>scm:git:https://github.com/intuit/graphql-orchestrator-java
     </connection>
-    <url>https://github.intuit.com/data-orchestration/graphql-orchestrator-java</url>
-    <tag>HEAD</tag>
+    <url>https://github.com/intuit/graphql-orchestrator-java</url>
+    <tag>graphql-orchestrator-java-5.0.0-beta3</tag>
   </scm>
 
   <distributionManagement>
-    <repository>
-      <!-- Don't change the ID of this repository (it's configured in the SCM settings.xml that gets passed into IBP environment variables) -->
-      <id>scm.int.rel.repo</id>
-      <name>SCM INT release repository</name>
-      <!-- This value will be passed in by the SCM build -->
-      <url>http://nexus.intuit.net/nexus/content/repositories/ENG.CTG.Intuit-Releases</url>
-    </repository>
     <snapshotRepository>
-      <!-- Don't change the ID of this repository (it's configured in the settings.xml that gets passed into IBP environment variables) -->
-      <id>scm.dev.snap.repo</id>
-      <name>SCM DEV snapshot release repository</name>
-      <url>http://nexus.intuit.net/nexus/content/repositories/ENG.CTG.Intuit-Snapshots</url>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+    </repository>
   </distributionManagement>
 
   <repositories>
@@ -267,18 +396,6 @@
       <id>ossrh</id>
       <name>Sonatype Repository</name>
       <url>https://oss.sonatype.org/content/repositories/releases</url>
-    </repository>
-    <repository>
-      <id>cg-central</id>
-      <name>CG Central Repo</name>
-      <url>http://nexus.intuit.net/nexus/content/groups/public</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-      </snapshots>
     </repository>
   </repositories>
 
@@ -288,12 +405,6 @@
       <name>Sonatype Repository</name>
       <url>https://oss.sonatype.org/content/repositories/releases</url>
     </pluginRepository>
-    <pluginRepository>
-      <id>cg-central</id>
-      <name>CG Central Repo</name>
-      <url>http://nexus.intuit.net/nexus/content/groups/public</url>
-    </pluginRepository>
-
   </pluginRepositories>
 
 </project>

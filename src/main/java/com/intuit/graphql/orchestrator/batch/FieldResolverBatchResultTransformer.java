@@ -1,14 +1,17 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createAlias;
-import static com.intuit.graphql.orchestrator.utils.ExecutionPathUtils.graphQLErrorPathStartsWith;
-
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,10 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.lang3.ArrayUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createAlias;
+import static com.intuit.graphql.orchestrator.utils.ExecutionPathUtils.graphQLErrorPathStartsWith;
 
 @AllArgsConstructor
 public class FieldResolverBatchResultTransformer implements BatchResultTransformer {
@@ -28,21 +30,21 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
       + "encountered an error while calling downstream service.";
 
   private final String[] resolverSelectedFields;
-  private final ExecutionPath resolverExecutionPath;
-  private final FieldWithResolverMetadata fieldWithResolverMetadata;
+  private final ResultPath resolverExecutionPath;
+  private final FieldResolverContext fieldResolverContext;
 
 
   public FieldResolverBatchResultTransformer(String[] resolverSelectedFields,
-      FieldWithResolverMetadata fieldWithResolverMetadata) {
+      FieldResolverContext fieldResolverContext) {
 
     if (ArrayUtils.isEmpty(resolverSelectedFields)) {
       throw new IllegalArgumentException("resolverSelectedFields is empty");
     }
 
     this.resolverSelectedFields = resolverSelectedFields;
-    this.resolverExecutionPath = ExecutionPath.fromList(Arrays.asList(resolverSelectedFields));
+    this.resolverExecutionPath = ResultPath.fromList(Arrays.asList(resolverSelectedFields));
 
-    this.fieldWithResolverMetadata = fieldWithResolverMetadata;
+    this.fieldResolverContext = fieldResolverContext;
   }
 
   @Override
@@ -54,8 +56,15 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     for (int i = 0; i < CollectionUtils.size(dataFetchingEnvironments); i++) {
       DataFetchingEnvironment dataFetchingEnvironment = dataFetchingEnvironments.get(i);
 
-      Object pathData = getDataFromBatchResult(dataFetcherResult.getData(), i);
-      List<GraphQLError> pathErrors = getErrorsFromBatchResult(dataFetcherResult.getErrors(), dataFetchingEnvironment, i);
+      Object pathData = null;
+      if (MapUtils.isNotEmpty(dataFetcherResult.getData())) {
+        pathData = getDataFromBatchResult(dataFetcherResult.getData(), i);
+      }
+
+      List<GraphQLError> pathErrors = Collections.emptyList();
+      if (CollectionUtils.isNotEmpty(dataFetcherResult.getErrors())) {
+        pathErrors = getErrorsFromBatchResult(dataFetcherResult.getErrors(), dataFetchingEnvironment, i);
+      }
 
       dataFetcherResults.add(DataFetcherResult.newResult()
           .data(pathData)
@@ -71,8 +80,12 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
 
     Map<String, Object> tempMap = batchData;
     for (int i = 0; i < lastIndex; i++) {
-      tempMap = (Map<String, Object>) batchData.get(resolverSelectedFields[i]);
+      tempMap = (Map<String, Object>) tempMap.get(resolverSelectedFields[i]);
+      if (MapUtils.isEmpty(tempMap)) {
+        return null;
+      }
     }
+
     String alias = createAlias(resolverSelectedFields[lastIndex], aliasCounter);
     return tempMap.get(alias);
   }
@@ -83,7 +96,7 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
     int lastIndex = resolverSelectedFields.length - 1;
     String leafFieldName = resolverSelectedFields[lastIndex];
 
-    ExecutionPath aliasedResolverExecutionPath = resolverExecutionPath
+    ResultPath aliasedResolverExecutionPath = resolverExecutionPath
         .replaceSegment(createAlias(leafFieldName, aliasCounter));
 
     List<GraphQLError> errorsWithoutPath = Collections.emptyList();
@@ -104,14 +117,14 @@ public class FieldResolverBatchResultTransformer implements BatchResultTransform
   }
 
   private GraphQLError mapErrorToPath(GraphQLError graphQLError) {
-    return mapErrorToPath(graphQLError, ExecutionPath.fromList(Collections.emptyList()));
+    return mapErrorToPath(graphQLError, ResultPath.fromList(Collections.emptyList()));
   }
 
-  private GraphQLError mapErrorToPath(GraphQLError graphQLError, ExecutionPath dfeExecutionPath) {
+  private GraphQLError mapErrorToPath(GraphQLError graphQLError, ResultPath dfeExecutionPath) {
     final Map<String, Object> extensions = new HashMap<>();
-    extensions.put("serviceNamespace", fieldWithResolverMetadata.getServiceNamespace());
-    extensions.put("parentType", fieldWithResolverMetadata.getFieldContext().getParentType());
-    extensions.put("fieldName", fieldWithResolverMetadata.getFieldContext().getFieldName());
+    extensions.put("serviceNamespace", fieldResolverContext.getTargetServiceNamespace());
+    extensions.put("parentTypename", fieldResolverContext.getParentTypename());
+    extensions.put("fieldName", fieldResolverContext.getFieldName());
     extensions.put("downstreamErrors", graphQLError.toSpecification());
 
     return GraphqlErrorBuilder.newError()

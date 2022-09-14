@@ -3,12 +3,14 @@ package com.intuit.graphql.orchestrator.stitching;
 import static java.util.Objects.requireNonNull;
 
 import com.intuit.graphql.orchestrator.ServiceProvider;
+import com.intuit.graphql.orchestrator.VirtualOrchestratorProvider;
 import com.intuit.graphql.orchestrator.batch.BatchLoaderExecutionHooks;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import graphql.VisibleForTesting;
 import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 
@@ -26,6 +28,8 @@ public class SchemaStitcher {
   /**
    * Stitch the xtext using the provided {@code serviceProviders} and return the stitched graph. This action is cached;
    * subsequent calls will return the same {@link RuntimeGraph} instance.
+   *
+   * @return The stitched graph which is an instance of {@link RuntimeGraph}
    */
   public RuntimeGraph stitchGraph() {
     if (runtimeGraph == null) {
@@ -50,7 +54,7 @@ public class SchemaStitcher {
   public static final class Builder {
 
     private BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> batchLoaderHooks = BatchLoaderExecutionHooks.DEFAULT_HOOKS;
-    private List<ServiceProvider> serviceProviders = new ArrayList<>();
+    private List<ServiceProvider> serviceProviders = new ArrayList<>(Arrays.asList(VirtualOrchestratorProvider.INSTANCE));
 
     private Builder() {
     }

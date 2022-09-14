@@ -1,10 +1,15 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
+import graphql.language.StringValue;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLInputType;
-import java.util.Objects;
+import graphql.schema.InputValueWithState;
 import lombok.Getter;
+
+import java.util.Objects;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
 
 /**
  * This class holds information about the resolver argument directive without the need to parse it via Xtext or
@@ -30,13 +35,19 @@ public class ResolverArgumentDirective {
   public static ResolverArgumentDirective fromGraphQLArgument(GraphQLArgument graphQLArgument) {
     Builder b = new Builder();
 
-    final GraphQLDirective directive = graphQLArgument.getDirective("resolver");
+    final GraphQLDirective directive = graphQLArgument.getDirective(RESOLVER_DIRECTIVE_NAME);
 
     b.argumentName(graphQLArgument.getName());
     b.graphQLInputType(graphQLArgument.getType());
-    b.field((String) directive.getArgument("field").getValue());
-    return b.build();
 
+    InputValueWithState inputValueWithState = directive.getArgument("field").getArgumentValue();
+    if (inputValueWithState.isLiteral()) {
+      StringValue stringValue = (StringValue) inputValueWithState.getValue();
+      b.field(stringValue.getValue());
+    } else {
+      b.field((String) inputValueWithState.getValue());
+    }
+    return b.build();
   }
 
   public static Builder newBuilder() {

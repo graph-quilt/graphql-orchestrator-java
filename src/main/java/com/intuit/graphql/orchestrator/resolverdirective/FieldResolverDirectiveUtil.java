@@ -1,37 +1,37 @@
 package com.intuit.graphql.orchestrator.resolverdirective;
 
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getChildFields;
-import static graphql.language.AstValueHelper.astFromValue;
-
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeExtensionDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.orchestrator.schema.transform.FieldWithResolverMetadata;
-import com.intuit.graphql.orchestrator.xtext.FieldContext;
+import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
-import graphql.language.Argument;
-import graphql.language.Value;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
-import graphql.schema.GraphQLType;
-import java.util.ArrayList;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.ecore.EObject;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.ecore.EObject;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class FieldResolverDirectiveUtil {
 
   public static final String RESOLVER_DIRECTIVE_NAME = "resolver";
+  public static final String RESOLVER_ARGUMENT_INPUT_NAME = "ResolverArgument";
   public static final String FIELD_REFERENCE_PREFIX = "$";
+
+  public static final String FQN_KEYWORD_QUERY = "query";
+  public static final char FQN_FIELD_SEPARATOR = '.';
 
   public static final CharSequence OPERATION_NAME_SEPARATOR = "_";
   public static final CharSequence RESOLVER_DIRECTIVE_QUERY_NAME = "Resolver_Directive_Query";
@@ -39,38 +39,7 @@ public class FieldResolverDirectiveUtil {
   private FieldResolverDirectiveUtil() {
   }
 
-  public static List<Argument> createResolverQueryFieldArguments(List<ResolverArgument> resolverArguments,
-      GraphQLFieldsContainer parentType, Map<String, Object> parentSource,
-      ResolverDirectiveDefinition resolverDirectiveDefinition, String serviceNameSpace) {
-
-    Objects.requireNonNull(resolverArguments);
-    Objects.requireNonNull(parentSource);
-    Objects.requireNonNull(resolverDirectiveDefinition);
-    Objects.requireNonNull(serviceNameSpace);
-
-    List<Argument> arguments = new ArrayList<>();
-    resolverArguments.forEach(
-        resolverArg -> {
-          String resolverArgValue = resolverArg.getValue();
-          if (isReferenceToFieldInParentType(resolverArgValue, parentType)) {
-            String fieldReferenceName = getNameFromFieldReference(resolverArgValue);
-
-            ifInvalidFieldReferenceThrowException(fieldReferenceName, parentType.getName(),
-                resolverDirectiveDefinition, serviceNameSpace, parentSource);
-
-            Object valueFromSource = parentSource.get(fieldReferenceName);
-            GraphQLType fieldReferenceType = parentType.getFieldDefinition(fieldReferenceName).getType();
-            Value<?> fieldRefSourceValue = astFromValue(valueFromSource, fieldReferenceType);
-            Argument argument = Argument.newArgument(resolverArg.getName(), fieldRefSourceValue).build();
-            arguments.add(argument);
-          } else {
-            throw new ResolverArgumentNotAFieldOfParentException(resolverArgValue, parentType.getName());
-          }
-        });
-    return arguments;
-  }
-
-  private static void ifInvalidFieldReferenceThrowException(String fieldReferenceName, String parentTypeName,
+  public static void ifInvalidFieldReferenceThrowException(String fieldReferenceName, String parentTypeName,
       ResolverDirectiveDefinition resolverDirectiveDefinition, String serviceNameSpace,
       Map<String, Object> parentSource) {
 
@@ -100,23 +69,23 @@ public class FieldResolverDirectiveUtil {
         && StringUtils.length(string) > FIELD_REFERENCE_PREFIX.length();
   }
 
-  private static String getNameFromFieldReference(String fieldReference) {
+  public static String getNameFromFieldReference(String fieldReference) {
     return StringUtils.substring(fieldReference, FIELD_REFERENCE_PREFIX.length());
   }
 
-  private static boolean isReferenceToFieldInParentType(String resolverArgValue, GraphQLFieldsContainer parentType) {
+  public static boolean isReferenceToFieldInParentType(String resolverArgValue, GraphQLFieldsContainer parentType) {
     if (isFieldReference(resolverArgValue)) {
       String fieldName = getNameFromFieldReference(resolverArgValue);
       return parentType.getFieldDefinition(fieldName) != null;
     } else {
-      throw new NotAValidFieldReference(resolverArgValue);
+      return false;
     }
   }
 
   public static boolean isReferenceToFieldInParentType(String resolverArgValue, TypeDefinition parentType) {
     if (isFieldReference(resolverArgValue)) {
       String fieldName = getNameFromFieldReference(resolverArgValue);
-      List<FieldDefinition> childFields = getChildFields(parentType);
+      List<FieldDefinition> childFields = getFieldDefinitions(parentType);
       return childFields.stream().anyMatch(fieldDefinition -> StringUtils.equals(fieldDefinition.getName(), fieldName));
     } else {
       throw new NotAValidFieldReference(resolverArgValue);
@@ -149,14 +118,14 @@ public class FieldResolverDirectiveUtil {
     return fieldDefinition.getDirective(RESOLVER_DIRECTIVE_NAME) != null;
   }
 
-  public static boolean isInputTypeFieldContainer(TypeDefinition typeDefinition) {
+  public static boolean isObjectOrInterfaceType(TypeDefinition typeDefinition) {
     return typeDefinition instanceof ObjectTypeDefinition || typeDefinition instanceof InterfaceTypeDefinition;
   }
 
-  public static List<FieldWithResolverMetadata> createFieldWithResolverMetadatas(
+  public static List<FieldResolverContext> createFieldResolverContexts(
       TypeDefinition typeDefinition, XtextGraph xtextGraph) {
 
-    List<FieldDefinition> childFields = getChildFields(typeDefinition);
+    List<FieldDefinition> childFields = getFieldDefinitions(typeDefinition);
     return childFields.stream()
         .map(childFieldDefinition -> {
           List<Directive> directives = getResolverDirective(childFieldDefinition);
@@ -166,19 +135,22 @@ public class FieldResolverDirectiveUtil {
           }
 
           if (CollectionUtils.size(directives) < 1) {
-            return Optional.<FieldWithResolverMetadata>empty();
+            return Optional.<FieldResolverContext>empty();
           }
 
-          FieldWithResolverMetadata fieldWithResolverMetadata = FieldWithResolverMetadata.builder()
-              .fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
+          ResolverDirectiveDefinition resolverDirectiveDefinition = ResolverDirectiveDefinition.from(directives.get(0));
+
+          FieldResolverContext fieldResolverContext = FieldResolverContext.builder()
+              //.fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
               .fieldDefinition(childFieldDefinition)
               .parentTypeDefinition(typeDefinition)
               .requiresTypeNameInjection(xtextGraph.requiresTypenameInjection())
               .serviceNamespace(xtextGraph.getServiceProvider().getNameSpace())
-              .resolverDirectiveDefinition(ResolverDirectiveDefinition.from(directives.get(0)))
+              .resolverDirectiveDefinition(resolverDirectiveDefinition)
+              .requiredFields(extractRequiredFieldsFrom(resolverDirectiveDefinition))
               .build();
 
-          return Optional.of(fieldWithResolverMetadata);
+          return Optional.of(fieldResolverContext);
         })
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -196,6 +168,9 @@ public class FieldResolverDirectiveUtil {
   }
 
   public static String createFieldResolverOperationName(String originalOperationName) {
+    if (StringUtils.isBlank(originalOperationName)) {
+      return RESOLVER_DIRECTIVE_QUERY_NAME.toString();
+    }
     return String.join(OPERATION_NAME_SEPARATOR, originalOperationName, RESOLVER_DIRECTIVE_QUERY_NAME);
   }
 }

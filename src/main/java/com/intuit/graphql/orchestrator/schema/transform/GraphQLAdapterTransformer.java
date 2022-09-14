@@ -12,7 +12,7 @@ import com.intuit.graphql.orchestrator.schema.SchemaTransformationException;
 import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
-import com.intuit.graphql.orchestrator.xtext.XtextGraph;
+import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
 import com.intuit.graphql.utils.XtextTypeUtils;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,12 +23,12 @@ import org.apache.commons.lang3.StringUtils;
  * This class is responsible for checking each graph for any adapter directives. If there are adapter directives on any
  * field, this class will attach a REST data fetcher to that field and then attach a static DF until the root.
  */
-public class GraphQLAdapterTransformer implements Transformer<XtextGraph, XtextGraph> {
+public class GraphQLAdapterTransformer implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
 
   public static final String FIELD_NULL_ERROR = "Field %s cannot be found for adapter transformation";
 
   @Override
-  public XtextGraph transform(final XtextGraph source) {
+  public UnifiedXtextGraph transform(final UnifiedXtextGraph source) {
     Map<FieldContext, DataFetcherContext> adapterCodeRegistry = new HashMap<>();
     source.getCodeRegistry().forEach((fieldContext, dataFetcherContext) -> {
       if (dataFetcherContext.getServiceType() == REST) {
