@@ -6,7 +6,6 @@ import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typename
 import static graphql.language.Field.newField;
 import static graphql.language.InlineFragment.newInlineFragment;
 
-import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import com.intuit.graphql.orchestrator.federation.EntityQuery;
@@ -41,20 +40,16 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
     private final List<String> representationFieldTemplate;
     private final ServiceProvider entityServiceProvider;
 
-    private final Map<String, TypeDefinition> typeDefinitionMap;
-
-    private ServiceMetadata entityServiceMetadata;
+    private final ServiceMetadata entityServiceMetadata;
 
     public EntityFetcherBatchLoader(FederationMetadata.EntityExtensionMetadata metadata,
                                     ServiceMetadata entityServiceMetadata,
-                                    Map<String, TypeDefinition> typeDefinitionMap,
                                     String fieldName) {
         this.entityServiceProvider = metadata.getServiceProvider();
         this.entityTypeName = metadata.getTypeName();
         this.representationFieldTemplate = generateRepresentationTemplate(metadata, fieldName);
         this.batchResultTransformer = new EntityFetcherBatchResultTransformer(metadata.getServiceProvider().getNameSpace(), metadata.getTypeName(), fieldName);
         this.entityServiceMetadata = entityServiceMetadata;
-        this.typeDefinitionMap = typeDefinitionMap;
     }
 
     @Override
