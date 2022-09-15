@@ -15,6 +15,7 @@ import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import graphql.ExecutionInput
 import graphql.GraphQLContext
+import graphql.Scalars
 import graphql.execution.DataFetcherResult
 import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
@@ -143,7 +144,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         representationFieldTemplateField.get(3) == "keyField4"
     }
 
-    def "batchloader retrieves entity for singlular dfe"() {
+    def "batchloader retrieves entity for singular dfe"() {
         given:
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
@@ -156,6 +157,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         dfeMock.getSource() >> dfeDataSource
         dfeMock.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock.getFieldType() >> Scalars.GraphQLString
         dfeMock.getContext() >> GraphQLContext.newContext().build()
 
         AtomicReference<ExecutionInput> queryToProviderRef = new AtomicReference<>()
@@ -197,7 +199,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         representationVariables.get(0).get("keyField1") == "keyValue"
     }
 
-    def "batchloader retrieves entity for singlular dfe null result"() {
+    def "batchloader retrieves entity for singular dfe null result"() {
         given:
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
@@ -210,6 +212,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         dfeMock.getSource() >> dfeDataSource
         dfeMock.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock.getFieldType() >> Scalars.GraphQLString
         dfeMock.getContext() >> GraphQLContext.newContext().build()
 
         AtomicReference<ExecutionInput> queryToProviderRef = new AtomicReference<>()
@@ -260,6 +263,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         dfeMock1.getSource() >> dfe1DataSource
         dfeMock1.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock1.getFieldType() >> Scalars.GraphQLString
         dfeMock1.getContext() >> GraphQLContext.newContext().build()
 
         DataFetchingEnvironment dfeMock2 = Mock(DataFetchingEnvironment.class)
@@ -268,6 +272,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         dfeMock2.getSource() >> dfe2DataSource
         dfeMock2.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock2.getFieldType() >> Scalars.GraphQLString
         dfeMock2.getContext() >> GraphQLContext.newContext().build()
 
         DataFetchingEnvironment dfeMock3 = Mock(DataFetchingEnvironment.class)
@@ -342,6 +347,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         dfeMock1.getSource() >> dfe1DataSource
         dfeMock1.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock1.getFieldType() >> Scalars.GraphQLString
         dfeMock1.getContext() >> GraphQLContext.newContext().build()
 
         DataFetchingEnvironment dfeMock2 = Mock(DataFetchingEnvironment.class)
@@ -350,6 +356,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         dfeMock2.getSource() >> dfe2DataSource
         dfeMock2.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock2.getFieldType() >> Scalars.GraphQLString
         dfeMock2.getContext() >> GraphQLContext.newContext().build()
 
         DataFetchingEnvironment dfeMock3 = Mock(DataFetchingEnvironment.class)
