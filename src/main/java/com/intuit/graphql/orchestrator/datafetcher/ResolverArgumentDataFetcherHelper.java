@@ -33,7 +33,7 @@ import lombok.Getter;
  * correctly call the downstream services with argument data.
  */
 @Getter
-public class ResolverArgumentDataFetcherHelper implements ServiceContext{
+public class ResolverArgumentDataFetcherHelper {
 
   private final String namespace;
 

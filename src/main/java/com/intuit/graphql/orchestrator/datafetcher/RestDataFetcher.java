@@ -19,7 +19,7 @@ import java.util.List;
 import lombok.Getter;
 
 @Getter
-public class RestDataFetcher implements DataFetcher, ServiceContext {
+public class RestDataFetcher implements ServiceAwareDataFetcher {
 
   private final ServiceMetadata serviceMetadata;
   private final String namespace;

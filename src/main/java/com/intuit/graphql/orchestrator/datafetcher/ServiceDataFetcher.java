@@ -7,7 +7,7 @@ import graphql.schema.DataFetchingEnvironment;
 import lombok.Getter;
 
 @Getter
-public class ServiceDataFetcher implements DataFetcher, ServiceContext {
+public class ServiceDataFetcher implements ServiceAwareDataFetcher {
 
   /**
    * One of Query or Mutation or Subscription

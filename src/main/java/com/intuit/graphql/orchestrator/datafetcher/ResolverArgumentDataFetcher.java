@@ -25,7 +25,7 @@ import lombok.Getter;
  * that needs the data.
  */
 @Getter
-public class ResolverArgumentDataFetcher implements DataFetcher<CompletableFuture<DataFetcherResult<Object>>>, ServiceContext {
+public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<CompletableFuture<DataFetcherResult<Object>>> {
 
   private final String namespace;
   private final Map<ResolverArgumentDirective, OperationDefinition> resolverQueryByDirective;

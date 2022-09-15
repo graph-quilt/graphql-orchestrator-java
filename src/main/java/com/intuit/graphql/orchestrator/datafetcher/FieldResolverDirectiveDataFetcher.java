@@ -9,7 +9,7 @@ import java.util.Objects;
 import lombok.Getter;
 
 @Getter
-public class FieldResolverDirectiveDataFetcher implements DataFetcher<Object>, ServiceContext {
+public class FieldResolverDirectiveDataFetcher implements ServiceAwareDataFetcher<Object> {
 
   private final FieldResolverContext fieldResolverContext;
   private final String namespace;
