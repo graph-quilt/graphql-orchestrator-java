@@ -31,10 +31,13 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
         
         type NestedType {
             typeId: String
-            cTopField: CObjectType @resolver(field: "cTopField")
+            cTopFieldLink: CObjectType @resolver(field: "cTopField")
+            dTopFieldLink: DObjectType @resolver(field: "dTopField", arguments: [{name : "p1", value: "\$typeId"}])
         }
         
         type CObjectType
+        
+        type DObjectType
         
         directive @resolver(field: String!, arguments: [A_ResolverArgument!]) on FIELD_DEFINITION
         input A_ResolverArgument { # If this is type, dapi does not throws error
@@ -88,6 +91,24 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
             ]]
     ]
 
+    def schemaD = """
+        type Query {
+            dTopField(p1: String): DObjectType!
+        }
+
+        type DObjectType {
+            dObjectField: String
+        }
+    """
+
+    def QUERY_D = "query Resolver_Directive_Query {dTopField_0:dTopField(p1:\"type1\") {dObjectField} dTopField_1:dTopField(p1:\"type2\") {dObjectField}}"
+    def mockServiceResponseD = [
+            (QUERY_D): [data: [
+                    dTopField_0: [ dObjectField: "dObjectFieldValue1"],
+                    dTopField_1: [ dObjectField: "dObjectFieldValue2"],
+            ]]
+    ]
+
     GraphQLSchema graphQLSchema
 
     @Subject
@@ -97,11 +118,12 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
         def serviceA = createQueryMatchingService("ServiceA", ServiceProvider.ServiceType.FEDERATION_SUBGRAPH, schemaA, mockServiceResponseA)
         def serviceB = createQueryMatchingService("ServiceB", ServiceProvider.ServiceType.FEDERATION_SUBGRAPH, schemaB, mockServiceResponseB)
         def serviceC = createQueryMatchingService("ServiceC", schemaC, mockServiceResponseC)
-        specUnderTest = createGraphQLOrchestrator([serviceA, serviceB, serviceC])
+        def serviceD = createQueryMatchingService("ServiceD", schemaD, mockServiceResponseD)
+        specUnderTest = createGraphQLOrchestrator([serviceA, serviceB, serviceC, serviceD])
         graphQLSchema = specUnderTest.getSchema()
     }
 
-    def "Nested FieldResolver"() {
+    def "Query Single Nested FieldResolver"() {
         given:
         def graphqlQuery =    """
             {
@@ -111,9 +133,9 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
                         aObjectField
                         aObjectField2 {
                             typeId
-                            cTopField {
+                            cTopFieldLink {
                                 cObjectField
-                            }   
+                            }
                         }                                                                    
                     }
                 }
@@ -133,14 +155,143 @@ class EntityWithNestedFieldResolverSpec extends BaseIntegrationTestSpecification
         executionResult?.data?.bTopField[0]?.aTopField?.size() == 2
         executionResult?.data?.bTopField[0]?.aTopField?.aObjectField == "aObjectFieldValue1"
         executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.typeId == "type1"
-        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopField?.size() == 1
-        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopField?.cObjectField == "cObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopFieldLink?.cObjectField == "cObjectFieldValue1"
         executionResult?.data?.bTopField[1]?.bObjectField == "bObjectFieldValue2"
         executionResult?.data?.bTopField[1]?.aTopField?.size() == 2
         executionResult?.data?.bTopField[1]?.aTopField?.aObjectField == "aObjectFieldValue2"
         executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.typeId == "type2"
-        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopField?.size() == 1
-        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopField?.cObjectField == "cObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopFieldLink?.cObjectField == "cObjectFieldValue2"
+    }
+
+    def "Query Single Nested FieldResolver with Required Field not selected"() {
+        given:
+        def graphqlQuery =    """
+            {
+                bTopField {
+                    bObjectField
+                    aTopField {
+                        aObjectField
+                        aObjectField2 {
+                            dTopFieldLink {
+                                dObjectField
+                            }
+                        }                                                                    
+                    }
+                }
+            }
+        """
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
+
+        then:
+        executionResult.getErrors().isEmpty()
+        executionResult?.data?.bTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.size() == 2
+        executionResult?.data?.bTopField[1]?.size() == 2
+        executionResult?.data?.bTopField[0]?.bObjectField == "bObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField == "aObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.dTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.dTopFieldLink?.dObjectField == "dObjectFieldValue1"
+        executionResult?.data?.bTopField[1]?.bObjectField == "bObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField == "aObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.dTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.dTopFieldLink?.dObjectField == "dObjectFieldValue2"
+    }
+
+     def "Query Single Nested FieldResolver with Required Field selected"() {
+        given:
+        def graphqlQuery =    """
+            {
+                bTopField {
+                    bObjectField
+                    aTopField {
+                        aObjectField
+                        aObjectField2 {
+                            typeId
+                            dTopFieldLink {
+                                dObjectField
+                            }
+                        }                                                                    
+                    }
+                }
+            }
+        """
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
+
+        then:
+        executionResult.getErrors().isEmpty()
+        executionResult?.data?.bTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.size() == 2
+        executionResult?.data?.bTopField[1]?.size() == 2
+        executionResult?.data?.bTopField[0]?.bObjectField == "bObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField == "aObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.typeId == "type1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.dTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.dTopFieldLink?.dObjectField == "dObjectFieldValue1"
+        executionResult?.data?.bTopField[1]?.bObjectField == "bObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField == "aObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.typeId == "type2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.dTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.dTopFieldLink?.dObjectField == "dObjectFieldValue2"
+    }
+
+    def "Query Multiple Nested FieldResolver"() {
+        given:
+        def graphqlQuery =    """
+            {
+                bTopField {
+                    bObjectField
+                    aTopField {
+                        aObjectField
+                        aObjectField2 {
+                            cTopFieldLink {
+                                cObjectField
+                            }
+                            dTopFieldLink {
+                                dObjectField
+                            }
+                        }                                                                    
+                    }
+                }
+            }
+        """
+        ExecutionInput executionInput = createExecutionInput(graphqlQuery)
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
+
+        then:
+        executionResult.getErrors().isEmpty()
+        executionResult?.data?.bTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.size() == 2
+        executionResult?.data?.bTopField[1]?.size() == 2
+        executionResult?.data?.bTopField[0]?.bObjectField == "bObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField == "aObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.typeId == null // not selected in query
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.cTopFieldLink?.cObjectField == "cObjectFieldValue1"
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.dTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[0]?.aTopField?.aObjectField2?.dTopFieldLink?.dObjectField == "dObjectFieldValue1"
+        executionResult?.data?.bTopField[1]?.bObjectField == "bObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.size() == 2
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField == "aObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.typeId == null // not selected in query
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.cTopFieldLink?.cObjectField == "cObjectFieldValue2"
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.dTopFieldLink?.size() == 1
+        executionResult?.data?.bTopField[1]?.aTopField?.aObjectField2?.dTopFieldLink?.dObjectField == "dObjectFieldValue2"
     }
 
 }

@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.batch;
 
 import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
 import static graphql.language.AstPrinter.printAstCompact;
 import static graphql.language.OperationDefinition.Operation.QUERY;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
@@ -17,7 +18,6 @@ import graphql.VisibleForTesting;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
-import graphql.language.AstTransformer;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
@@ -59,8 +59,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private final QueryOperationModifier queryOperationModifier;
   private final ServiceMetadata serviceMetadata;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> hooks;
-
-  private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
   @VisibleForTesting
   VariableDefinitionFilter variableDefinitionFilter = new VariableDefinitionFilter();

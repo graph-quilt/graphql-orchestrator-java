@@ -5,6 +5,7 @@ import static graphql.schema.GraphQLTypeUtil.unwrapOne;
 
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
+import graphql.language.AstTransformer;
 import graphql.language.Field;
 import graphql.language.ListType;
 import graphql.language.NonNullType;
@@ -32,6 +33,8 @@ import java.util.stream.Collectors;
 public class GraphQLUtil {
 
   public static final Parser parser = new Parser();
+
+  public static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
   private static final String ERR_CREATE_TYPE_UNEXPECTED_TYPE = "Failed to create Type due to "
       + "unexpected GraphQL Type %s";

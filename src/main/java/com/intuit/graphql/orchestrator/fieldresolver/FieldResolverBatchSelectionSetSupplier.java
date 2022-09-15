@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.fieldresolver;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getNameFromFieldReference;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.getFieldType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
@@ -17,7 +18,6 @@ import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import graphql.Scalars;
 import graphql.execution.ValuesResolver;
 import graphql.language.Argument;
-import graphql.language.AstTransformer;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.SelectionSet;
@@ -40,8 +40,6 @@ import org.apache.commons.lang3.StringUtils;
 
 @AllArgsConstructor
 public class FieldResolverBatchSelectionSetSupplier implements Supplier<SelectionSet> {
-
-    private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
     private final String[] resolverSelectedFields;
     private final List<DataFetchingEnvironment> dataFetchingEnvironments;

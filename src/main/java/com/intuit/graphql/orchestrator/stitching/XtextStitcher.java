@@ -146,7 +146,6 @@ public class XtextStitcher implements Stitcher {
         EntityFetcherBatchLoader entityFetcherBatchLoader = new EntityFetcherBatchLoader(
                 metadata,
                 serviceMetadataMap.get(metadata.getServiceProvider().getNameSpace()),
-                stitchedGraph.getTypes(),
                 fieldName
         );
 
