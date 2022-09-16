@@ -2,7 +2,6 @@ package com.intuit.graphql.orchestrator.datafetcher;
 
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.GraphQLContext;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.Getter;
 
@@ -13,12 +12,10 @@ public class ServiceDataFetcher implements ServiceAwareDataFetcher {
    * One of Query or Mutation or Subscription
    */
   private final ServiceMetadata serviceMetadata;
-  private final String namespace;
 
 
-  public ServiceDataFetcher(ServiceMetadata serviceMetadata, String namespace) {
+  public ServiceDataFetcher(ServiceMetadata serviceMetadata) {
     this.serviceMetadata = serviceMetadata;
-    this.namespace = namespace;
   }
 
   @Override
@@ -29,5 +26,10 @@ public class ServiceDataFetcher implements ServiceAwareDataFetcher {
     return environment
         .getDataLoader(serviceMetadata.getServiceProvider().getNameSpace())
         .load(environment);
+  }
+
+  @Override
+  public String getNamespace() {
+    return this.serviceMetadata.getServiceProvider().getNameSpace();
   }
 }

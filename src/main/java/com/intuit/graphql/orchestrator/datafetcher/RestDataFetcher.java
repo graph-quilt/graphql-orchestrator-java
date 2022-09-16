@@ -22,12 +22,10 @@ import lombok.Getter;
 public class RestDataFetcher implements ServiceAwareDataFetcher {
 
   private final ServiceMetadata serviceMetadata;
-  private final String namespace;
   private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
 
-  public RestDataFetcher(final ServiceMetadata serviceMetadata, String namespace) {
+  public RestDataFetcher(final ServiceMetadata serviceMetadata) {
     this.serviceMetadata = serviceMetadata;
-    this.namespace = namespace;
   }
 
   @Override
@@ -74,4 +72,8 @@ public class RestDataFetcher implements ServiceAwareDataFetcher {
         .thenApply(queryResponse -> toSingleResult(queryResponse, dataFetchingEnvironment));
   }
 
+  @Override
+  public String getNamespace() {
+    return this.serviceMetadata.getServiceProvider().getNameSpace();
+  }
 }
