@@ -83,7 +83,7 @@ class RestDataFetcherSpec extends Specification {
         ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
         serviceMetadata.getServiceProvider() >> testServiceProvider
 
-        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata, testServiceProvider.getNameSpace())
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
 
         when:
         ((CompletableFuture<DataFetcherResult<Map<String, Object>>>) restDataFetcher.get(dataFetchingEnvironment))
