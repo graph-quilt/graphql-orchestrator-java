@@ -16,8 +16,10 @@ import graphql.language.VariableDefinition;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.List;
+import lombok.Getter;
 
-public class RestDataFetcher implements DataFetcher {
+@Getter
+public class RestDataFetcher implements ServiceAwareDataFetcher {
 
   private final ServiceMetadata serviceMetadata;
   private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
@@ -70,4 +72,8 @@ public class RestDataFetcher implements DataFetcher {
         .thenApply(queryResponse -> toSingleResult(queryResponse, dataFetchingEnvironment));
   }
 
+  @Override
+  public String getNamespace() {
+    return this.serviceMetadata.getServiceProvider().getNameSpace();
+  }
 }

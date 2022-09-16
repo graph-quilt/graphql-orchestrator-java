@@ -77,7 +77,8 @@ class RestDataFetcherSpec extends Specification {
             return CompletableFuture.completedFuture(responseMap)
         }
 
-        TestServiceProvider testServiceProvider = TestServiceProvider.newBuilder().queryFunction(queryExecutor)
+        TestServiceProvider testServiceProvider = TestServiceProvider.newBuilder().namespace("TEST")
+                .queryFunction(queryExecutor)
                 .serviceType(ServiceType.REST).build()
         ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
         serviceMetadata.getServiceProvider() >> testServiceProvider

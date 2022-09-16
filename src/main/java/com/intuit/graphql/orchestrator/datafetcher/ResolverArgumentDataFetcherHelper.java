@@ -25,12 +25,14 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 /**
  * This class helps break up the ResolverArgumentDataFetcher class and it contains logic to fetch data requested by the
  * data fetcher. This class is responsible for modifying the DataFetchingEnvironment so that the batch loader is able to
  * correctly call the downstream services with argument data.
  */
+@Getter
 public class ResolverArgumentDataFetcherHelper {
 
   private final String namespace;

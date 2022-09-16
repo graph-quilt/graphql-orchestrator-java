@@ -2,12 +2,11 @@ package com.intuit.graphql.orchestrator.datafetcher;
 
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.GraphQLContext;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.Getter;
 
 @Getter
-public class ServiceDataFetcher implements DataFetcher {
+public class ServiceDataFetcher implements ServiceAwareDataFetcher {
 
   /**
    * One of Query or Mutation or Subscription
@@ -27,5 +26,10 @@ public class ServiceDataFetcher implements DataFetcher {
     return environment
         .getDataLoader(serviceMetadata.getServiceProvider().getNameSpace())
         .load(environment);
+  }
+
+  @Override
+  public String getNamespace() {
+    return this.serviceMetadata.getServiceProvider().getNameSpace();
   }
 }
