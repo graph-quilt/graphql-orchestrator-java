@@ -43,8 +43,10 @@ class SchemaStitcherSpec extends Specification {
     def "test Builder Services with non-null service"() {
         given:
         ServiceProvider serviceProvider = TestServiceProvider.newBuilder().build()
+        List<ServiceProvider> serviceProviderList = new ArrayList<>()
+        serviceProviderList.add(serviceProvider)
         when:
-        sfBuilder.services(List.of(serviceProvider))
+        sfBuilder.services(serviceProviderList)
         then:
         noExceptionThrown()
     }

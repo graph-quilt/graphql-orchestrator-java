@@ -530,8 +530,9 @@ class XtextUtilsSpec extends Specification {
         barDirective.setDefinition(barDirectiveDefinition)
 
         typeExtensionDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective))
-
-        List<Directive> result = getDirectivesWithNameFromDefinition(typeExtensionDefinition, List.of("Bad"))
+        List<String> directiveNames = new ArrayList<>()
+        directiveNames.add("Not Bar")
+        List<Directive> result = getDirectivesWithNameFromDefinition(typeExtensionDefinition, directiveNames)
 
         expect:
         CollectionUtils.isEmpty(result)
@@ -557,7 +558,9 @@ class XtextUtilsSpec extends Specification {
         bar2Directive.setDefinition(barDirectiveDefinition)
 
         typeDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive))
-        List<Directive> result = getDirectivesWithNameFromDefinition(typeDefinition, List.of("Bar"))
+        List<String> directiveNames = new ArrayList<>()
+        directiveNames.add("Bar")
+        List<Directive> result = getDirectivesWithNameFromDefinition(typeDefinition, directiveNames)
 
         expect:
         CollectionUtils.isNotEmpty(result)
