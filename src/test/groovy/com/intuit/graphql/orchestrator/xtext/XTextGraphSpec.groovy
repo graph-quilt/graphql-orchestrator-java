@@ -50,8 +50,6 @@ class XTextGraphSpec extends Specification {
         .mutation(objectTypeDefinitionMock)
         .dataFetcherContext(fieldContextMock, dataFetcherContextMock)
         .build()
-
-        assert xtextGraph.getOperation(TYPE_NAME_2) == Operation.QUERY
     }
 
     def "test xTextGraph is properly formed"() {
