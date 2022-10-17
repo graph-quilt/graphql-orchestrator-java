@@ -23,4 +23,23 @@ class ResolverArgumentLeafTypeNotSameSpec extends Specification {
         expect:
         error.message.contains("Resolver argument 'argName' in 'rootObject:rootField': Expected 'String' in 'parentObject:parentField' to be 'Int'.")
     }
+
+    def "create method produces Correct Error Message Without Parent Context"() {
+        given:
+        final ResolverArgumentLeafTypeNotSame error = ResolverArgumentLeafTypeNotSame.create(
+                "argName", new FieldContext("rootObject", "rootField"), null, "String", "ObjectType")
+
+        expect:
+        error.message.contains("Resolver argument 'argName' in 'rootObject:rootField': Expected 'String' to be 'ObjectType'.")
+    }
+
+    def "create method produces Correct Error Message With Parent Context"() {
+        given:
+        final ResolverArgumentLeafTypeNotSame error = ResolverArgumentLeafTypeNotSame.create(
+                "argName", new FieldContext("rootObject", "rootField"), new FieldContext("parentObject", "parentField"),
+                "String", "Int")
+
+        expect:
+        error.message.contains("Resolver argument 'argName' in 'rootObject:rootField': Expected 'String' in 'parentObject:parentField' to be 'Int'.")
+    }
 }

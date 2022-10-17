@@ -9,6 +9,10 @@ import org.apache.commons.collections4.CollectionUtils
 import org.eclipse.xtext.resource.XtextResourceSet
 import spock.lang.Specification
 
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.createNamedType
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.getDirectivesWithNameFromDefinition
 import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.*
@@ -340,7 +344,7 @@ class XtextUtilsSpec extends Specification {
         result.get(0).getDefinition().getName().equals("Bar")
     }
 
-    def "definition Contains Directiv Field Def Returns False When Not Found"() {
+    def "definition Contains Directive Field Def Returns False When Not Found"() {
         given:
         FieldDefinition fieldDefinition = GraphQLFactoryDelegate.createFieldDefinition()
 
@@ -482,5 +486,90 @@ class XtextUtilsSpec extends Specification {
 
         expect:
         definitionContainsDirective(typeExtensionDefinition, "Foo")
+    }
+
+    def "getDescriptiveString for an object named type"() {
+        given:
+        EnumTypeDefinition enumTypeDefinition = GraphQLFactoryDelegate.createEnumTypeDefinition()
+        enumTypeDefinition.setName("Arg1")
+        ObjectType objectType = GraphQLFactoryDelegate.createObjectType()
+        objectType.setType(enumTypeDefinition)
+        String res = XtextUtils.toDescriptiveString(objectType)
+
+        expect:
+        res == "[name:Arg1, type:EnumTypeDefinition, description:null]"
+    }
+
+    def "getDescriptiveString for a list named type"() {
+        given:
+        ListType listType = GraphQLFactoryDelegate.createListType()
+        ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
+        objectTypeDefinition.setName("Arg1")
+        listType.setType(createNamedType(objectTypeDefinition))
+        String res = XtextUtils.toDescriptiveString(listType)
+
+        expect:
+        res == "[name:Arg1, type:, description:]"
+    }
+
+
+    def "get Directives With Name From Definitions Type Ext Def and DirectiveNames Returns Empty When Not Found"() {
+        given:
+        ObjectTypeExtensionDefinition typeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition()
+
+        Directive fooDirective = GraphQLFactoryDelegate.createDirective()
+        Directive barDirective = GraphQLFactoryDelegate.createDirective()
+
+        DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition()
+        DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition()
+
+        fooDirectiveDefinition.setName("Foo")
+        fooDirective.setDefinition(fooDirectiveDefinition)
+
+        barDirectiveDefinition.setName("Bar")
+        barDirective.setDefinition(barDirectiveDefinition)
+
+        typeExtensionDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective))
+
+        List<Directive> result = getDirectivesWithNameFromDefinition(typeExtensionDefinition, List.of("Bad"))
+
+        expect:
+        CollectionUtils.isEmpty(result)
+    }
+
+
+    def "get Directives With Name From Definitions Typed Def and DirectiveNames arguments Returns Directives"() {
+        given:
+        TypeDefinition typeDefinition = createObjectTypeDefinition()
+
+        Directive fooDirective = createDirective()
+        Directive barDirective = createDirective()
+        Directive bar2Directive = createDirective()
+
+        DirectiveDefinition fooDirectiveDefinition = createDirectiveDefinition()
+        DirectiveDefinition barDirectiveDefinition = createDirectiveDefinition()
+
+        fooDirectiveDefinition.setName("Foo")
+        fooDirective.setDefinition(fooDirectiveDefinition)
+
+        barDirectiveDefinition.setName("Bar")
+        barDirective.setDefinition(barDirectiveDefinition)
+        bar2Directive.setDefinition(barDirectiveDefinition)
+
+        typeDefinition.getDirectives().addAll(Arrays.asList(fooDirective, barDirective, bar2Directive))
+        List<Directive> result = getDirectivesWithNameFromDefinition(typeDefinition, List.of("Bar"))
+
+        expect:
+        CollectionUtils.isNotEmpty(result)
+        result.size() == 2
+        result.get(0).getDefinition().getName().equals("Bar")
+    }
+
+    def "getAllTypeExtensions returns stream of typeExtensionDefinition"() {
+        given:
+        Stream<TypeExtensionDefinition> typeExtensionDefinitionStream = XtextUtils.getAllTypeExtensions(TYPE)
+        expect:
+        typeExtensionDefinitionStream.collect(Collectors.toList()).size() == 0
+
     }
 }
