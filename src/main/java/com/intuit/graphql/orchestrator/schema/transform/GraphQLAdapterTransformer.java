@@ -36,7 +36,7 @@ public class GraphQLAdapterTransformer implements Transformer<UnifiedXtextGraph,
         ObjectTypeDefinition parent = null;
         if (operation != null) {
           //Only do it for Query
-          if (operation == Operation.QUERY) {
+          if (operation == Operation.QUERY || operation == Operation.MUTATION) {
             parent = source.getOperationType(operation);
           }
         } else {
