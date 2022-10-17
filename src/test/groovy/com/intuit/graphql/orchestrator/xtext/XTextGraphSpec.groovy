@@ -50,6 +50,8 @@ class XTextGraphSpec extends Specification {
         .mutation(objectTypeDefinitionMock)
         .dataFetcherContext(fieldContextMock, dataFetcherContextMock)
         .build()
+
+        assert xtextGraph.getOperation(TYPE_NAME_2) == Operation.QUERY
     }
 
     def "test xTextGraph is properly formed"() {
@@ -94,11 +96,6 @@ class XTextGraphSpec extends Specification {
 
         expect:
         xtextGraph.getType(objectType) == typeDefinition
-    }
-
-    def "getOperation returns the Operation if objectTypeDefinition is present"() {
-        expect:
-        xtextGraph.getOperation(TYPE_NAME_2) == Operation.QUERY
     }
 
 }

@@ -11,4 +11,11 @@ class OperationSpec extends Specification {
         Operation.SUBSCRIPTION.getName() == "Subscription"
     }
 
+    def "test asGraphQLObjectType"() {
+        expect:
+        Operation.QUERY.asGraphQLObjectType().name == "Query"
+        Operation.MUTATION.asGraphQLObjectType().name == "Mutation"
+        Operation.SUBSCRIPTION.asGraphQLObjectType().name == "Subscription"
+    }
+
 }
