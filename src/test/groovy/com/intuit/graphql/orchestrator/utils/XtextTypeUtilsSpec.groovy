@@ -20,7 +20,7 @@ class XtextTypeUtilsSpec extends Specification {
         outerlistType.setType(listType); //[[Arg]]
 
         expect:
-        !XtextTypeUtils.compareTypes(listType, outerlistType)
+        !compareTypes(listType, outerlistType)
     }
 
     def "compare Non Null Types Test"() {
@@ -39,7 +39,7 @@ class XtextTypeUtilsSpec extends Specification {
         listType2.setType(namedType2); //[Arg]
 
         expect:
-        !XtextTypeUtils.compareTypes(listType, listType2)
+        !compareTypes(listType, listType2)
     }
 
     def "compare Equal Wrapped Non Null Types Test"() {
@@ -61,7 +61,7 @@ class XtextTypeUtilsSpec extends Specification {
         listType2.setNonNull(true); //[Arg!]!
 
         expect:
-        XtextTypeUtils.compareTypes(listType, listType2)
+        compareTypes(listType, listType2)
     }
 
     def "generate Arguments Definition String Test"() {
@@ -78,9 +78,11 @@ class XtextTypeUtilsSpec extends Specification {
         argumentsDefinition.getInputValueDefinition().add(ivf2)
 
         expect:
-        [ "argument1", "desc1", "argument2", "desc2" ]
-                .findAll({toDescriptiveString(argumentsDefinition)
-                        .contains(it)}).size() == 4
+        ["argument1", "desc1", "argument2", "desc2"]
+                .findAll({
+                    toDescriptiveString(argumentsDefinition)
+                            .contains(it)
+                }).size() == 4
     }
 
     void "generate Directives String Test"() {
@@ -105,9 +107,11 @@ class XtextTypeUtilsSpec extends Specification {
         fieldDefinition.getDirectives().add(directive2)
 
         expect:
-        [ "directive1", "description1", "directive2", "description2" ]
-                .findAll({toDescriptiveString(fieldDefinition.getDirectives())
-                        .contains(it)}).size() == 4
+        ["directive1", "description1", "directive2", "description2"]
+                .findAll({
+                    toDescriptiveString(fieldDefinition.getDirectives())
+                            .contains(it)
+                }).size() == 4
     }
 
     def "throws Exception For Object Type Not Valid As Input"() {
@@ -120,7 +124,7 @@ class XtextTypeUtilsSpec extends Specification {
         listType.setType(namedType)
 
         expect:
-        !XtextTypeUtils.isValidInputType(listType)
+        !isValidInputType(listType)
     }
 
     def "Input Object Type Is Valid As Input"() {
@@ -133,7 +137,7 @@ class XtextTypeUtilsSpec extends Specification {
         listType.setType(namedType)
 
         expect:
-        XtextTypeUtils.isValidInputType(listType)
+        isValidInputType(listType)
     }
 
     def "Enum Type Is Valid As Input"() {
@@ -143,7 +147,7 @@ class XtextTypeUtilsSpec extends Specification {
         NamedType namedType = createNamedType(enumTypeDefinition)
 
         expect:
-        XtextTypeUtils.isValidInputType(namedType)
+        isValidInputType(namedType)
     }
 
     def "Scalar Type Is Valid As Input"() {
@@ -152,7 +156,7 @@ class XtextTypeUtilsSpec extends Specification {
         primitiveType.setType("String")
 
         expect:
-        XtextTypeUtils.isValidInputType(primitiveType)
+        isValidInputType(primitiveType)
     }
 
     def "Scalar Type Definition Is Valid As Input"() {
@@ -162,12 +166,12 @@ class XtextTypeUtilsSpec extends Specification {
         NamedType namedType = createNamedType(scalarTypeDefinition)
 
         expect:
-        XtextTypeUtils.isValidInputType(namedType)
+        isValidInputType(namedType)
     }
 
     def "is Compatible Scalars Test Both Nullable"() {
         when:
-        PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
+        PrimitiveType primitiveTypeStub = GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
 
         PrimitiveType primitiveTypeTarget = GraphQLFactoryDelegate.createPrimitiveType()
@@ -175,12 +179,12 @@ class XtextTypeUtilsSpec extends Specification {
 
         then:
         // both nullable
-        XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
+        isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
     def "is Compatible Scalars Test Stub Nullable"() {
         when:
-        PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
+        PrimitiveType primitiveTypeStub = GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
 
         PrimitiveType primitiveTypeTarget = GraphQLFactoryDelegate.createPrimitiveType()
@@ -190,12 +194,12 @@ class XtextTypeUtilsSpec extends Specification {
         primitiveTypeTarget.setNonNull(true)
 
         then:
-        XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
+        isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
     def "is Compatible Scalars Test Target Nullable"() {
         when:
-        PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
+        PrimitiveType primitiveTypeStub = GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
 
         PrimitiveType primitiveTypeTarget = GraphQLFactoryDelegate.createPrimitiveType()
@@ -206,12 +210,12 @@ class XtextTypeUtilsSpec extends Specification {
         primitiveTypeTarget.setNonNull(false)
 
         then:
-        !XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
+        !isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
     def "is Compatible Scalars Test Both Non Nullable"() {
         when:
-        PrimitiveType primitiveTypeStub =  GraphQLFactoryDelegate.createPrimitiveType()
+        PrimitiveType primitiveTypeStub = GraphQLFactoryDelegate.createPrimitiveType()
         primitiveTypeStub.setType("String")
 
         PrimitiveType primitiveTypeTarget = GraphQLFactoryDelegate.createPrimitiveType()
@@ -221,7 +225,7 @@ class XtextTypeUtilsSpec extends Specification {
         primitiveTypeTarget.setNonNull(true)
 
         then:
-        XtextTypeUtils.isCompatible(primitiveTypeStub, primitiveTypeTarget)
+        isCompatible(primitiveTypeStub, primitiveTypeTarget)
     }
 
     def "is Compatible Wrapped Types Test"() {
@@ -236,8 +240,8 @@ class XtextTypeUtilsSpec extends Specification {
         outerlistType.setType(listType); //[[Arg]]
 
         expect:
-        !XtextTypeUtils.isCompatible(listType, outerlistType)
-        !XtextTypeUtils.isCompatible(outerlistType, listType)
+        !isCompatible(listType, outerlistType)
+        !isCompatible(outerlistType, listType)
     }
 
     def "is Compatible Wrapped Non Null Types Test"() {
@@ -256,8 +260,8 @@ class XtextTypeUtilsSpec extends Specification {
         listType2.setType(namedType2); //[Arg]
 
         expect:
-        !XtextTypeUtils.isCompatible(listType, listType2)
-        XtextTypeUtils.isCompatible(listType2, listType)
+        !isCompatible(listType, listType2)
+        isCompatible(listType2, listType)
     }
 
     def "is Compatible Same Type Wrapping Non Null Types Test"() {
@@ -279,8 +283,8 @@ class XtextTypeUtilsSpec extends Specification {
         listType2.setNonNull(true); //[Arg!]!
 
         expect:
-        XtextTypeUtils.isCompatible(listType, listType2)
-        XtextTypeUtils.isCompatible(listType2, listType)
+        isCompatible(listType, listType2)
+        isCompatible(listType2, listType)
     }
 
     def "is Compatible Wrapped And Non Wrapped Type Test"() {
@@ -298,11 +302,11 @@ class XtextTypeUtilsSpec extends Specification {
         namedType2.setNonNull(true); // Arg1
 
         expect:
-        !XtextTypeUtils.isCompatible(listType, namedType2)
-        !XtextTypeUtils.isCompatible(namedType2, listType)
+        !isCompatible(listType, namedType2)
+        !isCompatible(namedType2, listType)
     }
 
-    def "get Field Definition Throws Exception For Non Entity Extension Types"(){
+    def "get Field Definition Throws Exception For Non Entity Extension Types"() {
         given:
         EnumTypeExtensionDefinition badExtension = GraphQLFactoryDelegate.createEnumTypeExtensionDefinition()
 
@@ -313,7 +317,7 @@ class XtextTypeUtilsSpec extends Specification {
         thrown(IllegalArgumentException)
     }
 
-    def "get Field Definition Returns Empty List For Non Entity Extension Types With Default Set"(){
+    def "get Field Definition Returns Empty List For Non Entity Extension Types With Default Set"() {
         given:
         EnumTypeExtensionDefinition badExtension = GraphQLFactoryDelegate.createEnumTypeExtensionDefinition()
         List<FieldDefinition> fields = getFieldDefinitions(badExtension, true)
@@ -322,7 +326,7 @@ class XtextTypeUtilsSpec extends Specification {
         fields.size() == 0
     }
 
-    def "get Field Definition Returns Fields For Object Type Extension Definition"(){
+    def "get Field Definition Returns Fields For Object Type Extension Definition"() {
         given:
         String fieldName = "Test Field"
         ObjectTypeExtensionDefinition objectTypeExtensionDefinition = GraphQLFactoryDelegate.createObjectTypeExtensionDefinition()
@@ -338,7 +342,7 @@ class XtextTypeUtilsSpec extends Specification {
         fieldDefinitionList.get(0).getName() == fieldName
     }
 
-    def "get Field Definition Returns Fields For Interface Type Extension Definition"(){
+    def "get Field Definition Returns Fields For Interface Type Extension Definition"() {
         given:
         String fieldName = "Test Interface Field"
         InterfaceTypeExtensionDefinition interfaceTypeExtensionDefinition = GraphQLFactoryDelegate.createInterfaceTypeExtensionDefinition()
@@ -384,4 +388,53 @@ class XtextTypeUtilsSpec extends Specification {
         !isInterfaceTypeExtensionDefinition(null)
     }
 
+    def "getNamedTypeName returns the name of the type definition for object type"() {
+        given:
+        EnumTypeDefinition enumTypeDefinition = GraphQLFactoryDelegate.createEnumTypeDefinition()
+        enumTypeDefinition.setName("Arg1")
+        ObjectType objectType = GraphQLFactoryDelegate.createObjectType()
+        objectType.setType(enumTypeDefinition)
+
+        expect:
+        getNamedTypeName(objectType) == "Arg1"
+    }
+
+    def "getNamedTypeName returns the name of the object for primitive type"() {
+        given:
+        PrimitiveType primitiveType = GraphQLFactoryDelegate.createPrimitiveType()
+        primitiveType.setType("Arg1")
+
+        expect:
+        getNamedTypeName(primitiveType) == "Arg1"
+    }
+
+    def "getNamedTypeName returns the name of the object for list type"() {
+        given:
+        ListType listType = GraphQLFactoryDelegate.createListType()
+        ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
+        objectTypeDefinition.setName("Arg1")
+        listType.setType(createNamedType(objectTypeDefinition))
+
+        expect:
+        getNamedTypeName(listType) == "Arg1"
+    }
+
+    def "getNamedTypeNam returns null for a null value"() {
+        expect:
+        getNamedTypeName(null) == null
+    }
+
+
+    def "get Field Definition throws exception for enum type definition with default list disabled"() {
+        given:
+        String fieldName = "Test Interface Field"
+        EnumTypeDefinition enumTypeDefinition = GraphQLFactoryDelegate.createEnumTypeDefinition()
+        enumTypeDefinition.setName(fieldName)
+
+        when:
+        getFieldDefinitions(enumTypeDefinition, false)
+
+        then:
+        thrown(IllegalArgumentException.class)
+    }
 }

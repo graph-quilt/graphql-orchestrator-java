@@ -44,6 +44,28 @@ class NoRegisteredServicesSpec extends BaseIntegrationTestSpecification {
         thrown(NullPointerException)
     }
 
+    def "test Builder Without Service Null Instrumentation at a given index"() {
+        given:
+        final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator()
+
+        when:
+        baseBuilder.instrumentation(0, null)
+
+        then:
+        thrown(NullPointerException)
+    }
+
+    def "test Builder Without Service Null Instrumentation"() {
+        given:
+        final Builder baseBuilder = GraphQLOrchestrator.newOrchestrator()
+
+        when:
+        baseBuilder.instrumentation(null)
+
+        then:
+        thrown(NullPointerException)
+    }
+
     def "test Builder Without Service"() {
         given:
         final RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
