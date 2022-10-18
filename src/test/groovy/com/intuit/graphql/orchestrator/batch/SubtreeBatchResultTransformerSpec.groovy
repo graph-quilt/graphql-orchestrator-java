@@ -101,6 +101,34 @@ class SubtreeBatchResultTransformerSpec extends Specification {
         results.get(0).getData() == null
     }
 
+
+    def "Array Data Path Returns Null"() {
+        given:
+        Map<String, Object> data = new HashMap<>()
+
+        data.put("consumer", new ArrayList<String>() {{
+            add(0, "finance")
+        }})
+
+        final ExecutionStepInfo executionStepInfo = buildCompleteExecutionStepInfo(document, "consumer", "finance")
+
+        DataFetchingEnvironment dataFetchingEnvironment = newDataFetchingEnvironment()
+                .mergedField(executionStepInfo.getField())
+                .executionStepInfo(executionStepInfo).build()
+
+        DataFetcherResult<Map<String, Object>> dataFetcherResult = DataFetcherResult.<Map<String, Object>>newResult()
+                .data(data)
+                .build()
+
+        when:
+        final List<DataFetcherResult<Object>> results = new SubtreeBatchResultTransformer()
+                .toBatchResult(dataFetcherResult, Collections.singletonList(dataFetchingEnvironment))
+
+        then:
+        results.size() == 1
+        results.get(0).getData() == null
+    }
+
     def "produces Partitioned Result"() {
         given:
         Map<String, Object> data = new HashMap<>()

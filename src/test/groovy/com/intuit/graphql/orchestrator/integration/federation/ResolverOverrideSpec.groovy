@@ -12,6 +12,8 @@ import graphql.schema.GraphQLObjectType
 import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
+import java.lang.instrument.Instrumentation
+
 class ResolverOverrideSpec extends BaseIntegrationTestSpecification {
 
     ServiceProvider fooProvider, barProvider
@@ -106,8 +108,11 @@ class ResolverOverrideSpec extends BaseIntegrationTestSpecification {
                 .build().stitchGraph()
 
         GraphQLOrchestrator.Builder builder = GraphQLOrchestrator.newOrchestrator()
+        graphql.execution.instrumentation.Instrumentation instrumentationMock = Mock(graphql.execution.instrumentation.Instrumentation.class)
         builder.runtimeGraph(runtimeGraph)
         builder.instrumentations(Collections.emptyList())
+        builder.instrumentation(instrumentationMock)
+        builder.instrumentation(0, instrumentationMock)
         builder.executionIdProvider(ExecutionIdProvider.DEFAULT_EXECUTION_ID_PROVIDER);
         builder.queryExecutionStrategy(new AsyncExecutionStrategy())
         builder.mutationExecutionStrategy(new AsyncExecutionStrategy())

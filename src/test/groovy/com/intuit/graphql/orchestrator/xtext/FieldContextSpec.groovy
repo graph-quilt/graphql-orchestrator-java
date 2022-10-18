@@ -8,7 +8,7 @@ class FieldContextSpec extends Specification {
     private static final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
     private static final String TEST_FIELD_NAME = "testFieldName"
 
-    private FieldContext fieldContext = new FieldContext(TEST_PARENT_TYPE_NAME,TEST_FIELD_NAME)
+    private FieldContext fieldContext = new FieldContext(TEST_PARENT_TYPE_NAME, TEST_FIELD_NAME)
 
     def "equals Return False For Null"() {
         given:
@@ -60,5 +60,11 @@ class FieldContextSpec extends Specification {
 
         expect:
         actual
+    }
+
+    def "field co-ordinates sets the correct value for parent type and field name"() {
+        expect:
+        fieldContext.fieldCoordinates.typeName == fieldContext.parentType
+        fieldContext.fieldCoordinates.fieldName == fieldContext.fieldName
     }
 }

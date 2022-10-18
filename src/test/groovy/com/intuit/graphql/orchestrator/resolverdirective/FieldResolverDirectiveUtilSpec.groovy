@@ -12,6 +12,10 @@ import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.creat
 
 class FieldResolverDirectiveUtilSpec extends Specification {
 
+    private final String TEST_FIELD_REFERENCE_NAME = "testFieldReferenceName"
+    private final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
+    private final String TEST_SERVICE_NAME = "testServiceName"
+
     def "is Reference To Field In Parent Type Success"() {
         given:
         String fieldName = "someFieldName"
@@ -132,4 +136,24 @@ class FieldResolverDirectiveUtilSpec extends Specification {
         exception.getMessage().startsWith("Expecting parent to be an instance of FieldDefinition.  directive=mockDirective, pareTypeInstance=InterfaceTypeDefinition")
     }
 
+    def "ifInvalidFieldReferenceThrowException throws FieldNotFoundInParentException when parentSource doesn't contain fieldReferenceName"() {
+        when:
+        ResolverDirectiveDefinition resolverDirectiveDefinitionMock = Mock(ResolverDirectiveDefinition.class)
+        HashMap<String, Object> testParentSourceMap =  new HashMap<>()
+        FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException(TEST_FIELD_REFERENCE_NAME, TEST_PARENT_TYPE_NAME, resolverDirectiveDefinitionMock, TEST_SERVICE_NAME, testParentSourceMap)
+        then:
+        def exception = thrown(FieldNotFoundInParentException.class)
+        exception.getMessage().startsWith("Field not found in parent's resolved value.")
+    }
+
+    def "ifInvalidFieldReferenceThrowException throws FieldValueIsNullInParentException when parentSource contains fieldReferenceName value as null"() {
+        when:
+        ResolverDirectiveDefinition resolverDirectiveDefinitionMock = Mock(ResolverDirectiveDefinition.class)
+        HashMap<String, Object> testParentSourceMap =  new HashMap<>()
+        testParentSourceMap.put(TEST_FIELD_REFERENCE_NAME, null)
+        FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException(TEST_FIELD_REFERENCE_NAME, TEST_PARENT_TYPE_NAME, resolverDirectiveDefinitionMock, TEST_SERVICE_NAME, testParentSourceMap)
+        then:
+        def exception = thrown(FieldValueIsNullInParentException.class)
+        exception.getMessage().startsWith("Field value not found in parent's resolved value.")
+    }
 }
