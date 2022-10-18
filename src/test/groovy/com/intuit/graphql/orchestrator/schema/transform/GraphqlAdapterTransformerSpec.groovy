@@ -52,8 +52,7 @@ class GraphqlAdapterTransformerSpec extends Specification {
         when:
         UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph)
 
-        then:
-        ObjectTypeDefinition query = adapterGraph.getOperationMap().get(Operation.QUERY)
+        then: "code registry for nested query fields are added and Query:a DataFetcherType type is updated to STATIC"
         adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")).getDataFetcherType() == DataFetcherType.STATIC
         adapterGraph.getCodeRegistry().get(new FieldContext("A", "b")).getDataFetcherType() == DataFetcherType.STATIC
         adapterGraph.getCodeRegistry().get(new FieldContext("A", "bb")).getDataFetcherType() == DataFetcherType.SERVICE
@@ -277,7 +276,7 @@ class GraphqlAdapterTransformerSpec extends Specification {
                 .fold(UnifiedXtextGraph.emptyGraph(), Collections.singletonList(xtextGraph))
         UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph)
 
-        then:
+        then: "code registry for nested mutation fields are added and Mutation:a DataFetcherType type is updated to STATIC"
         adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")).getDataFetcherType() == DataFetcherType.STATIC
         adapterGraph.getCodeRegistry().get(new FieldContext("A", "b")).getDataFetcherType() == DataFetcherType.STATIC
         adapterGraph.getCodeRegistry().get(new FieldContext("B", "c")).getDataFetcherType() == DataFetcherType.STATIC
