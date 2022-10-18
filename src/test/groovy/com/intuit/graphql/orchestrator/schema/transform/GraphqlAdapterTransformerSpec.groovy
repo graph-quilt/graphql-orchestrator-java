@@ -52,8 +52,7 @@ class GraphqlAdapterTransformerSpec extends Specification {
         when:
         UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph)
 
-        then:
-        ObjectTypeDefinition query = adapterGraph.getOperationMap().get(Operation.QUERY)
+        then: "code registry for nested query fields are added and Query:a DataFetcherType type is updated to STATIC"
         adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")).getDataFetcherType() == DataFetcherType.STATIC
         adapterGraph.getCodeRegistry().get(new FieldContext("A", "b")).getDataFetcherType() == DataFetcherType.STATIC
         adapterGraph.getCodeRegistry().get(new FieldContext("A", "bb")).getDataFetcherType() == DataFetcherType.SERVICE
@@ -150,13 +149,12 @@ class GraphqlAdapterTransformerSpec extends Specification {
     def "test Adapter Transformer Without Directive"() {
         given:
         String schema = """
-            schema { mutation: Mutation query: Query }
+            schema { query: Query }
             type Mutation { a: A }
             type Query { a: A }
             type A { b: B } type B { c: C }
-            type C { adapter1: D @adapter(service: 'foo'), adapter2: D @adapter(service: 'bar') }
+            type C { noAdapter1: D  noAdapter2: D }
             type D { field: String }
-            $directive
         """
 
         FieldContext fieldContext = new FieldContext("Query", "a")
@@ -179,8 +177,8 @@ class GraphqlAdapterTransformerSpec extends Specification {
         UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph)
 
         then:
-        adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")) != null
-        adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")).getNamespace() == "SVC1"
+        adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")) != null
+        adapterGraph.getCodeRegistry().get(new FieldContext("Query", "a")).getNamespace() == "SVC1"
     }
 
     def "test Adapter Transformer For Non Rest"() {
@@ -278,10 +276,16 @@ class GraphqlAdapterTransformerSpec extends Specification {
                 .fold(UnifiedXtextGraph.emptyGraph(), Collections.singletonList(xtextGraph))
         UnifiedXtextGraph adapterGraph = new GraphQLAdapterTransformer().transform(stitchedGraph)
 
-        then:
-        adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")).getNamespace() == "SVC1"
+        then: "code registry for nested mutation fields are added and Mutation:a DataFetcherType type is updated to STATIC"
+        adapterGraph.getCodeRegistry().get(new FieldContext("Mutation", "a")).getDataFetcherType() == DataFetcherType.STATIC
+        adapterGraph.getCodeRegistry().get(new FieldContext("A", "b")).getDataFetcherType() == DataFetcherType.STATIC
+        adapterGraph.getCodeRegistry().get(new FieldContext("B", "c")).getDataFetcherType() == DataFetcherType.STATIC
+        adapterGraph.getCodeRegistry().get(new FieldContext("C", "adapter1")).getDataFetcherType() == DataFetcherType.SERVICE
+        adapterGraph.getCodeRegistry().get(new FieldContext("C", "adapter2")).getDataFetcherType() == DataFetcherType.SERVICE
+        adapterGraph.getCodeRegistry().get(new FieldContext("C", "adapter1")).getNamespace() == "SVC1"
+        adapterGraph.getCodeRegistry().get(new FieldContext("C", "adapter2")).getNamespace() == "SVC1"
 
-        adapterGraph.getCodeRegistry().size() == 1
+        adapterGraph.getCodeRegistry().size() == 5
     }
 
     def "test Adapter Transformer Without Directive Argument"() {
