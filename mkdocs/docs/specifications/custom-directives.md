@@ -1,7 +1,7 @@
 ## _@rename_
 
 ```graphql
-# Directive used to rename a type or field when registration with Data Api
+# Directive used to rename a type or field during registration
 directive @rename(to: String!) on FIELD_DEFINITION | OBJECT | INTERFACE
 
 ```
