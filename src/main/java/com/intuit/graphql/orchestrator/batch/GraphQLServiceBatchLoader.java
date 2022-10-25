@@ -162,23 +162,19 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
     SelectionSet filteredSelection = selectionSetBuilder.build();
     if(operationType.name().equalsIgnoreCase("QUERY")
-            && canOptimiseQuery(filteredSelection)) {
+            && canOptimizeQuery(filteredSelection)) {
       SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
 
       HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
       createSelectionSetTree(filteredSelection, selectionSetTree);
-//      List<Field> distinctRoots = filteredSelection.getSelections().stream()
-//              .map( rootNode -> (Field) rootNode).filter(distinctByFieldName(Field:: getName))
-//              .collect(Collectors.toList());
-//      distinctRoots.stream()
-//              //.map( rootNode -> (Field) rootNode)
-//              .forEach( rootNode -> mergeFilteredSelection(rootNode.getName(), selectionSetTree)
-//                      .getSelections().stream().forEach(mergedSelectionSetBuilder ::selection));
 
       filteredSelection.getSelections().stream()
-              .map( rootNode -> (Field) rootNode).filter(distinctByFieldName(Field:: getName))
+              .map( rootNode -> (Field) rootNode)
+              .filter(distinctByFieldName(Field:: getName))
               .forEach( rootNode -> mergeFilteredSelection(rootNode, selectionSetTree)
-                      .getSelections().stream().forEach(mergedSelectionSetBuilder ::selection));
+                      .getSelections()
+                      .stream()
+                      .forEach(mergedSelectionSetBuilder ::selection));
       SelectionSet mergedFilterSelection = mergedSelectionSetBuilder.build();
       filteredSelection = mergedFilterSelection;
 
@@ -244,11 +240,13 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     return t -> seen.add(keyExtractor.apply(t));
   }
 
-  private boolean canOptimiseQuery(SelectionSet selectionSet){
+  private boolean canOptimizeQuery(SelectionSet selectionSet){
+    if(serviceMetadata.hasFieldResolverDirective()) return false;
     if(selectionSet == null) return true;
     for( Selection selection : selectionSet.getSelections()){
       if(selection.getClass() != Field.class
-              || !canOptimiseQuery(((Field) selection).getSelectionSet()))
+              || ((Field) selection).getDirectives().size()!=0
+              || !canOptimizeQuery(((Field) selection).getSelectionSet()))
         return false;
     }
     return true;
@@ -257,10 +255,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     Field field;
     SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
     SelectionSet.Builder childSelectionSetBuilder = SelectionSet.newSelectionSet();
-
     if (ObjectUtils.isEmpty(selectionSetTree.get(node.getName()))) { // leaf node
       field = new Field(node.getName(), node.getArguments());
-
       selectionSetBuilder.selection(field);
       SelectionSet set = selectionSetBuilder.build();
       return set;

@@ -9,19 +9,21 @@ import helpers.BaseIntegrationTestSpecification
 import spock.lang.Subject
 
 class FieldResolverDirectiveTargetIsNestedFieldSpec extends BaseIntegrationTestSpecification {
-    def PERSON_DOWNSTREAM_QUERY = "query Get_Person {person {id} person {name}}";
+    def PERSON_DOWNSTREAM_QUERY_OPTIMISED = "query Get_Person {person {id name}}";
+    def PERSON_DOWNSTREAM_QUERY_OPTIMISED2 = "query Get_Person {person {name id}}";
     def BOOK_DOWNSTREAM_QUERY = "query Get_Person {person {book {id name author {lastName}}}}";
     def PETS_DOWNSTREAM_QUERY = "query Get_Person {person {pets {name}}}";
     def PETS_FIELD_RESOLVER_DOWNSTREAM_QUERY = "query Get_Person_Resolver_Directive_Query {person {pets_0:pets {name}}}";
 
-    def personEI, bookEI, petsEI, petsFieldResolverEI
+    def personEI, bookEI, petsEI, petsFieldResolverEI,personEI2
     def mockPersonService,mockBookService ,mockPetsService
 
     @Subject
     specUnderTest
 
     void setup() {
-        personEI = ExecutionInput.newExecutionInput().query(PERSON_DOWNSTREAM_QUERY).build();
+        personEI = ExecutionInput.newExecutionInput().query(PERSON_DOWNSTREAM_QUERY_OPTIMISED).build();
+        personEI2 = ExecutionInput.newExecutionInput().query(PERSON_DOWNSTREAM_QUERY_OPTIMISED2).build();
         bookEI = ExecutionInput.newExecutionInput().query(BOOK_DOWNSTREAM_QUERY).build();
         petsEI = ExecutionInput.newExecutionInput().query(PETS_DOWNSTREAM_QUERY).build();
         petsFieldResolverEI  = ExecutionInput.newExecutionInput().query(PETS_FIELD_RESOLVER_DOWNSTREAM_QUERY).build();
@@ -32,6 +34,10 @@ class FieldResolverDirectiveTargetIsNestedFieldSpec extends BaseIntegrationTestS
                 .mockResponse(ServiceProviderMockResponse.builder()
                         .expectResponse("top_level/person/mock-responses/get-person-1.json")
                         .forExecutionInput(personEI)
+                        .build())
+                .mockResponse(ServiceProviderMockResponse.builder()
+                        .expectResponse("top_level/person/mock-responses/get-person-1.json")
+                        .forExecutionInput(personEI2)
                         .build())
                 .build();
 
