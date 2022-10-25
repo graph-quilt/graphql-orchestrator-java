@@ -40,7 +40,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,6 +51,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
@@ -159,10 +161,28 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     }
 
     SelectionSet filteredSelection = selectionSetBuilder.build();
-    Field rootName = (Field)filteredSelection.getSelections().get(0);
-    HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
-    createSelectionSetTree(filteredSelection, selectionSetTree);
-    filteredSelection = mergeFilteredSelection(rootName.getName(),selectionSetTree);
+    if(operationType.name().equalsIgnoreCase("QUERY")
+            && canOptimiseQuery(filteredSelection)) {
+      SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
+
+      HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
+      createSelectionSetTree(filteredSelection, selectionSetTree);
+//      List<Field> distinctRoots = filteredSelection.getSelections().stream()
+//              .map( rootNode -> (Field) rootNode).filter(distinctByFieldName(Field:: getName))
+//              .collect(Collectors.toList());
+//      distinctRoots.stream()
+//              //.map( rootNode -> (Field) rootNode)
+//              .forEach( rootNode -> mergeFilteredSelection(rootNode.getName(), selectionSetTree)
+//                      .getSelections().stream().forEach(mergedSelectionSetBuilder ::selection));
+
+      filteredSelection.getSelections().stream()
+              .map( rootNode -> (Field) rootNode).filter(distinctByFieldName(Field:: getName))
+              .forEach( rootNode -> mergeFilteredSelection(rootNode, selectionSetTree)
+                      .getSelections().stream().forEach(mergedSelectionSetBuilder ::selection));
+      SelectionSet mergedFilterSelection = mergedSelectionSetBuilder.build();
+      filteredSelection = mergedFilterSelection;
+
+    }
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
         .flatMap(dataFetchingEnvironment -> dataFetchingEnvironment.getVariables().entrySet().stream())
@@ -219,44 +239,65 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           return batchResult;
         });
   }
+  public static <T> Predicate<T> distinctByFieldName(Function<? super T, ?> keyExtractor) {
+    Set<Object> seen = ConcurrentHashMap.newKeySet();
+    return t -> seen.add(keyExtractor.apply(t));
+  }
 
-private SelectionSet mergeFilteredSelection(String nodeName, HashMap<String, Set<Field>> selectionSetTree){
-  Field field;
-  SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
-  SelectionSet.Builder childSelectionSetBuilder = SelectionSet.newSelectionSet();
+  private boolean canOptimiseQuery(SelectionSet selectionSet){
+    if(selectionSet == null) return true;
+    for( Selection selection : selectionSet.getSelections()){
+      if(selection.getClass() != Field.class
+              || !canOptimiseQuery(((Field) selection).getSelectionSet()))
+        return false;
+    }
+    return true;
+  }
+  private SelectionSet mergeFilteredSelection(Field node, HashMap<String, Set<Field>> selectionSetTree){
+    Field field;
+    SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
+    SelectionSet.Builder childSelectionSetBuilder = SelectionSet.newSelectionSet();
 
-  if (ObjectUtils.isEmpty(selectionSetTree.get(nodeName))) {
-    field = new Field(nodeName);
+    if (ObjectUtils.isEmpty(selectionSetTree.get(node.getName()))) { // leaf node
+      field = new Field(node.getName(), node.getArguments());
+
+      selectionSetBuilder.selection(field);
+      SelectionSet set = selectionSetBuilder.build();
+      return set;
+    }
+    List<SelectionSet> childrenSets = new ArrayList<>();
+    for( Field f : selectionSetTree.get(node.getName())) {
+      childrenSets.add(mergeFilteredSelection(f, selectionSetTree));
+    }
+    childrenSets
+            .stream()
+            .map(s -> s.getSelections())
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList())
+            .stream()
+            .forEach(childSelectionSetBuilder::selection);
+    field = new Field(node.getName(), node.getArguments(), childSelectionSetBuilder.build());
     selectionSetBuilder.selection(field);
-    SelectionSet set = selectionSetBuilder.build();
-    return set;
-  }
-  List<SelectionSet> childrenSets = new ArrayList<>();
-  for( Field f : selectionSetTree.get(nodeName)) {
-    childrenSets.add(mergeFilteredSelection(f.getName(), selectionSetTree));
-  }
-  childrenSets
-          .stream()
-          .map(s -> s.getSelections())
-          .flatMap(Collection::stream)
-          .collect(Collectors.toList())
-          .stream()
-          .forEach(childSelectionSetBuilder::selection);
-  field = new Field(nodeName, childSelectionSetBuilder.build());
-  selectionSetBuilder.selection(field);
 
-  return selectionSetBuilder.build() ;
-}
+    return selectionSetBuilder.build() ;
+  }
+
   private void createSelectionSetTree(SelectionSet selectionSet, HashMap<String, Set<Field>> selectionSetMap){
     selectionSet.getSelections().stream().forEach(field -> {
       Field f = (Field) field;
       if(f.getSelectionSet() != null){ // leaf node
         if(selectionSetMap.containsKey(f.getName()) ) {
           selectionSetMap.get(f.getName())
-                  .add(((Field) f.getSelectionSet().getSelections().get(0)));
+                  .addAll((f.getSelectionSet().getSelections()
+                          .stream()
+                          .map(s ->(Field) s)
+                          .collect(Collectors.toList())));
         }
-        else selectionSetMap.put(f.getName(), new HashSet<>(Arrays.asList(
-                ((Field)f.getSelectionSet().getSelections().get(0)))));
+        else selectionSetMap.put(f.getName(), new HashSet<>(
+                f.getSelectionSet().getSelections()
+                        .stream()
+                        .map(s -> (Field)s)
+                        .collect(Collectors.toList())));
         createSelectionSetTree(f.getSelectionSet(), selectionSetMap);
       }
     });

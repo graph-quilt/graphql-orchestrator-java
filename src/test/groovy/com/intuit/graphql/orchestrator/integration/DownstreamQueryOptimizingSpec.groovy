@@ -66,11 +66,11 @@ class DownstreamQueryOptimizingSpec extends BaseIntegrationTestSpecification {
 
     }
 
-    def "Variables are split to different services"() {
+    def "Nested Query from different services is optimized"() {
         given:
 
         def graphqlQuery = '''
-            query TestQuery{
+            query testQuery{
                 a {
                     c {
                         leaf
@@ -102,10 +102,11 @@ class DownstreamQueryOptimizingSpec extends BaseIntegrationTestSpecification {
         valD.leaf instanceof String && valD.leaf == "somethingD"
 
         ExecutionInput serviceAExecutionInput = getCapturedDownstreamExecutionInput(testServiceA)
-        serviceAExecutionInput.query == 'query TestQuery {a {c {leaf} b {leaf}}}'
+        serviceAExecutionInput.query == 'query testQuery {a {c {leaf} b {leaf}}}' ||
+                serviceAExecutionInput.query == 'query testQuery {a {b {leaf} c {leaf}}}'
 
         ExecutionInput serviceBExecutionInput = getCapturedDownstreamExecutionInput(testServiceB)
-        serviceBExecutionInput.query == 'query TestQuery {a {d {leaf}}}'
+        serviceBExecutionInput.query == 'query testQuery {a {d {leaf}}}'
     }
 
 }
