@@ -1,23 +1,19 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
-import static graphql.language.AstPrinter.printAstCompact;
-import static graphql.language.OperationDefinition.Operation.QUERY;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.VisibleForTesting;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
+import static graphql.language.AstPrinter.printAstCompact;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
@@ -25,6 +21,7 @@ import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
+import static graphql.language.OperationDefinition.Operation.QUERY;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import graphql.language.TypeName;
@@ -35,9 +32,19 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import static graphql.schema.GraphQLTypeUtil.unwrapAll;
+import static java.util.Objects.requireNonNull;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.dataloader.BatchLoader;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,9 +53,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -117,7 +121,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
             ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(),
                 key.getFragmentsByName(), graphQLSchema)
             : field)
-          .forEach(selectionSetBuilder::selection);
+          .forEach(selectionSetBuilder :: selection);
       }
 
       for (final FragmentDefinition fragmentDefinition : result.getFragmentDefinitions().values()) {
@@ -154,8 +158,11 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       }
     }
 
-    final SelectionSet filteredSelection = selectionSetBuilder.build();
-
+    SelectionSet filteredSelection = selectionSetBuilder.build();
+    Field rootName = (Field)filteredSelection.getSelections().get(0);
+    HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
+    createSelectionSetTree(filteredSelection, selectionSetTree);
+    filteredSelection = mergeFilteredSelection(rootName.getName(),selectionSetTree);
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
         .flatMap(dataFetchingEnvironment -> dataFetchingEnvironment.getVariables().entrySet().stream())
@@ -211,6 +218,48 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
+  }
+
+private SelectionSet mergeFilteredSelection(String nodeName, HashMap<String, Set<Field>> selectionSetTree){
+  Field field;
+  SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
+  SelectionSet.Builder childSelectionSetBuilder = SelectionSet.newSelectionSet();
+
+  if (ObjectUtils.isEmpty(selectionSetTree.get(nodeName))) {
+    field = new Field(nodeName);
+    selectionSetBuilder.selection(field);
+    SelectionSet set = selectionSetBuilder.build();
+    return set;
+  }
+  List<SelectionSet> childrenSets = new ArrayList<>();
+  for( Field f : selectionSetTree.get(nodeName)) {
+    childrenSets.add(mergeFilteredSelection(f.getName(), selectionSetTree));
+  }
+  childrenSets
+          .stream()
+          .map(s -> s.getSelections())
+          .flatMap(Collection::stream)
+          .collect(Collectors.toList())
+          .stream()
+          .forEach(childSelectionSetBuilder::selection);
+  field = new Field(nodeName, childSelectionSetBuilder.build());
+  selectionSetBuilder.selection(field);
+
+  return selectionSetBuilder.build() ;
+}
+  private void createSelectionSetTree(SelectionSet selectionSet, HashMap<String, Set<Field>> selectionSetMap){
+    selectionSet.getSelections().stream().forEach(field -> {
+      Field f = (Field) field;
+      if(f.getSelectionSet() != null){ // leaf node
+        if(selectionSetMap.containsKey(f.getName()) ) {
+          selectionSetMap.get(f.getName())
+                  .add(((Field) f.getSelectionSet().getSelections().get(0)));
+        }
+        else selectionSetMap.put(f.getName(), new HashSet<>(Arrays.asList(
+                ((Field)f.getSelectionSet().getSelections().get(0)))));
+        createSelectionSetTree(f.getSelectionSet(), selectionSetMap);
+      }
+    });
   }
 
   private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
@@ -352,7 +401,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         .findFirst();
   }
 
-  public static GraphQLServiceBatchLoader.Builder newQueryExecutorBatchLoader() {
+  public static Builder newQueryExecutorBatchLoader() {
     return new Builder();
   }
 

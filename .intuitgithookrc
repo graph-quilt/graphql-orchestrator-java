@@ -1,0 +1,9 @@
+
+# Default Parameters
+POSTCHECKOUT_GIT_PUSH=y
+JIRA_TRANSITION=y
+COMPONENT_UPDATE_TRANSITION=n
+GITHOOK_ENABLED=y
+PREPUSH_HOOK="echo -e 'Thanks for using Intuit Githooks v2!\nIf you'd like to define a custom prepush, please update PREPUSH_HOOK in your .intuitgithookrc file!'"
+# End Default Parameters
+
