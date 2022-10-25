@@ -123,7 +123,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
             ? removeFieldsWithExternalTypes(field, getRootFieldDefinition(key.getExecutionStepInfo()).getType(),
                 key.getFragmentsByName(), graphQLSchema)
             : field)
-          .forEach(selectionSetBuilder :: selection);
+          .forEach(selectionSetBuilder::selection);
       }
 
       for (final FragmentDefinition fragmentDefinition : result.getFragmentDefinitions().values()) {
