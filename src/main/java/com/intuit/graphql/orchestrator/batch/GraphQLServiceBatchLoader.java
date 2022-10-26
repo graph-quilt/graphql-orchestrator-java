@@ -7,6 +7,7 @@ import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
+import com.intuit.graphql.orchestrator.utils.QueryOptimizerUtil;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.VisibleForTesting;
@@ -166,19 +167,18 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
 
       HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
-      createSelectionSetTree(filteredSelection, selectionSetTree);
+      QueryOptimizerUtil.createSelectionSetTree(filteredSelection, selectionSetTree);
 
       filteredSelection.getSelections().stream()
               .map( rootNode -> (Field) rootNode)
               .filter(distinctByFieldName(Field:: getName))
-              .forEach( rootNode -> mergeFilteredSelection(rootNode, selectionSetTree)
+              .forEach( rootNode -> QueryOptimizerUtil.mergeFilteredSelection(rootNode, selectionSetTree)
                       .getSelections()
                       .stream()
                       .forEach(mergedSelectionSetBuilder ::selection));
-      SelectionSet mergedFilterSelection = mergedSelectionSetBuilder.build();
-      filteredSelection = mergedFilterSelection;
-
+      filteredSelection = mergedSelectionSetBuilder.build();
     }
+
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
         .flatMap(dataFetchingEnvironment -> dataFetchingEnvironment.getVariables().entrySet().stream())
@@ -250,53 +250,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         return false;
     }
     return true;
-  }
-  private SelectionSet mergeFilteredSelection(Field node, HashMap<String, Set<Field>> selectionSetTree){
-    Field field;
-    SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
-    SelectionSet.Builder childSelectionSetBuilder = SelectionSet.newSelectionSet();
-    if (ObjectUtils.isEmpty(selectionSetTree.get(node.getName()))) { // leaf node
-      field = new Field(node.getName(), node.getArguments());
-      selectionSetBuilder.selection(field);
-      SelectionSet set = selectionSetBuilder.build();
-      return set;
-    }
-    List<SelectionSet> childrenSets = new ArrayList<>();
-    for( Field f : selectionSetTree.get(node.getName())) {
-      childrenSets.add(mergeFilteredSelection(f, selectionSetTree));
-    }
-    childrenSets
-            .stream()
-            .map(s -> s.getSelections())
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList())
-            .stream()
-            .forEach(childSelectionSetBuilder::selection);
-    field = new Field(node.getName(), node.getArguments(), childSelectionSetBuilder.build());
-    selectionSetBuilder.selection(field);
-
-    return selectionSetBuilder.build() ;
-  }
-
-  private void createSelectionSetTree(SelectionSet selectionSet, HashMap<String, Set<Field>> selectionSetMap){
-    selectionSet.getSelections().stream().forEach(field -> {
-      Field f = (Field) field;
-      if(f.getSelectionSet() != null){ // leaf node
-        if(selectionSetMap.containsKey(f.getName()) ) {
-          selectionSetMap.get(f.getName())
-                  .addAll((f.getSelectionSet().getSelections()
-                          .stream()
-                          .map(s ->(Field) s)
-                          .collect(Collectors.toList())));
-        }
-        else selectionSetMap.put(f.getName(), new HashSet<>(
-                f.getSelectionSet().getSelections()
-                        .stream()
-                        .map(s -> (Field)s)
-                        .collect(Collectors.toList())));
-        createSelectionSetTree(f.getSelectionSet(), selectionSetMap);
-      }
-    });
   }
 
   private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
