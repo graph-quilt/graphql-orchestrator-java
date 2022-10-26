@@ -7,7 +7,6 @@ import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
-import com.intuit.graphql.orchestrator.utils.QueryOptimizerUtil;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.VisibleForTesting;
@@ -36,15 +35,12 @@ import graphql.schema.GraphQLType;
 import static graphql.schema.GraphQLTypeUtil.unwrapAll;
 import static java.util.Objects.requireNonNull;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.dataloader.BatchLoader;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,9 +48,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
@@ -66,6 +59,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private final QueryOperationModifier queryOperationModifier;
   private final ServiceMetadata serviceMetadata;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> hooks;
+  private QueryOptimizer queryOptimizer;
 
   @VisibleForTesting
   VariableDefinitionFilter variableDefinitionFilter = new VariableDefinitionFilter();
@@ -162,23 +156,8 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     }
 
     SelectionSet filteredSelection = selectionSetBuilder.build();
-    if(operationType.name().equalsIgnoreCase("QUERY")
-            && canOptimizeQuery(filteredSelection)) {
-      SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
-
-      HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
-      QueryOptimizerUtil.createSelectionSetTree(filteredSelection, selectionSetTree);
-
-      filteredSelection.getSelections().stream()
-              .map( rootNode -> (Field) rootNode)
-              .filter(distinctByFieldName(Field:: getName))
-              .forEach( rootNode -> QueryOptimizerUtil.mergeFilteredSelection(rootNode, selectionSetTree)
-                      .getSelections()
-                      .stream()
-                      .forEach(mergedSelectionSetBuilder ::selection));
-      filteredSelection = mergedSelectionSetBuilder.build();
-    }
-
+    queryOptimizer = new QueryOptimizer(operationType, serviceMetadata, filteredSelection);
+    filteredSelection = queryOptimizer.getTransformedSelectionSet();
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
         .flatMap(dataFetchingEnvironment -> dataFetchingEnvironment.getVariables().entrySet().stream())
@@ -234,22 +213,6 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
           hooks.onBatchLoadEnd(context, batchResult);
           return batchResult;
         });
-  }
-  public static <T> Predicate<T> distinctByFieldName(Function<? super T, ?> keyExtractor) {
-    Set<Object> seen = ConcurrentHashMap.newKeySet();
-    return t -> seen.add(keyExtractor.apply(t));
-  }
-
-  private boolean canOptimizeQuery(SelectionSet selectionSet){
-    if(serviceMetadata.hasFieldResolverDirective()) return false;
-    if(selectionSet == null) return true;
-    for( Selection selection : selectionSet.getSelections()){
-      if(selection.getClass() != Field.class
-              || ((Field) selection).getDirectives().size()!=0
-              || !canOptimizeQuery(((Field) selection).getSelectionSet()))
-        return false;
-    }
-    return true;
   }
 
   private Map<String, Object> filterVariables(List<VariableDefinition> filteredVariableDefinitions,
