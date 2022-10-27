@@ -51,7 +51,7 @@ public class QueryOptimizer {
         });
     }
 
-    public static SelectionSet mergeFilteredSelection(Field node) {
+    public static SelectionSet mergeFilteredSelection(Field node, HashMap<String, Set<Field>> selectionSetTree) {
         SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
         SelectionSet.Builder childrenSelectionSetBuilder = SelectionSet.newSelectionSet();
         if (node.getSelectionSet() == null) { // check if leaf node
@@ -59,10 +59,9 @@ public class QueryOptimizer {
             return selectionSetBuilder.build();
         }
         List<SelectionSet> childrenSelectionSets = new ArrayList<>();
-
-        node.getSelectionSet().getSelections().forEach(selection ->
-                childrenSelectionSets.add(mergeFilteredSelection((Field) selection)));
-
+        for (Selection selection : selectionSetTree.get(node.getName())) {
+            childrenSelectionSets.add(mergeFilteredSelection((Field) selection, selectionSetTree));
+        }
         childrenSelectionSets
                 .stream()
                 .map(s -> s.getSelections())
@@ -85,8 +84,8 @@ public class QueryOptimizer {
 
             filteredSelection.getSelections().stream()
                     .map(rootNode -> (Field) rootNode)
-                    //.filter(distinctByFieldName(Field::getName))
-                    .forEach(rootNode -> QueryOptimizer.mergeFilteredSelection(rootNode)
+                    .filter(distinctByFieldName(Field::getName))
+                    .forEach(rootNode -> QueryOptimizer.mergeFilteredSelection(rootNode, selectionSetTree)
                             .getSelections()
                             .stream()
                             .forEach(mergedSelectionSetBuilder::selection));
