@@ -23,14 +23,24 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
 
     def BOOKS_SIMPLE_DOWNSTREAM_QUERY = "query GetQuery {books {id name author {}}}"
 
-    def USERS_WITH_LINK_DOWNSTREAM_QUERY = "query GetQuery {userById(id:\"user-1\") {id firstName lastName petId1 petId2}}"
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY = "query GetQuery {userById(id:\"user-1\") {id firstName petId1}}"
+
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY2 = "query GetQuery {userById(id:\"user-1\") {id petId1 firstName}}"
+
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY3 = "query GetQuery {userById(id:\"user-1\") {firstName id petId1}}"
+
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY4 = "query GetQuery {userById(id:\"user-1\") {firstName id petId1}}"
+
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY5 = "query GetQuery {userById(id:\"user-1\") {petId1 id firstName}}"
+
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY6 = "query GetQuery {userById(id:\"user-1\") {petId1 id firstName}}"
 
     def PETBYID_1_DOWNSTREAM_QUERY = "query GetQuery_Resolver_Directive_Query {petById1_0:petById1(id:\"pet-1\") {... on Cat {name catBreed} ... on Dog {name dogBreed} __typename}}"
 
     def PETBYID_2_DOWNSTREAM_QUERY = "fragment petFragment on Pet {id name} query GetQuery_Resolver_Directive_Query {petById2_0:petById2(id:\"pet-2\") {...petFragment __typename}}"
 
     def petsEI, petByIdEI, petById1EI, petById2EI
-    def usersEI, userWithLinkByIdEI
+    def usersEI, userWithLinkByIdEI,userWithLinkByIdEI2,userWithLinkByIdEI3,userWithLinkByIdEI4,userWithLinkByIdEI5,userWithLinkByIdEI6
     def booksEI, booksSimpleEI
 
     ServiceProvider mockPetsService, mockPetsServiceWithErrors, mockPetsServiceWithErrorsNoPath
@@ -53,6 +63,16 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
         usersEI = ExecutionInput.newExecutionInput().query(USERS_DOWNSTREAM_QUERY).build()
 
         userWithLinkByIdEI = ExecutionInput.newExecutionInput().query(USERS_WITH_LINK_DOWNSTREAM_QUERY).build()
+
+        userWithLinkByIdEI2 = ExecutionInput.newExecutionInput().query(USERS_WITH_LINK_DOWNSTREAM_QUERY2).build()
+
+        userWithLinkByIdEI3 = ExecutionInput.newExecutionInput().query(USERS_WITH_LINK_DOWNSTREAM_QUERY3).build()
+
+        userWithLinkByIdEI4 = ExecutionInput.newExecutionInput().query(USERS_WITH_LINK_DOWNSTREAM_QUERY4).build()
+
+        userWithLinkByIdEI5 = ExecutionInput.newExecutionInput().query(USERS_WITH_LINK_DOWNSTREAM_QUERY5).build()
+
+        userWithLinkByIdEI6 = ExecutionInput.newExecutionInput().query(USERS_WITH_LINK_DOWNSTREAM_QUERY6).build()
 
         petById1EI = ExecutionInput.newExecutionInput().query(PETBYID_1_DOWNSTREAM_QUERY).build()
 
@@ -140,6 +160,26 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
                         .expectResponse("top_level/user-and-pets/mock-responses/get-userById-1.json")
                         .forExecutionInput(userWithLinkByIdEI)
                         .build())
+                .mockResponse(ServiceProviderMockResponse.builder()
+                        .expectResponse("top_level/user-and-pets/mock-responses/get-userById-1.json")
+                        .forExecutionInput(userWithLinkByIdEI2)
+                        .build())
+                .mockResponse(ServiceProviderMockResponse.builder()
+                        .expectResponse("top_level/user-and-pets/mock-responses/get-userById-1.json")
+                        .forExecutionInput(userWithLinkByIdEI3)
+                        .build())
+                .mockResponse(ServiceProviderMockResponse.builder()
+                        .expectResponse("top_level/user-and-pets/mock-responses/get-userById-1.json")
+                        .forExecutionInput(userWithLinkByIdEI4)
+                        .build())
+                .mockResponse(ServiceProviderMockResponse.builder()
+                        .expectResponse("top_level/user-and-pets/mock-responses/get-userById-1.json")
+                        .forExecutionInput(userWithLinkByIdEI5)
+                        .build())
+                .mockResponse(ServiceProviderMockResponse.builder()
+                        .expectResponse("top_level/user-and-pets/mock-responses/get-userById-1.json")
+                        .forExecutionInput(userWithLinkByIdEI6)
+                        .build())
                 .build()
 
         mockPetsWithInterfaceUnionService = MockServiceProvider.builder()
@@ -199,16 +239,15 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
 
         String queryString = """query GetQuery {
             userById(id: "user-1") { 
-                id firstName lastName petId1 
+                id firstName petId1 
                 pet1 { 
                     ... on Cat { name catBreed } 
                     ... on Dog { name dogBreed } 
-                } 
-                petId2 
-                pet2 { ... petFragment } 
+                }  
+               
             } 
         }
-        fragment petFragment on Pet { id name }"""
+       """
 
         ExecutionInput query = ExecutionInput.newExecutionInput().query(queryString).build()
 
@@ -218,12 +257,8 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
         then:
         executionResult.getErrors().isEmpty()
         executionResult?.data?.userById?.firstName == "Delilah"
-        executionResult?.data?.userById?.lastName == "Hadfield"
-
         executionResult?.data?.userById?.pet1?.name == "Lassie"
         executionResult?.data?.userById?.pet1?.dogBreed == "COLLIE"
-        executionResult?.data?.userById?.pet2?.id == "pet-2"
-        executionResult?.data?.userById?.pet2?.name == "Garfield"
     }
 
     def "testFieldResolverInTopLevelFieldPetServiceWithErrors"() {

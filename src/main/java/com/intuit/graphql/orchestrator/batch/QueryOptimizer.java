@@ -102,7 +102,6 @@ public class QueryOptimizer {
     }
 
     private boolean canOptimizeQuery(SelectionSet selectionSet) {
-        if (serviceMetadata.hasFieldResolverDirective()) return false;
         if (selectionSet == null) return true;
         for (Selection selection : selectionSet.getSelections()) {
             if (selection.getClass() != Field.class
