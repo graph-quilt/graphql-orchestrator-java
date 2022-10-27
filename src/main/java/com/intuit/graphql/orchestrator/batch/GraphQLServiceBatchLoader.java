@@ -156,7 +156,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     }
 
     SelectionSet filteredSelection = selectionSetBuilder.build();
-    queryOptimizer = new QueryOptimizer(operationType, serviceMetadata, filteredSelection);
+    queryOptimizer = new QueryOptimizer(operationType, filteredSelection);
     filteredSelection = queryOptimizer.getTransformedSelectionSet();
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
