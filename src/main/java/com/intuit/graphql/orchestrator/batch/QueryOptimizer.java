@@ -34,21 +34,21 @@ public class QueryOptimizer {
     public static void createSelectionSetTree(SelectionSet selectionSet, HashMap<String, Set<Field>> selectionSetMap) {
         selectionSet.getSelections().forEach(field -> {
             Field f = (Field) field;
-            if (f.getSelectionSet() != null) { // check if not a leaf node
-                if (selectionSetMap.containsKey(f.getName())) {
-                    selectionSetMap.get(f.getName())
-                            .addAll((f.getSelectionSet().getSelections()
-                                    .stream()
-                                    .map(s -> (Field) s)
-                                    .collect(Collectors.toList())));
-                } else selectionSetMap.put(f.getName(), new HashSet<>(
-                        f.getSelectionSet().getSelections()
-                                .stream()
-                                .map(s -> (Field) s)
-                                .collect(Collectors.toList())));
+            if (f.getSelectionSet() != null) {
+                if (selectionSetMap.containsKey(f.getName()))
+                    selectionSetMap.get(f.getName()).addAll(getSelectionSetFields(f));
+                else
+                    selectionSetMap.put(f.getName(), new HashSet<>(getSelectionSetFields(f)));
                 createSelectionSetTree(f.getSelectionSet(), selectionSetMap);
             }
         });
+    }
+
+    public static List<Field> getSelectionSetFields(Field f){
+        return f.getSelectionSet().getSelections()
+                .stream()
+                .map(s -> (Field) s)
+                .collect(Collectors.toList());
     }
 
     public static SelectionSet mergeFilteredSelection(Field node, HashMap<String, Set<Field>> selectionSetTree) {
@@ -66,7 +66,6 @@ public class QueryOptimizer {
                 .stream()
                 .map(s -> s.getSelections())
                 .flatMap(Collection::stream)
-                .collect(Collectors.toList())
                 .forEach(childrenSelectionSetBuilder::selection);
         selectionSetBuilder.selection(node.transform(builder ->
                 builder.selectionSet(childrenSelectionSetBuilder.build())));
@@ -87,7 +86,6 @@ public class QueryOptimizer {
                     .filter(distinctByFieldName(Field::getName))
                     .forEach(rootNode -> QueryOptimizer.mergeFilteredSelection(rootNode, selectionSetTree)
                             .getSelections()
-                            .stream()
                             .forEach(mergedSelectionSetBuilder::selection));
             return mergedSelectionSetBuilder.build();
         }
