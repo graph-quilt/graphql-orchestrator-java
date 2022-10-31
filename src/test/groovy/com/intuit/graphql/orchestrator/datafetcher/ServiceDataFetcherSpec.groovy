@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 import static graphql.execution.MergedField.newMergedField
 import static graphql.language.Field.newField
 
-class ServiceDataFetcherTest extends Specification {
+class ServiceDataFetcherSpec extends Specification {
 
     def "gets Data From Data Loader"() {
         TestServiceProvider testServiceProviderForQuery = TestServiceProvider.newBuilder().namespace("Query.topLevelField")
