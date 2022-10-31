@@ -1,23 +1,19 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
-import static graphql.language.AstPrinter.printAstCompact;
-import static graphql.language.OperationDefinition.Operation.QUERY;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.DefaultBatchFieldAuthorization;
 import com.intuit.graphql.orchestrator.batch.MergedFieldModifier.MergedFieldModifierResult;
 import com.intuit.graphql.orchestrator.schema.GraphQLObjects;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.VisibleForTesting;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
+import static graphql.language.AstPrinter.printAstCompact;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
@@ -25,6 +21,7 @@ import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
+import static graphql.language.OperationDefinition.Operation.QUERY;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import graphql.language.TypeName;
@@ -35,6 +32,12 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import static graphql.schema.GraphQLTypeUtil.unwrapAll;
+import static java.util.Objects.requireNonNull;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.dataloader.BatchLoader;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,9 +49,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.dataloader.BatchLoader;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -59,6 +59,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private final QueryOperationModifier queryOperationModifier;
   private final ServiceMetadata serviceMetadata;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> hooks;
+  private QueryOptimizer queryOptimizer;
 
   @VisibleForTesting
   VariableDefinitionFilter variableDefinitionFilter = new VariableDefinitionFilter();
@@ -154,8 +155,9 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       }
     }
 
-    final SelectionSet filteredSelection = selectionSetBuilder.build();
-
+    SelectionSet filteredSelection = selectionSetBuilder.build();
+    //queryOptimizer = new QueryOptimizer(operationType, filteredSelection);
+    //filteredSelection = queryOptimizer.getTransformedSelectionSet();
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
         .flatMap(dataFetchingEnvironment -> dataFetchingEnvironment.getVariables().entrySet().stream())
@@ -352,7 +354,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         .findFirst();
   }
 
-  public static GraphQLServiceBatchLoader.Builder newQueryExecutorBatchLoader() {
+  public static Builder newQueryExecutorBatchLoader() {
     return new Builder();
   }
 

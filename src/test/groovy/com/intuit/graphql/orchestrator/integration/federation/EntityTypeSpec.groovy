@@ -18,7 +18,7 @@ import spock.lang.Subject
 class EntityTypeSpec extends BaseIntegrationTestSpecification {
     ServiceProvider employeeProvider, inventoryProvider, reviewsProvider
     ServiceProvider vehicleProvider, carProvider, reviewProvider
-    ExecutionInput vehicleEI, carEI, reviewEI
+    ExecutionInput vehicleEI, carEI, reviewEI,vehicleEI2
 
     String VEHICLE_SCHEMA = """
         type Query {
@@ -81,6 +81,7 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     """
 
     String VEHICLE_DOWNSTREAM_QUERY = "query mix_type_providers {getVehicleById(id:\"mockVehicle\") {id color}}"
+    String VEHICLE_DOWNSTREAM_QUERY_2 = "query mix_type_providers {getVehicleById(id:\"mockVehicle\") {color id}}"
     String CAR_DOWNSTREAM_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Vehicle {carInfo {carId capacity __typename}}}}"
     String REVIEWS_DOWNSTREAM_QUERY = "query mix_type_providers_Resolver_Directive_Query {getReviewsById_0:getReviewsById(id:\"test-car\") {rating comment}}"
 
@@ -221,6 +222,7 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     def "Federation and resolver providers can be executed together"(){
         given:
         vehicleEI = ExecutionInput.newExecutionInput().query(VEHICLE_DOWNSTREAM_QUERY).build()
+        vehicleEI2 = ExecutionInput.newExecutionInput().query(VEHICLE_DOWNSTREAM_QUERY_2).build()
         carEI = ExecutionInput.newExecutionInput().query(CAR_DOWNSTREAM_QUERY).build()
         reviewEI =  ExecutionInput.newExecutionInput().query(REVIEWS_DOWNSTREAM_QUERY).build()
 
@@ -245,6 +247,12 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
                     .forExecutionInput(vehicleEI)
                     .expectResponseRaw(vehicleResponse)
                     .build()
+                )
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(vehicleEI2)
+                                .expectResponseRaw(vehicleResponse)
+                                .build()
                 )
                 .build()
 
