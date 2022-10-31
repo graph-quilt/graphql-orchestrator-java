@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import static com.google.common.base.CharMatcher.anyOf;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
 import graphql.language.SelectionSet;
@@ -38,14 +39,22 @@ public class QueryOptimizerTest {
     public void testQueryOptimiser(){
         QueryOptimizer queryOptimizer = new QueryOptimizer(OperationDefinition.Operation.QUERY,inputBuilder.build());
         SelectionSet.Builder expectedOutputBuilder = SelectionSet.newSelectionSet();
+        SelectionSet.Builder expectedOutputBuilder2 = SelectionSet.newSelectionSet();
         SelectionSet.Builder mergedBuilder = SelectionSet.newSelectionSet();
+        SelectionSet.Builder mergedBuilder2 = SelectionSet.newSelectionSet();
         mergedBuilder.selection(b);
         mergedBuilder.selection(c);
+        mergedBuilder2.selection(c);
+        mergedBuilder2.selection(b);
         Field expectedOutputA = new Field("a", mergedBuilder.build());
+        Field expectedOutputA2 = new Field("a", mergedBuilder2.build());
         expectedOutputBuilder.selection(expectedOutputA);
+        expectedOutputBuilder2.selection(expectedOutputA2);
         SelectionSet output = queryOptimizer.getTransformedSelectionSet();
         SelectionSet expectedOutput = expectedOutputBuilder.build();
+        SelectionSet expectedOutput2 = expectedOutputBuilder2.build();
         assertThat(expectedOutput.getSelections().size()).isEqualTo(output.getSelections().size());
-        assertThat(expectedOutput.getSelections().get(0).toString()).isEqualTo(output.getSelections().get(0).toString());
+        assertThat(output.getSelections().get(0).toString()).isIn(expectedOutput.getSelections().get(0).toString(),
+                expectedOutput2.getSelections().get(0).toString());
     }
 }
