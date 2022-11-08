@@ -35,4 +35,9 @@ public class ServiceDataFetcher implements ServiceAwareDataFetcher {
   public String getNamespace() {
     return this.serviceMetadata.getServiceProvider().getNameSpace();
   }
+
+  @Override
+  public DataFetcherType getDataFetcherType() {
+    return DataFetcherType.SERVICE_DATA_FETCHER;
+  }
 }

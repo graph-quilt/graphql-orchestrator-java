@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.federation
 
+import com.intuit.graphql.orchestrator.datafetcher.DataFetcherType
 import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
 import org.dataloader.DataLoader
@@ -13,6 +14,8 @@ class EntityDataFetcherSpec extends Specification {
 
     private final String entityName = "MockEntity"
 
+    private final String namespace = "testNamespace"
+
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 
     private DataLoader dataLoaderMock
@@ -23,7 +26,23 @@ class EntityDataFetcherSpec extends Specification {
         dataFetchingEnvironmentMock = Mock(DataFetchingEnvironment)
         dataLoaderMock = Mock(DataLoader)
 
-        subjectUnderTest =  new EntityDataFetcher(entityName)
+        subjectUnderTest =  new EntityDataFetcher(entityName, namespace)
+    }
+
+    def "returns correct namespace"() {
+        when:
+        String actualNamespace = subjectUnderTest.getNamespace()
+
+        then:
+        actualNamespace == namespace
+    }
+
+    def "returns correct DataFetcherType"() {
+        when:
+        DataFetcherType actualDataFetcherType = subjectUnderTest.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherType.ENTITY_DATA_FETCHER
     }
 
     def "load entityBatchFetcher Success"() {

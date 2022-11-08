@@ -3,7 +3,6 @@ package com.intuit.graphql.orchestrator.datafetcher;
 import com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.Objects;
 import lombok.Getter;
@@ -35,4 +34,8 @@ public class FieldResolverDirectiveDataFetcher implements ServiceAwareDataFetche
         .load(dataFetchingEnvironment);
   }
 
+  @Override
+  public DataFetcherType getDataFetcherType() {
+    return DataFetcherType.FIELD_RESOLVER_DATA_FETCHER;
+  }
 }

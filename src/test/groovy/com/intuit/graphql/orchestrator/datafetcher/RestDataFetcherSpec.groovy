@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.datafetcher
 
 import com.google.common.collect.ImmutableMap
+import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType
 import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.batch.QueryExecutor
@@ -99,9 +100,34 @@ class RestDataFetcherSpec extends Specification {
         noExceptionThrown()
     }
 
-    // TODO see if needed
-    // public void canExecuteRequestWithEmptySelectionSet() {
-    // }
+    def "returns correct namespace"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getNameSpace() >> "TestNamespace"
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
+
+        when:
+        String actualNamespace = restDataFetcher.getNamespace()
+
+        then:
+        actualNamespace == "TestNamespace"
+    }
+
+    def "returns correct DataFetcherType"() {
+        given:
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
+
+        when:
+        DataFetcherType actualDataFetcherType = restDataFetcher.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherType.REST_DATA_FETCHER
+    }
 
     private DataFetchingEnvironment createTestDataFetchingEnvironment(
             OperationDefinition opDef, MergedField field, Map<String, Object> variables) {

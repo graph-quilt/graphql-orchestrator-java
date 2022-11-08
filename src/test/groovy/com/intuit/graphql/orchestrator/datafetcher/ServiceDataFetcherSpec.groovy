@@ -68,4 +68,34 @@ class ServiceDataFetcherSpec extends Specification {
         ((CompletableFuture) mresult).getNow("fail") == "mresult"
     }
 
+    def "returns correct namespace"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getNameSpace() >> "TestNamespace"
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
+
+        when:
+        String actualNamespace = serviceDataFetcher.getNamespace()
+
+        then:
+        actualNamespace == "TestNamespace"
+    }
+
+    def "returns correct DataFetcherType"() {
+        given:
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+
+        ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
+
+        when:
+        DataFetcherType actualDataFetcherType = serviceDataFetcher.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherType.SERVICE_DATA_FETCHER
+    }
+
 }

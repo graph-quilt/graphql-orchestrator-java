@@ -1,7 +1,7 @@
 package com.intuit.graphql.orchestrator.datafetcher
 
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective
 import com.intuit.graphql.orchestrator.TestHelper
+import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective
 import graphql.ExecutionResult
 import graphql.ExecutionResultImpl
 import graphql.GraphqlErrorBuilder
@@ -16,7 +16,6 @@ import org.dataloader.DataLoader
 import org.dataloader.DataLoaderRegistry
 
 import java.util.concurrent.CompletableFuture
-
 
 class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
@@ -198,5 +197,33 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
         then:
         result.getErrors().size() == 1
+    }
+
+    def "returns correct namespace"() {
+        given:
+        ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
+                .queriesByResolverArgument(Collections.emptyMap())
+                .namespace(namespace)
+                .build()
+
+        when:
+        String actualNamespace = dataFetcher.getNamespace()
+
+        then:
+        actualNamespace == namespace
+    }
+
+    def "returns correct DataFetcherType"() {
+        given:
+        ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
+                .queriesByResolverArgument(Collections.emptyMap())
+                .namespace(namespace)
+                .build()
+
+        when:
+        DataFetcherType actualDataFetcherType = dataFetcher.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherType.RESOLVER_ARGUMENT_DATA_FETCHER
     }
 }

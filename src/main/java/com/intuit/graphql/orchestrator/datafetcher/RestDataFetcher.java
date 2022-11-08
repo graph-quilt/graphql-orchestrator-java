@@ -13,7 +13,6 @@ import graphql.language.OperationDefinition;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.SelectionSet;
 import graphql.language.VariableDefinition;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.List;
 import lombok.Getter;
@@ -75,5 +74,10 @@ public class RestDataFetcher implements ServiceAwareDataFetcher {
   @Override
   public String getNamespace() {
     return this.serviceMetadata.getServiceProvider().getNameSpace();
+  }
+
+  @Override
+  public DataFetcherType getDataFetcherType() {
+    return DataFetcherType.REST_DATA_FETCHER;
   }
 }

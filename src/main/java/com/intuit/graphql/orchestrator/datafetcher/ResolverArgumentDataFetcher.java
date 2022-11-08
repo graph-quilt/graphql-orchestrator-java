@@ -7,7 +7,6 @@ import graphql.VisibleForTesting;
 import graphql.execution.Async;
 import graphql.execution.DataFetcherResult;
 import graphql.language.OperationDefinition;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -113,6 +112,11 @@ public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<Comp
     }
 
     return retVal;
+  }
+
+  @Override
+  public DataFetcherType getDataFetcherType() {
+    return DataFetcherType.RESOLVER_ARGUMENT_DATA_FETCHER;
   }
 
   public static final class Builder {
