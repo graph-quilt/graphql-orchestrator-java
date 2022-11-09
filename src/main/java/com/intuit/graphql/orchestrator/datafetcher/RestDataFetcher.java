@@ -6,6 +6,7 @@ import static graphql.language.AstPrinter.printAstCompact;
 import com.intuit.graphql.orchestrator.batch.DefaultQueryResponseModifier;
 import com.intuit.graphql.orchestrator.batch.QueryResponseModifier;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
 import graphql.language.Document;
@@ -78,6 +79,6 @@ public class RestDataFetcher implements ServiceAwareDataFetcher {
 
   @Override
   public DataFetcherType getDataFetcherType() {
-    return DataFetcherType.REST_DATA_FETCHER;
+    return DataFetcherType.REST;
   }
 }

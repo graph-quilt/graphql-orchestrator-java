@@ -2,8 +2,8 @@ package com.intuit.graphql.orchestrator.federation;
 
 import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
 
-import com.intuit.graphql.orchestrator.datafetcher.DataFetcherType;
 import com.intuit.graphql.orchestrator.datafetcher.ServiceAwareDataFetcher;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +33,6 @@ public class EntityDataFetcher implements ServiceAwareDataFetcher<CompletableFut
 
   @Override
   public DataFetcherType getDataFetcherType() {
-    return DataFetcherType.ENTITY_DATA_FETCHER;
+    return DataFetcherType.ENTITY_FETCHER;
   }
 }

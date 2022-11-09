@@ -1,6 +1,6 @@
 package com.intuit.graphql.orchestrator.federation
 
-import com.intuit.graphql.orchestrator.datafetcher.DataFetcherType
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
 import org.dataloader.DataLoader
@@ -39,10 +39,10 @@ class EntityDataFetcherSpec extends Specification {
 
     def "returns correct DataFetcherType"() {
         when:
-        DataFetcherType actualDataFetcherType = subjectUnderTest.getDataFetcherType()
+        DataFetcherContext.DataFetcherType actualDataFetcherType = subjectUnderTest.getDataFetcherType()
 
         then:
-        actualDataFetcherType == DataFetcherType.ENTITY_DATA_FETCHER
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.ENTITY_FETCHER
     }
 
     def "load entityBatchFetcher Success"() {

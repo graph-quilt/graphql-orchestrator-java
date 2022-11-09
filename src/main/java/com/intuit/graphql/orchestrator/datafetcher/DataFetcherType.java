@@ -1,9 +1,0 @@
-package com.intuit.graphql.orchestrator.datafetcher;
-
-public enum DataFetcherType {
-  SERVICE_DATA_FETCHER,
-  FEDERATION_SERVICE_DATA_FETCHER,
-  ENTITY_DATA_FETCHER,
-  FIELD_RESOLVER_DATA_FETCHER,
-  RESOLVER_ARGUMENT_DATA_FETCHER, REST_DATA_FETCHER
-}

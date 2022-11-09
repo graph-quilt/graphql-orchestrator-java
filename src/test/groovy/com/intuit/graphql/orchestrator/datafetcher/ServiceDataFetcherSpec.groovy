@@ -4,6 +4,7 @@ import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.GraphQLContext
 import graphql.execution.MergedField
 import graphql.schema.DataFetchingEnvironment
@@ -92,10 +93,10 @@ class ServiceDataFetcherSpec extends Specification {
         ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
 
         when:
-        DataFetcherType actualDataFetcherType = serviceDataFetcher.getDataFetcherType()
+        DataFetcherContext.DataFetcherType actualDataFetcherType = serviceDataFetcher.getDataFetcherType()
 
         then:
-        actualDataFetcherType == DataFetcherType.SERVICE_DATA_FETCHER
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.SERVICE
     }
 
 }

@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.datafetcher;
 
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
 import graphql.VisibleForTesting;
@@ -116,7 +117,7 @@ public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<Comp
 
   @Override
   public DataFetcherType getDataFetcherType() {
-    return DataFetcherType.RESOLVER_ARGUMENT_DATA_FETCHER;
+    return DataFetcherType.RESOLVER_ARGUMENT;
   }
 
   public static final class Builder {

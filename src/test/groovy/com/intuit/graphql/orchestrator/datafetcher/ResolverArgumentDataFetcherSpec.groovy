@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.datafetcher
 
 import com.intuit.graphql.orchestrator.TestHelper
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.ExecutionResult
 import graphql.ExecutionResultImpl
 import graphql.GraphqlErrorBuilder
@@ -221,9 +222,9 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
                 .build()
 
         when:
-        DataFetcherType actualDataFetcherType = dataFetcher.getDataFetcherType()
+        DataFetcherContext.DataFetcherType actualDataFetcherType = dataFetcher.getDataFetcherType()
 
         then:
-        actualDataFetcherType == DataFetcherType.RESOLVER_ARGUMENT_DATA_FETCHER
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT
     }
 }

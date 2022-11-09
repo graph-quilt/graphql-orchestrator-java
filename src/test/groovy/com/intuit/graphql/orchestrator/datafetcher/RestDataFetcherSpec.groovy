@@ -7,6 +7,7 @@ import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.batch.QueryExecutor
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.GraphQLContext
 import graphql.execution.DataFetcherResult
 import graphql.execution.MergedField
@@ -123,10 +124,10 @@ class RestDataFetcherSpec extends Specification {
         RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
 
         when:
-        DataFetcherType actualDataFetcherType = restDataFetcher.getDataFetcherType()
+        DataFetcherContext.DataFetcherType actualDataFetcherType = restDataFetcher.getDataFetcherType()
 
         then:
-        actualDataFetcherType == DataFetcherType.REST_DATA_FETCHER
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.REST
     }
 
     private DataFetchingEnvironment createTestDataFetchingEnvironment(

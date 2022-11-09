@@ -2,6 +2,7 @@ package com.intuit.graphql.orchestrator.datafetcher
 
 
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import spock.lang.Specification
 
 class FieldResolverDirectiveDataFetcherSpec extends Specification {
@@ -24,10 +25,10 @@ class FieldResolverDirectiveDataFetcherSpec extends Specification {
         FieldResolverDirectiveDataFetcher dataFetcher = new FieldResolverDirectiveDataFetcher(fieldResolverContext, "TestNamespace")
 
         when:
-        DataFetcherType actualDataFetcherType = dataFetcher.getDataFetcherType()
+        DataFetcherContext.DataFetcherType actualDataFetcherType = dataFetcher.getDataFetcherType()
 
         then:
-        actualDataFetcherType == DataFetcherType.FIELD_RESOLVER_DATA_FETCHER
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION
     }
 
 }
