@@ -130,6 +130,23 @@ class RestDataFetcherSpec extends Specification {
         actualDataFetcherType == DataFetcherContext.DataFetcherType.REST
     }
 
+    def "returns correct ServiceType"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getSeviceType() >> ServiceType.REST
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
+
+        when:
+        ServiceType actualServiceType = restDataFetcher.getServiceType()
+
+        then:
+        actualServiceType == ServiceType.REST
+    }
+
     private DataFetchingEnvironment createTestDataFetchingEnvironment(
             OperationDefinition opDef, MergedField field, Map<String, Object> variables) {
         return newDataFetchingEnvironment()

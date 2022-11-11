@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.datafetcher;
 
+import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
@@ -13,11 +14,13 @@ public class FieldResolverDirectiveDataFetcher implements ServiceAwareDataFetche
 
   private final FieldResolverContext fieldResolverContext;
   private final String namespace;
+  private final ServiceType serviceType;
 
   private FieldResolverDirectiveDataFetcher(FieldResolverContext fieldResolverContext,
-      String namespace) {
+      String namespace, ServiceType serviceType) {
     this.fieldResolverContext = fieldResolverContext;
     this.namespace = namespace;
+    this.serviceType = serviceType;
   }
 
   public static FieldResolverDirectiveDataFetcher from(DataFetcherContext dataFetcherContext) {
@@ -25,7 +28,7 @@ public class FieldResolverDirectiveDataFetcher implements ServiceAwareDataFetche
     Objects.requireNonNull(dataFetcherContext.getFieldResolverContext(),
         "FieldResolverContext is required");
     return new FieldResolverDirectiveDataFetcher(dataFetcherContext.getFieldResolverContext(),
-        dataFetcherContext.getNamespace());
+        dataFetcherContext.getNamespace(), dataFetcherContext.getServiceType());
   }
 
   @Override

@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.federation
 
+import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
@@ -16,6 +17,8 @@ class EntityDataFetcherSpec extends Specification {
 
     private final String namespace = "testNamespace"
 
+    private final ServiceProvider.ServiceType serviceType = ServiceProvider.ServiceType.FEDERATION_SUBGRAPH
+
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 
     private DataLoader dataLoaderMock
@@ -26,7 +29,7 @@ class EntityDataFetcherSpec extends Specification {
         dataFetchingEnvironmentMock = Mock(DataFetchingEnvironment)
         dataLoaderMock = Mock(DataLoader)
 
-        subjectUnderTest =  new EntityDataFetcher(entityName, namespace)
+        subjectUnderTest =  new EntityDataFetcher(entityName, namespace, serviceType)
     }
 
     def "returns correct namespace"() {
@@ -43,6 +46,14 @@ class EntityDataFetcherSpec extends Specification {
 
         then:
         actualDataFetcherType == DataFetcherContext.DataFetcherType.ENTITY_FETCHER
+    }
+
+    def "returns correct ServiceType"() {
+        when:
+        ServiceProvider.ServiceType actualServiceType = subjectUnderTest.getServiceType()
+
+        then:
+        actualServiceType == ServiceProvider.ServiceType.FEDERATION_SUBGRAPH
     }
 
     def "load entityBatchFetcher Success"() {

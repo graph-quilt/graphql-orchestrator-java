@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.datafetcher;
 import static com.intuit.graphql.orchestrator.batch.DefaultBatchResultTransformer.toSingleResult;
 import static graphql.language.AstPrinter.printAstCompact;
 
+import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.batch.DefaultQueryResponseModifier;
 import com.intuit.graphql.orchestrator.batch.QueryResponseModifier;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
@@ -19,7 +20,7 @@ import java.util.List;
 import lombok.Getter;
 
 @Getter
-public class RestDataFetcher implements ServiceAwareDataFetcher {
+public class RestDataFetcher implements ServiceAwareDataFetcher<Object> {
 
   private final ServiceMetadata serviceMetadata;
   private final QueryResponseModifier queryResponseModifier = new DefaultQueryResponseModifier();
@@ -80,5 +81,10 @@ public class RestDataFetcher implements ServiceAwareDataFetcher {
   @Override
   public DataFetcherType getDataFetcherType() {
     return DataFetcherType.REST;
+  }
+
+  @Override
+  public ServiceType getServiceType() {
+    return this.serviceMetadata.getServiceProvider().getSeviceType();
   }
 }

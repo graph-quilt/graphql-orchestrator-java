@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.datafetcher;
 
+import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import graphql.GraphQLContext;
@@ -39,5 +40,10 @@ public class ServiceDataFetcher implements ServiceAwareDataFetcher {
   @Override
   public DataFetcherType getDataFetcherType() {
     return DataFetcherType.SERVICE;
+  }
+
+  @Override
+  public ServiceType getServiceType() {
+    return this.serviceMetadata.getServiceProvider().getSeviceType();
   }
 }

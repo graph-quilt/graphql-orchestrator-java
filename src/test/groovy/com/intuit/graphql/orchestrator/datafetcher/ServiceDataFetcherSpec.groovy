@@ -86,6 +86,23 @@ class ServiceDataFetcherSpec extends Specification {
         actualNamespace == "TestNamespace"
     }
 
+    def "returns correct service type"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getSeviceType() >> ServiceProvider.ServiceType.GRAPHQL
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
+
+        when:
+        ServiceProvider.ServiceType actualServiceType = serviceDataFetcher.getServiceType()
+
+        then:
+        actualServiceType == ServiceProvider.ServiceType.GRAPHQL
+    }
+
     def "returns correct DataFetcherType"() {
         given:
         ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)

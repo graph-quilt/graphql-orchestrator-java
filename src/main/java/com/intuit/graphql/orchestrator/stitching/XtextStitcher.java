@@ -262,14 +262,16 @@ public class XtextStitcher implements Stitcher {
         builder.dataFetcher(coordinates, ResolverArgumentDataFetcher.newBuilder()
             .namespace(dataFetcherContext.getNamespace())
             .queriesByResolverArgument(map)
+            .serviceType(dataFetcherContext.getServiceType())
             .build()
         );
       } else if (type == RESOLVER_ON_FIELD_DEFINITION) {
         builder.dataFetcher(coordinates, FieldResolverDirectiveDataFetcher.from(dataFetcherContext)
         );
       } else if (type == ENTITY_FETCHER && mergedGraph.getType(fieldContext.getParentType()) != null) {
-        builder.dataFetcher(coordinates, new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata().getTypeName(), dataFetcherContext.getNamespace())
-        );
+        EntityDataFetcher entityDataFetcher = new EntityDataFetcher(dataFetcherContext.getEntityExtensionMetadata().getTypeName(),
+          dataFetcherContext.getNamespace(), dataFetcherContext.getServiceType());
+        builder.dataFetcher(coordinates, entityDataFetcher);
       }
     });
     return builder;
