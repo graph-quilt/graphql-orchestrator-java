@@ -13,13 +13,14 @@
 [Builds](https://circleci.com/gh/graph-quilt/graphql-orchestrator-java)
 
 
-**graphql-orchestrator-java** is a library that exposes data from various GraphQL microservices using a single unified GraphQL schema.
+**graphql-orchestrator-java** is a library that combines the schema from various GraphQL microservices into a single unified GraphQL schema.
 It uses [a recursive strategy](./mkdocs/docs/key-concepts/merging-types.md) to aggregate and combine the schemas from these micro-services 
 and [orchestrates the graphql queries](./mkdocs/docs/key-concepts/graphql-query-execution.md) to the appropriate services
 at runtime.
 
+It also supports Apollo Federation directives for schema composition. Currently, it supports `@key, @requires, @extends, and @external` directives.
 
-It uses the [graphql-java](https://github.com/graphql-java/graphql-java) library as the runtime execution engine on the unified schema.
+It uses the [graphql-java](https://github.com/graphql-java/graphql-java) library as the runtime execution engine for the unified schema.
 
 ## Getting Started
 
@@ -35,33 +36,61 @@ It uses the [graphql-java](https://github.com/graphql-java/graphql-java) library
 
 ### Usage in code
 
-* Implement the ServiceProvider interface. You will a new instance for
-each GraphQL Service.
+* Implement the ServiceProvider interface. You will a new instance for each GraphQL Service.
+Consider the following 2 services below
+
 ```java
-class TemplateServiceProvider implements ServiceProvider {
+class PersonNameService implements ServiceProvider {
 
-  public static final String TEMPLATE = "type Query { nested: Nested } type Nested { %s: String}";
-  private String field;
-
-  public TemplateServiceProvider(String field) { this.field = field; }
-
+  public static final String schema = 
+        "type Query { person: Person } " 
+      + "type Person { firstName : String lastName: String }";
+  
   // Unique namespace for the service
   @Override
-  public String getNameSpace() { return field; }
+  public String getNameSpace() { return "PERSON_NAME"; }
 
   // GraphQL Schema
   @Override
   public Map<String, String> sdlFiles() {
-    return ImmutableMap.of(field + ".graphqls", String.format(TEMPLATE, field));
+    return ImmutableMap.of("schema.graphqls", schema);
   }
 
   // Query execution at runtime, the response needs to have data and error objects as per GraphQL Spec
   @Override
   public CompletableFuture<Map<String, Object>> query(final ExecutionInput executionInput, 
       final GraphQLContext context) {
-    //{'data':{'nested':{'%s':'%s'}}}"
+    //{'data':{'person':{'firstName':'GraphQL Orchestrator', 'lastName': 'Java'}}}"
     Map<String, Object> data = ImmutableMap
-        .of("data", ImmutableMap.of("nested", ImmutableMap.of(field, field)));
+        .of("data", ImmutableMap.of("person", ImmutableMap.of("firstName", "GraphQL Orchestrator", "lastName", "Java")));
+    return CompletableFuture.completedFuture(data);
+  }
+}
+```
+
+```java
+class PersonAddressService implements ServiceProvider {
+
+  public static final String schema = 
+        "type Query { person: Person }"
+      + "type Person { address : Address }"
+      + "type Address { city: String state: String zip: String}";
+
+  // Unique namespace for the service
+  @Override
+  public String getNameSpace() { return "PERSON_ADDRESS";}
+
+  // GraphQL Schema
+  @Override
+  public Map<String, String> sdlFiles() { return ImmutableMap.of("schema.graphqls", schema);}
+
+  // Query execution at runtime, the response needs to have data and error objects as per GraphQL Spec
+  @Override
+  public CompletableFuture<Map<String, Object>> query(final ExecutionInput executionInput,
+      final GraphQLContext context) {
+    //{'data':{'person':{'address':{ 'city' 'San Diego', 'state': 'CA', 'zip': '92129' }}}}"
+    Map<String, Object> data = ImmutableMap
+        .of("data", ImmutableMap.of("person", ImmutableMap.of("address", ImmutableMap.of("city","San Diego", "state","CA", "zip","92129"))));
     return CompletableFuture.completedFuture(data);
   }
 }
@@ -69,10 +98,11 @@ class TemplateServiceProvider implements ServiceProvider {
 
 * Create an instance of Orchestrator and execute the query as below.
 ```java
+
     // create a runtimeGraph by stitching service providers
     RuntimeGraph runtimeGraph = SchemaStitcher.newBuilder()
-        .service(new TemplateServiceProvider("foo"))   
-        .service(new TemplateServiceProvider("bar"))  
+        .service(new PersonNameService())   
+        .service(new PersonAddressService())  
         .build()
         .stitchGraph();
 
@@ -82,14 +112,23 @@ class TemplateServiceProvider implements ServiceProvider {
     
     //Execute the query 
     CompletableFuture<ExecutionResult> execute = graphQLOrchestrator
-        .execute(ExecutionInput.newExecutionInput().query("query {nested {foo bar}}").build());
+        .execute(
+            ExecutionInput.newExecutionInput()
+              .query("query {person {firstName lastName address {city state zip}}}")
+              .build()
+        );
 
     ExecutionResult executionResult = execute.get();
     System.out.println(executionResult.getData().toString());
-    // Output: {nested={foo=foo, bar=bar}}
+    // Output: 
+   // {person={firstName=GraphQL Orchestrator, lastName=Java, address={city=San Diego, state=CA, zip=92129}}}
 ```
 
 ------------------------------
+
+### Graph Quilt Gateway
+
+[Graph Quilt Gateway](https://github.com/graph-quilt/graph-quilt-gateway) is a GraphQL SpringBoot application that uses this library as an orchestrator.
 
 ### Documentation
 
