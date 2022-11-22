@@ -6,99 +6,68 @@ import graphql.language.Selection;
 import graphql.language.SelectionSet;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.Map;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class QueryOptimizer {
 
-    private final Operation operationType;
-    private final SelectionSet filteredSelection;
+  private final Operation operationType;
 
-    public QueryOptimizer(Operation operationType, SelectionSet filteredSelection) {
-        this.filteredSelection = filteredSelection;
-        this.operationType = operationType;
+  public QueryOptimizer(Operation operationType) {
+    this.operationType = operationType;
+  }
+
+  public static ImmutablePair<List<Selection>, Map<String, List<Field>>> groupSelections(List<Selection> selections) {
+    List<Selection> distinctSelections = new ArrayList<>();
+    Map<String, List<Field>> fieldMap = new HashMap<>();
+    selections.forEach(selection -> {
+      //group fields with same name
+      if (selection instanceof Field) {
+        Field field = (Field) selection;
+        fieldMap.computeIfAbsent(field.getName(), k -> new ArrayList<>()).add(field);
+        // collect non fields.
+      } else {
+        distinctSelections.add(selection);
+      }
+    });
+    return new ImmutablePair<>(distinctSelections, fieldMap);
+  }
+
+  public SelectionSet getTransformedSelectionSet(SelectionSet selectionSet) {
+    if (operationType == Operation.QUERY) {
+      return recurse(selectionSet);
     }
+    return selectionSet;
+  }
 
-    public static <T> Predicate<T> distinctByFieldName(Function<? super T, ?> keyExtractor) {
-        Set<Object> seen = ConcurrentHashMap.newKeySet();
-        return t -> seen.add(keyExtractor.apply(t));
+  public SelectionSet recurse(SelectionSet selections) {
+    SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
+    final ImmutablePair<List<Selection>, Map<String, List<Field>>> selectionSetTree = groupSelections(
+        selections.getSelections());
+    selectionSetTree.getLeft().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
+    selectionSetTree.getRight().values().forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
+    return mergedSelectionSetBuilder.build();
+  }
+
+  private Field mergeFields(final List<Field> fields) {
+    final Field firstField = fields.get(0);
+    // distinct field
+    if (fields.size() == 1) {
+      return fields.get(0);
     }
-
-    public static void createSelectionSetTree(SelectionSet selectionSet, HashMap<String, Set<Field>> selectionSetMap) {
-        selectionSet.getSelections().forEach(field -> {
-            Field f = (Field) field;
-            if (f.getSelectionSet() != null) {
-                if (selectionSetMap.containsKey(f.getName()))
-                    selectionSetMap.get(f.getName()).addAll(getSelectionSetFields(f));
-                else
-                    selectionSetMap.put(f.getName(), new HashSet<>(getSelectionSetFields(f)));
-                createSelectionSetTree(f.getSelectionSet(), selectionSetMap);
-            }
-        });
+    // leaf node
+    if (firstField.getSelectionSet() == null) {
+      return firstField;
     }
+    SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
+    fields.forEach(field ->
+        field.getSelectionSet().getSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection))
+    );
+    return firstField.transform(builder ->
+        builder.selectionSet(recurse(mergedSelectionSetBuilder.build()))
+    );
+  }
 
-    public static List<Field> getSelectionSetFields(Field f){
-        return f.getSelectionSet().getSelections()
-                .stream()
-                .map(s -> (Field) s)
-                .collect(Collectors.toList());
-    }
-
-    public static SelectionSet mergeFilteredSelection(Field node, HashMap<String, Set<Field>> selectionSetTree) {
-        SelectionSet.Builder selectionSetBuilder = SelectionSet.newSelectionSet();
-        SelectionSet.Builder childrenSelectionSetBuilder = SelectionSet.newSelectionSet();
-        if (node.getSelectionSet() == null) { // check if leaf node
-            selectionSetBuilder.selection(node);
-            return selectionSetBuilder.build();
-        }
-        List<SelectionSet> childrenSelectionSets = new ArrayList<>();
-        for (Selection selection : selectionSetTree.get(node.getName())) {
-            childrenSelectionSets.add(mergeFilteredSelection((Field) selection, selectionSetTree));
-        }
-        childrenSelectionSets
-                .stream()
-                .map(s -> s.getSelections())
-                .flatMap(Collection::stream)
-                .forEach(childrenSelectionSetBuilder::selection);
-        selectionSetBuilder.selection(node.transform(builder ->
-                builder.selectionSet(childrenSelectionSetBuilder.build())));
-
-        return selectionSetBuilder.build();
-    }
-
-    public SelectionSet getTransformedSelectionSet() {
-        if (operationType.name().equalsIgnoreCase("QUERY")
-                && canOptimizeQuery(filteredSelection)) {
-            SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
-
-            HashMap<String, Set<Field>> selectionSetTree = new HashMap<>();
-            QueryOptimizer.createSelectionSetTree(filteredSelection, selectionSetTree);
-
-            filteredSelection.getSelections().stream()
-                    .map(rootNode -> (Field) rootNode)
-                    .filter(distinctByFieldName(Field::getName))
-                    .forEach(rootNode -> QueryOptimizer.mergeFilteredSelection(rootNode, selectionSetTree)
-                            .getSelections()
-                            .forEach(mergedSelectionSetBuilder::selection));
-            return mergedSelectionSetBuilder.build();
-        }
-        return filteredSelection;
-    }
-
-    private boolean canOptimizeQuery(SelectionSet selectionSet) {
-        if (selectionSet == null) return true;
-        for (Selection selection : selectionSet.getSelections()) {
-            if (selection.getClass() != Field.class
-                    || !canOptimizeQuery(((Field) selection).getSelectionSet()))
-                return false;
-        }
-        return true;
-    }
 }
