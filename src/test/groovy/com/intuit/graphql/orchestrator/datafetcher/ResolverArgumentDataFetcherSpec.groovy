@@ -1,7 +1,9 @@
 package com.intuit.graphql.orchestrator.datafetcher
 
-import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective
+import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.TestHelper
+import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.ExecutionResult
 import graphql.ExecutionResultImpl
 import graphql.GraphqlErrorBuilder
@@ -16,7 +18,6 @@ import org.dataloader.DataLoader
 import org.dataloader.DataLoaderRegistry
 
 import java.util.concurrent.CompletableFuture
-
 
 class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
@@ -58,6 +59,12 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
     public ExecutionResult executionResult
 
     private DataLoaderRegistry dataLoaderRegistry
+
+    ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
+        .queriesByResolverArgument(Collections.emptyMap())
+        .namespace(namespace)
+        .serviceType(ServiceProvider.ServiceType.GRAPHQL)
+        .build()
 
     def setup() {
         mockHelper = Mock(ResolverArgumentDataFetcherHelper.class)
@@ -117,19 +124,19 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
         map.put(debtArgumentResolver, debtQuery)
 
-        ResolverArgumentDataFetcher resolverArgumentDataFetcher = ResolverArgumentDataFetcher.newBuilder()
+        ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
                 .queriesByResolverArgument(map)
                 .namespace(namespace).build()
 
-        resolverArgumentDataFetcher.argumentResolver = mockArgumentResolver
-        resolverArgumentDataFetcher.helper = mockHelper
+        dataFetcher.argumentResolver = mockArgumentResolver
+        dataFetcher.helper = mockHelper
 
         DataFetchingEnvironment dataFetchingEnvironment = DataFetchingEnvironmentImpl.newDataFetchingEnvironment()
                 .dataLoaderRegistry(dataLoaderRegistry)
                 .build()
 
         when:
-        final DataFetcherResult<Object> result = resolverArgumentDataFetcher
+        final DataFetcherResult<Object> result = dataFetcher
                 .get(dataFetchingEnvironment).join()
 
         then:
@@ -156,7 +163,7 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
         map.put(debtArgumentResolver, debtQuery)
         map.put(incomeArgumentResolver, incomeQuery)
 
-        ResolverArgumentDataFetcher dataFetcher = ResolverArgumentDataFetcher.newBuilder()
+        dataFetcher = ResolverArgumentDataFetcher.newBuilder()
                 .queriesByResolverArgument(map)
                 .namespace(namespace).build()
 
@@ -185,18 +192,29 @@ class ResolverArgumentDataFetcherSpec extends BaseIntegrationTestSpecification {
 
         mockArgumentResolver.resolveArguments(_ as DataFetchingEnvironment, _ as Map) >> resolvedArguments
 
-        ResolverArgumentDataFetcher resolverArgumentDataFetcher = ResolverArgumentDataFetcher.newBuilder()
-                .queriesByResolverArgument(Collections.emptyMap())
-                .namespace(namespace)
-                .build()
-
-        resolverArgumentDataFetcher.argumentResolver = mockArgumentResolver
+        dataFetcher.argumentResolver = mockArgumentResolver
 
         when:
-        final DataFetcherResult<Object> result = resolverArgumentDataFetcher
+        final DataFetcherResult<Object> result = dataFetcher
                 .get(Mock(DataFetchingEnvironment.class)).join()
 
         then:
         result.getErrors().size() == 1
+    }
+
+    def "returns correct namespace"() {
+        when:
+        String actualNamespace = dataFetcher.getNamespace()
+
+        then:
+        actualNamespace == namespace
+    }
+
+    def "returns correct DataFetcherType"() {
+        when:
+        DataFetcherContext.DataFetcherType actualDataFetcherType = dataFetcher.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT
     }
 }
