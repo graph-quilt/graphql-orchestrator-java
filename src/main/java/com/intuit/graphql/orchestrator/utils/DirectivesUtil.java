@@ -1,15 +1,16 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import static java.util.stream.Collectors.toMap;
-
 import graphql.Scalars;
 import graphql.introspection.Introspection.DirectiveLocation;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.collections4.CollectionUtils;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Holds creates and maintains DEPRECATED_DIRECTIVE object and Directives specific util functions. The @skip and
@@ -20,6 +21,8 @@ class DirectivesUtil {
 
   static final String NO_LONGER_SUPPORTED = "No longer supported";
 
+  static final String DEFER_DIRECTIVE_NAME = "defer";
+
   static final GraphQLDirective DEPRECATED_DIRECTIVE;
 
   private DirectivesUtil() {
@@ -28,6 +31,7 @@ class DirectivesUtil {
   static {
     DEPRECATED_DIRECTIVE = createDeprecatedDirective();
   }
+
 
   /**
    * creates GraphQLDirective for @deprecated directive.
@@ -69,4 +73,5 @@ class DirectivesUtil {
     }
     return null;
   }
+
 }
