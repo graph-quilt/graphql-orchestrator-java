@@ -18,8 +18,8 @@ class FieldResolverDirectiveTargetIsNestedFieldSpec extends BaseIntegrationTestS
     def BOOK_DOWNSTREAM_QUERY4 = "query Get_Person {person {book {name author {lastName} id}}}";
     def BOOK_DOWNSTREAM_QUERY5 = "query Get_Person {person {book {author {lastName} id name}}}";
     def BOOK_DOWNSTREAM_QUERY6 = "query Get_Person {person {book {author {lastName} name id}}}";
-    def PETS_DOWNSTREAM_QUERY = "query Get_Person {person {pets {name}}}";
-    def PETS_FIELD_RESOLVER_DOWNSTREAM_QUERY = "query Get_Person_Resolver_Directive_Query {person {pets_0:pets {name}}}";
+    def PETS_DOWNSTREAM_QUERY = "query Get_Person {person {pets(animalType:DOG,pureBred:true) {name}}}";
+    def PETS_FIELD_RESOLVER_DOWNSTREAM_QUERY = "query Get_Person_Resolver_Directive_Query {person {pets_0:pets(animalType:DOG,pureBred:true) {name}}}";
 
     def personEI, bookEI, petsEI, petsFieldResolverEI,personEI2,bookEI2,bookEI3,bookEI4,bookEI5,bookEI6,personEI0
     def mockPersonService,mockBookService ,mockPetsService
@@ -109,7 +109,7 @@ class FieldResolverDirectiveTargetIsNestedFieldSpec extends BaseIntegrationTestS
         specUnderTest = createGraphQLOrchestrator([mockPersonService, mockBookService, mockPetsService]);
 
         ExecutionInput query = ExecutionInput.newExecutionInput()
-                .query("query Get_Person { person { id name book {id name author {lastName pets { name } } } pets { name }  } }")
+                .query("query Get_Person { person { id name book {id name author {lastName pets { name } } } pets(animalType: DOG, pureBred: true) { name }  } }")
                 .build();
 
         when:

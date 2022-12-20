@@ -38,6 +38,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -229,10 +230,13 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       for (int i = 0; i < keys.size(); i++) {
         final DataFetchingEnvironment key = keys.get(i);
         String keyPath = key.getExecutionStepInfo().getPath().toString();
-        DataFetcherResult<Object> newDataFetcherResult = batchResult.get(i).transform(builder ->
-            builder.errors(new ArrayList<>(queryRedactErrorsByKey.get(keyPath)))
+        Collection<GraphqlErrorException> graphqlErrorsColl = queryRedactErrorsByKey.get(keyPath);
+        if (CollectionUtils.isNotEmpty(graphqlErrorsColl)) {
+          DataFetcherResult<Object> newDataFetcherResult = batchResult.get(i).transform(builder ->
+            builder.errors(new ArrayList<>(graphqlErrorsColl))
         );
         batchResult.set(i, newDataFetcherResult);
+        }
       }
     }
     return batchResult;
@@ -309,13 +313,11 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       GraphQLType typeCondition, Object authData, FieldAuthorization fieldAuthorization,
       DataFetchingEnvironment dataFetchingEnvironment, MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey,
       GraphQLObjectType operationType) {
-    // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    //return (FragmentDefinition) AST_TRANSFORMER.transform(origFragmentDefinition,
-    //    new DownstreamQueryModifier(unwrapAll(typeCondition), serviceMetadata, fragmentsByName, graphQLSchema));
+
     DownstreamQueryRedactor fragmentDefinitionRedactor = DownstreamQueryRedactor.builder()
         .root(origFragmentDefinition)
         .rootType(unwrapAll(typeCondition))
-        .rootParentType(operationType)
+        .rootParentType(operationType) // parent node of a fragment definition is the operation
         .authData(authData)
         .fieldAuthorization(fieldAuthorization)
         .dataFetchingEnvironment(dataFetchingEnvironment)
@@ -352,12 +354,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private Field removeFieldsWithExternalTypes(Field origField, GraphQLObjectType operationObjectType,
       DataFetchingEnvironment dfe, Object authData, FieldAuthorization fieldAuthorization,
       final MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey) {
-
-    // call serviceMetadata.hasFieldResolverDirective() before calling this method
-    //return (Field) AST_TRANSFORMER.transform(origField,
-    //    new DownstreamQueryModifier(unwrapAll(fieldType), serviceMetadata, fragmentsByName, graphQLSchema));
-
-
+    
     if (serviceMetadata.shouldModifyDownStreamQuery() ||
         !(fieldAuthorization instanceof DefaultFieldAuthorization)) {
       GraphQLType origFieldType = getRootFieldDefinition(dfe.getExecutionStepInfo()).getType();
