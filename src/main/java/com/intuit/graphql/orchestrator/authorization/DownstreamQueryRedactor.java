@@ -9,7 +9,6 @@ import graphql.language.Node;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLType;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.NonNull;
 
@@ -29,19 +28,19 @@ public class DownstreamQueryRedactor {
   public DownstreamQueryRedactorResult redact() {
     AuthDownstreamQueryModifier downstreamQueryModifier = createQueryModifier();
     Node<?> transformedRoot = AST_TRANSFORMER.transform(root, downstreamQueryModifier);
-    if (downstreamQueryModifier.redactedQueryHasEmptySelectionSet()) {
-      throw DownstreamCreateQueryException.builder()
-          .message("Downstream query result has empty selection set.")
-          .extension(
-              "emptySelectionSets",
-              downstreamQueryModifier.getEmptySelectionSets().stream()
-                  .map(SelectionSetMetadata::getSelectionSetPath)
-                  .collect(Collectors.toList()))
-          .build();
-    } else {
+//    if (downstreamQueryModifier.redactedQueryHasEmptySelectionSet()) {
+//      throw DownstreamCreateQueryException.builder()
+//          .message("Downstream query result has empty selection set.")
+//          .extension(
+//              "emptySelectionSets",
+//              downstreamQueryModifier.getEmptySelectionSets().stream()
+//                  .map(SelectionSetMetadata::getSelectionSetPath)
+//                  .collect(Collectors.toList()))
+//          .build();
+//    } else {
       return new DownstreamQueryRedactorResult(
-          transformedRoot, downstreamQueryModifier.getDeclineFieldErrors());
-    }
+          transformedRoot, downstreamQueryModifier.getDeclineFieldErrors(), downstreamQueryModifier.redactedQueryHasEmptySelectionSet());
+//    }
   }
 
   private AuthDownstreamQueryModifier createQueryModifier() {

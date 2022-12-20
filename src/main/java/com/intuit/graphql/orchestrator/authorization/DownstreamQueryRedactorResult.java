@@ -11,9 +11,10 @@ import lombok.NonNull;
 @AllArgsConstructor
 public class DownstreamQueryRedactorResult {
 
-  @NonNull
-  private Node<?> node;
+  private Node<?> node; // nullable since transformer may return null in case field representing this node is denied
 
   @NonNull
   private List<GraphqlErrorException> errors;
+
+  boolean hasEmptySelectionSet;
 }

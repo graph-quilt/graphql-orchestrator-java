@@ -81,6 +81,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
   @Override
   public CompletionStage<List<DataFetcherResult<Object>>> load(final List<DataFetchingEnvironment> keys) {
+
     GraphQLContext graphQLContext = getContext(keys);
     FieldAuthorization fieldAuthorization  = getDefaultOrCustomFieldAuthorization(graphQLContext);
     CompletableFuture<Object> futureAuthData = fieldAuthorization.getFutureAuthData();
@@ -123,6 +124,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         filteredRootField.getFields().stream()
           .map(field -> removeFieldsWithExternalTypes(field,
                 operationObjectType, key, authData, fieldAuthorization, queryRedactErrorsByKey))
+          .filter(Objects::nonNull) // denied access or has an empty selectionSet
           .forEach(selectionSetBuilder::selection);
       }
 
@@ -162,6 +164,19 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     }
 
     SelectionSet filteredSelection = selectionSetBuilder.build();
+    if (CollectionUtils.isEmpty(filteredSelection.getSelections())) {
+      List<DataFetcherResult<Object>> batchResult = keys.stream()
+        .map( key -> {
+          String keyPath = key.getExecutionStepInfo().getPath().toString();
+          Collection<GraphqlErrorException> graphqlErrorsColl = queryRedactErrorsByKey.get(keyPath);
+          return DataFetcherResult.newResult()
+          .errors(new ArrayList<>(graphqlErrorsColl))
+          .build();
+        })
+        .collect(Collectors.toList());
+      return CompletableFuture.completedFuture(batchResult);
+    }
+
     //queryOptimizer = new QueryOptimizer(operationType, filteredSelection);
     //filteredSelection = queryOptimizer.getTransformedSelectionSet();
     Map<String, Object> mergedVariables = new HashMap<>();
