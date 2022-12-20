@@ -204,22 +204,14 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
 
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
-    if (getParentType(context) instanceof GraphQLUnionType) {
+    GraphQLType parentType = getParentType(context);
+    if (parentType instanceof GraphQLUnionType) {
       return TraversalControl.CONTINUE;
     }
 
-    if (!context.isVisited()) {
-      int selectionCount = node.getSelections().size();
-      List<Object> pathList = getNodesAsPathList(context);
-      String selectionSetPath = pathListToFQN(pathList);
-      SelectionSetMetadata selectionSetMetadata = new SelectionSetMetadata(selectionCount, selectionSetPath);
-      context.setVar(SelectionSetMetadata.class, selectionSetMetadata);
-      processedSelectionSetMetadata.add(selectionSetMetadata);
-    }
-
-    GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
-    context.setVar(GraphQLType.class, parentType);
-    String parentTypeName = parentType.getName();
+    GraphQLFieldsContainer parentFieldContainerType = (GraphQLFieldsContainer) parentType;
+    context.setVar(GraphQLType.class, parentFieldContainerType);
+    String parentTypeName = parentFieldContainerType.getName();
 
     Map<String, Field> selectedFields =  this.selectionCollector.collectFields(node);
 
@@ -234,6 +226,15 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
 
     Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get();
 
+    if (!context.isVisited()) {
+      int selectionCount = node.getSelections().size() + CollectionUtils.size(fieldsToAdd);
+      List<Object> pathList = getNodesAsPathList(context);
+      String selectionSetPath = pathListToFQN(pathList);
+      SelectionSetMetadata selectionSetMetadata = new SelectionSetMetadata(selectionCount, selectionSetPath);
+      context.setVar(SelectionSetMetadata.class, selectionSetMetadata);
+      processedSelectionSetMetadata.add(selectionSetMetadata);
+    }
+
     if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
       SelectionSet newNode = node.transform(builder -> {
         for (Field field : fieldsToAdd) {
@@ -241,8 +242,6 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
           builder.selection(field);
         }
       });
-      SelectionSetMetadata selectionSetMetadata = context.getVar(SelectionSetMetadata.class);
-      selectionSetMetadata.increaseRemainingSelection(fieldsToAdd.size());
       return changeNode(context, newNode);
     }
 

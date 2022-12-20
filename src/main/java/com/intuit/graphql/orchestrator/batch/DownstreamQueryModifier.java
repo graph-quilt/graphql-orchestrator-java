@@ -47,6 +47,9 @@ import org.apache.commons.collections4.MapUtils;
  *
  * Another function is this class adds required fields to the query if fields
  * are required by other sibling fields which are external or remote.
+ *
+ * @deprecated  As of release 5.0.15.  To be replaced by {@link AuthDownstreamQueryModifier}
+ *
  */
  @Deprecated
 public class DownstreamQueryModifier extends NodeVisitorStub {

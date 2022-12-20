@@ -13,7 +13,4 @@ public class SelectionSetMetadata {
     --this.remainingSelectionsCount;
   }
 
-  public void increaseRemainingSelection(int count) {
-    this.remainingSelectionsCount += count;
-  }
 }
