@@ -387,6 +387,9 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         String keyPath = dfe.getExecutionStepInfo().getPath().toString();
         queryRedactErrorsByKey.putAll(keyPath, redactResult.getErrors());
       }
+      if (redactResult.isHasEmptySelectionSet()) {
+        return null; // if null, not added to selection
+      }
       return (Field) redactResult.getNode();
     } else {
       return origField;
