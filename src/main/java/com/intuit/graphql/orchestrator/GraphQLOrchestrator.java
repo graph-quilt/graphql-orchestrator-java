@@ -83,30 +83,31 @@ public class GraphQLOrchestrator {
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, boolean hasDefer) {
     if(hasDefer) {
       return executeWithDefer(executionInput);
-    } else {
+    }
       final GraphQL graphQL = constructGraphQL();
 
       final ExecutionInput newExecutionInput = executionInput
               .transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
 
       if (newExecutionInput.getContext() instanceof GraphQLContext) {
-        ((GraphQLContext) executionInput.getContext())
+        ((GraphQLContext) newExecutionInput.getContext())
                 .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
       }
       return graphQL.executeAsync(newExecutionInput);
-    }
   }
 
   private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput) {
     List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
             .map(ei -> {
-              ExecutionInput newEi = ei.transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
-              if (ei.getContext() instanceof GraphQLContext) {
-                ((GraphQLContext) executionInput.getContext())
-                        .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newEi.getDataLoaderRegistry());
-              }
-
-              return newEi;
+              DataLoaderRegistry registry = buildNewDataLoaderRegistry();
+              GraphQLContext graphqlContext = GraphQLContext.newContext()
+                      .of(executionInput.getGraphQLContext())
+                      .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, registry)
+                      .build();
+              return ei.transform(builder -> {
+                builder.dataLoaderRegistry(registry);
+                builder.context(graphqlContext);
+              });
             })
             .collect(Collectors.toList());
 
