@@ -81,48 +81,11 @@ public class GraphQLOrchestrator {
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, boolean hasDefer) {
-
-    final GraphQL.Builder graphqlBuilder = GraphQL.newGraphQL(runtimeGraph.getExecutableSchema())
-        .instrumentation(new ChainedInstrumentation(instrumentations))
-        .executionIdProvider(executionIdProvider)
-        .queryExecutionStrategy(queryExecutionStrategy);
-
-    if (Objects.nonNull(mutationExecutionStrategy)) {
-      graphqlBuilder.mutationExecutionStrategy(mutationExecutionStrategy);
-    }
-
-    final GraphQL graphQL = graphqlBuilder.build();
-
     if(hasDefer) {
-      List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
-              .map(ei -> {
-                ExecutionInput newEi = ei.transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
-                if (ei.getContext() instanceof GraphQLContext) {
-                  ((GraphQLContext) executionInput.getContext())
-                          .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newEi.getDataLoaderRegistry());
-                }
-
-                return newEi;
-              })
-              .collect(Collectors.toList());
-
-      int expectedResponses = splitExecutionInputs.size();
-      AtomicInteger responses = new AtomicInteger(0);
-
-      Flux<Object> executionResultPublisher = Flux.fromIterable(splitExecutionInputs)
-              .map(graphQL::executeAsync)
-              .map(CompletableFuture::join)
-              .doOnNext(executionResult -> responses.getAndIncrement())
-              .map(ExecutionResultImpl.newExecutionResult()::from)
-              .map(builder -> builder.addExtension("hasMoreData", (expectedResponses != responses.get())))
-              .map(ExecutionResultImpl.Builder::build)
-              .map(Object.class::cast)
-              .take(expectedResponses);
-
-      SubscriptionPublisher multiResultPublisher = new SubscriptionPublisher(executionResultPublisher, null);
-
-      return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult().data(multiResultPublisher).build());
+      return executeWithDefer(executionInput);
     } else {
+      final GraphQL graphQL = constructGraphQL();
+
       final ExecutionInput newExecutionInput = executionInput
               .transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
 
@@ -130,9 +93,51 @@ public class GraphQLOrchestrator {
         ((GraphQLContext) executionInput.getContext())
                 .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
       }
-
       return graphQL.executeAsync(newExecutionInput);
     }
+  }
+
+  private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput) {
+    List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
+            .map(ei -> {
+              ExecutionInput newEi = ei.transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
+              if (ei.getContext() instanceof GraphQLContext) {
+                ((GraphQLContext) executionInput.getContext())
+                        .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newEi.getDataLoaderRegistry());
+              }
+
+              return newEi;
+            })
+            .collect(Collectors.toList());
+
+    int expectedResponses = splitExecutionInputs.size();
+    AtomicInteger responses = new AtomicInteger(0);
+
+    Flux<Object> executionResultPublisher = Flux.fromIterable(splitExecutionInputs)
+            .map(constructGraphQL()::executeAsync)
+            .map(CompletableFuture::join)
+            .doOnNext(executionResult -> responses.getAndIncrement())
+            .map(ExecutionResultImpl.newExecutionResult()::from)
+            .map(builder -> builder.addExtension("hasMoreData", (expectedResponses != responses.get())))
+            .map(ExecutionResultImpl.Builder::build)
+            .map(Object.class::cast)
+            .take(expectedResponses);
+
+    SubscriptionPublisher multiResultPublisher = new SubscriptionPublisher(executionResultPublisher, null);
+
+    return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult().data(multiResultPublisher).build());
+  }
+
+  private GraphQL constructGraphQL() {
+    final GraphQL.Builder graphqlBuilder = GraphQL.newGraphQL(runtimeGraph.getExecutableSchema())
+            .instrumentation(new ChainedInstrumentation(instrumentations))
+            .executionIdProvider(executionIdProvider)
+            .queryExecutionStrategy(queryExecutionStrategy);
+
+    if (Objects.nonNull(mutationExecutionStrategy)) {
+      graphqlBuilder.mutationExecutionStrategy(mutationExecutionStrategy);
+    }
+    return graphqlBuilder.build();
   }
 
   public GraphQLSchema getSchema() {
