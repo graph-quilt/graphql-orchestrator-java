@@ -100,8 +100,9 @@ public class GraphQLOrchestrator {
     List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
             .map(ei -> {
               DataLoaderRegistry registry = buildNewDataLoaderRegistry();
+
               GraphQLContext graphqlContext = GraphQLContext.newContext()
-                      .of(executionInput.getGraphQLContext())
+                      .of((GraphQLContext)executionInput.getContext())
                       .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, registry)
                       .build();
               return ei.transform(builder -> {
