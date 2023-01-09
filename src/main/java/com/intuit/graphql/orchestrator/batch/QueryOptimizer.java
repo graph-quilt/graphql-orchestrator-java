@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import lombok.Getter;
 
 public class QueryOptimizer {
 
@@ -19,35 +19,34 @@ public class QueryOptimizer {
     this.operationType = operationType;
   }
 
-  public static ImmutablePair<List<Selection>, Map<String, List<Field>>> groupSelections(List<Selection> selections) {
-    List<Selection> distinctSelections = new ArrayList<>();
-    Map<String, List<Field>> fieldMap = new HashMap<>();
+  private static GroupedSelectionSet groupSelections(List<Selection> selections) {
+    GroupedSelectionSet groupedSelectionSet = new GroupedSelectionSet();
     selections.forEach(selection -> {
       //group fields with same name
       if (selection instanceof Field) {
         Field field = (Field) selection;
-        fieldMap.computeIfAbsent(field.getName(), k -> new ArrayList<>()).add(field);
+        groupedSelectionSet.getGroupedFields().computeIfAbsent(field.getName(), k -> new ArrayList<>()).add(field);
         // collect non fields.
       } else {
-        distinctSelections.add(selection);
+        groupedSelectionSet.getDistinctSelections().add(selection);
       }
     });
-    return new ImmutablePair<>(distinctSelections, fieldMap);
+    return groupedSelectionSet;
   }
 
   public SelectionSet getTransformedSelectionSet(SelectionSet selectionSet) {
     if (operationType == Operation.QUERY) {
-      return recurse(selectionSet);
+      return transform(selectionSet);
     }
     return selectionSet;
   }
 
-  public SelectionSet recurse(SelectionSet selections) {
+  private SelectionSet transform(SelectionSet selections) {
     SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
-    final ImmutablePair<List<Selection>, Map<String, List<Field>>> selectionSetTree = groupSelections(
+    final GroupedSelectionSet groupedSelectionSet = groupSelections(
         selections.getSelections());
-    selectionSetTree.getLeft().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
-    selectionSetTree.getRight().values().forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
+    groupedSelectionSet.getDistinctSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
+    groupedSelectionSet.getGroupedFields().values().forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
     return mergedSelectionSetBuilder.build();
   }
 
@@ -66,8 +65,14 @@ public class QueryOptimizer {
         field.getSelectionSet().getSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection))
     );
     return firstField.transform(builder ->
-        builder.selectionSet(recurse(mergedSelectionSetBuilder.build()))
+        builder.selectionSet(transform(mergedSelectionSetBuilder.build()))
     );
+  }
+
+  @Getter
+  static class GroupedSelectionSet {
+    List<Selection> distinctSelections = new ArrayList<>();
+    Map<String, List<Field>> groupedFields = new HashMap<>();
   }
 
 }

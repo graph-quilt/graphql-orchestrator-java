@@ -3,7 +3,6 @@ package com.intuit.graphql.orchestrator.batch
 import com.intuit.graphql.orchestrator.utils.GraphQLUtil
 import graphql.language.Document
 import graphql.language.Field
-import graphql.language.OperationDefinition
 import spock.lang.Specification
 
 import static graphql.language.OperationDefinition.Operation.QUERY
