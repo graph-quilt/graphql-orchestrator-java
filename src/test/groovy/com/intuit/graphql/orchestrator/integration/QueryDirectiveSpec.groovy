@@ -3,15 +3,19 @@ package com.intuit.graphql.orchestrator.integration
 import com.google.common.collect.ImmutableMap
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import com.intuit.graphql.orchestrator.ServiceProvider
+import com.intuit.graphql.orchestrator.testhelpers.MockServiceProvider
 import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import com.intuit.graphql.orchestrator.utils.GraphQLUtil
 import com.intuit.graphql.orchestrator.utils.SelectionSetUtil
 import graphql.ExecutionInput
+import graphql.ExecutionResult
+import graphql.execution.reactive.SubscriptionPublisher
 import graphql.language.Document
 import graphql.language.Field
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
 import helpers.BaseIntegrationTestSpecification
+import reactor.core.publisher.Flux
 
 class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
 
@@ -254,6 +258,107 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
         users_lastName_field.getDirectives().size() == 1
         users_lastName_field.getDirectives().get(0).getName() == "include"
         users_lastName_field.getDirectives().get(0).getArgument("if") != null
+    }
+
+    def "test defer directive on Query"() {
+        given:
+
+        def initialEI = "query getPetsDeferred {pets {id name}}"
+        def deferredEI = "query getPetsDeferred {pets {type}}"
+
+        def petsInitResponse = [
+                data: [
+                        pets: [
+                                [id: "pet-1", name: "Charlie"],
+                                [id: "pet-2", name: "Milo"],
+                                [id: "pet-3", name: "Poppy"]
+                        ]
+                ]
+        ]
+
+        def petsDeferResponse = [
+                data: [
+                        pets: [
+                                [type: "DOG" ],
+                                [type: "RABBIT"],
+                                [type: "CAT"]
+                        ]
+                ]
+        ]
+        MockServiceProvider petsService = createQueryMatchingService("petsService",
+                petsSchema,
+                [
+                        (initialEI) :petsInitResponse,
+                        (deferredEI) : petsDeferResponse
+                ]
+        )
+
+        ServiceProvider[] services = [ petsService ]
+        specUnderTest = createGraphQLOrchestrator(services)
+
+        when:
+        ExecutionInput petsEI = ExecutionInput.newExecutionInput()
+        .query('''
+            query getPetsDeferred {
+                pets {
+                    id 
+                    name 
+                    type @defer
+                }
+            }
+        ''').build()
+
+        ExecutionResult executionResult = specUnderTest.execute(petsEI, true).get()
+        SubscriptionPublisher subscriptionPublisher = (SubscriptionPublisher)executionResult.data
+        Flux<Object> publisher = (Flux) subscriptionPublisher.upstreamPublisher;
+        List<ExecutionResult> results = (List<ExecutionResult>) publisher.collectList().block()
+
+        then:
+        results.size() == 2
+        results.get(0).errors.size() == 0
+        results.get(0).data != null
+
+        Map<String, Object> initDataValue = (Map<String, Object>) results.get(0).data
+        initDataValue.keySet().contains("pets")
+        initDataValue.get("pets").size() == 3
+
+        Map<String, Object> initPet1 = initDataValue.get("pets").get(0)
+        initPet1.get("id") == "pet-1"
+        initPet1.get("name") == "Charlie"
+        initPet1.keySet().contains("type") == true
+        initPet1.get("type") == null
+
+        Map<String, Object> initPet2 = initDataValue.get("pets").get(1)
+        initPet2.get("id") == "pet-2"
+        initPet2.get("name") == "Milo"
+        initPet2.keySet().contains("type") == true
+        initPet2.get("type") == null
+
+        Map<String, Object> initPet3 = initDataValue.get("pets").get(2)
+        initPet3.get("id") == "pet-3"
+        initPet3.get("name") == "Poppy"
+        initPet3.keySet().contains("type") == true
+        initPet3.get("type") == null
+
+        Map<String, Object> deferDataValue = (Map<String, Object>) results.get(1).data
+        deferDataValue.keySet().contains("pets")
+        deferDataValue.get("pets").size() == 3
+
+        Map<String, Object> deferPet1 = deferDataValue.get("pets").get(0)
+        deferPet1.keySet().contains("id") == false
+        deferPet1.keySet().contains("name") == false
+        deferPet1.get("type") == "DOG"
+
+        Map<String, Object> deferPet2 = deferDataValue.get("pets").get(1)
+        deferPet2.keySet().contains("id") == false
+        deferPet2.keySet().contains("name") == false
+        deferPet2.get("type") == "RABBIT"
+
+        Map<String, Object> deferPet3 = deferDataValue.get("pets").get(2)
+        deferPet3.keySet().contains("id") == false
+        deferPet3.keySet().contains("name") == false
+        deferPet3.get("type") == "CAT"
+
     }
 
 }

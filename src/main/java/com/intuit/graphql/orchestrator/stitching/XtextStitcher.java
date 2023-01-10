@@ -1,17 +1,5 @@
 package com.intuit.graphql.orchestrator.stitching;
 
-import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
-import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
 import com.intuit.graphql.orchestrator.ServiceProvider;
@@ -61,6 +49,8 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
 import graphql.schema.StaticDataFetcher;
+import org.dataloader.BatchLoader;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -70,7 +60,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createDataLoaderKey;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.getBuiltInClientDirectives;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.getAllTypes;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.ENTITY_FETCHER;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ARGUMENT;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.RESOLVER_ON_FIELD_DEFINITION;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.SERVICE;
+import static com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType.STATIC;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The type Xtext stitcher.
@@ -295,11 +297,14 @@ public class XtextStitcher implements Stitcher {
         .forEach((operation, objectTypeDefinition) ->
             operationMap.put(operation, (GraphQLObjectType) visitor.doSwitch(objectTypeDefinition)));
 
+    Set<GraphQLDirective> directives = getAdditionalDirectives(unifiedXtextGraph, visitor.getDirectiveDefinitions());
+    directives.addAll(getBuiltInClientDirectives());
+
     return RuntimeGraph.newBuilder()
         .operationMap(operationMap)
         .objectTypes(visitor.getGraphQLObjectTypes())
         .additionalTypes(getAdditionalTypes(unifiedXtextGraph, visitor.getGraphQLObjectTypes()))
-        .additionalDirectives(getAdditionalDirectives(unifiedXtextGraph, visitor.getDirectiveDefinitions()));
+        .additionalDirectives(directives);
   }
 
   /**

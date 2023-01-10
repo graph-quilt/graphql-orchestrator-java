@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
 
 public class FieldResolverDirectiveUtil {
@@ -116,6 +117,10 @@ public class FieldResolverDirectiveUtil {
 
   public static boolean hasResolverDirective(GraphQLFieldDefinition fieldDefinition) {
     return fieldDefinition.getDirective(RESOLVER_DIRECTIVE_NAME) != null;
+  }
+
+  public static boolean hasDeferDirective(GraphQLFieldDefinition fieldDefinition) {
+    return fieldDefinition.getDirective(DEFER_DIRECTIVE_NAME) != null;
   }
 
   public static boolean isObjectOrInterfaceType(TypeDefinition typeDefinition) {

@@ -21,13 +21,7 @@ class MultipartUtilSpec extends Specification {
 
         then:
         splitSet.size() == 2
-        //non deferred fields are in the first query
-        splitSet.get(0).query == "query {\n" +
-                "  queryA {\n" +
-                "    fieldA\n" +
-                "    fieldB\n" +
-                "  }\n" +
-                "}\n"
+        splitSet.get(0).query == query
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldC\n" +
@@ -45,11 +39,7 @@ class MultipartUtilSpec extends Specification {
 
         then:
         splitSet.size() == 2
-        splitSet.get(0).query == "query {\n" +
-                "  queryA {\n" +
-                "    aliasA: fieldA\n" +
-                "  }\n" +
-                "}\n"
+        splitSet.get(0).query == query
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    aliasB: fieldB\n" +
@@ -59,7 +49,7 @@ class MultipartUtilSpec extends Specification {
 
     def "can split execution input with arguments"() {
         given:
-        String query = "query { getFoo(id:\"inputA\") { fieldA fieldB@defer } }"
+        String query = "query { getFoo(id: \"inputA\") { fieldA fieldB @defer } }"
 
         when:
         ExecutionInput input = ExecutionInput.newExecutionInput(query).build()
@@ -68,11 +58,7 @@ class MultipartUtilSpec extends Specification {
         then:
         splitSet.size() == 2
 
-        splitSet.get(0).query == "query {\n" +
-                "  getFoo(id: \"inputA\") {\n" +
-                "    fieldA\n" +
-                "  }\n" +
-                "}\n"
+        splitSet.get(0).query == query
 
         splitSet.get(1).query == "query {\n" +
                 "  getFoo(id: \"inputA\") {\n" +
@@ -91,11 +77,7 @@ class MultipartUtilSpec extends Specification {
 
         then:
         splitSet.size() == 3
-        splitSet.get(0).query == "query {\n" +
-                "  queryA {\n" +
-                "    fieldA\n" +
-                "  }\n" +
-                "}\n"
+        splitSet.get(0).query == query
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldB\n" +
@@ -120,15 +102,7 @@ class MultipartUtilSpec extends Specification {
 
         then:
         splitSet.size() == 2
-        splitSet.get(0).query == "query {\n" +
-                "  queryA {\n" +
-                "    fieldA\n" +
-                "    objectField {\n" +
-                "      fieldB\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n"
-
+        splitSet.get(0).query == query
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    objectField {\n" +
@@ -136,6 +110,19 @@ class MultipartUtilSpec extends Specification {
                 "    }\n" +
                 "  }\n" +
                 "}\n"
+    }
+
+    def "Does not split EI when if arg is false"() {
+        given:
+        String query = "query { queryA { fieldA fieldB fieldC @defer(if: false) } }"
+
+        when:
+        ExecutionInput input = ExecutionInput.newExecutionInput(query).build()
+        List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
+
+        then:
+        splitSet.size() == 1
+        splitSet.get(0).query == query
     }
 
     //todo
@@ -149,5 +136,9 @@ class MultipartUtilSpec extends Specification {
 
     //todo
     def "can split EI with fragment spread"() {}
+
+
+    // end to end tests
+
 
 }

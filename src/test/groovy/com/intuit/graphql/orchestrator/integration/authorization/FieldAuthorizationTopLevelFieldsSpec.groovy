@@ -79,6 +79,8 @@ class FieldAuthorizationTopLevelFieldsSpec extends BaseIntegrationTestSpecificat
     Map<String, Object> argumentValues = Collections.emptyMap();
 
     void setup() {
+        mockGraphQLContext.getOrDefault("useDefer", false) >> false
+
         testServiceA = createSimpleMockService("testServiceA", testSchemaA, mockServiceResponseA)
         testServiceB = createSimpleMockService("testServiceB", testSchemaB, mockServiceResponseB)
         testServiceC = createQueryMatchingService("testServiceC", testSchemaC, mockServiceResponseC)

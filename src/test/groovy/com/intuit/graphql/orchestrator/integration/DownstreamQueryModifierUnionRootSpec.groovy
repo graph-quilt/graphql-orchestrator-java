@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.integration
 import com.intuit.graphql.orchestrator.batch.DownstreamQueryModifier
 import com.intuit.graphql.orchestrator.metadata.RenamedMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
+import graphql.GraphQLContext
 import graphql.Scalars
 import graphql.language.*
 import graphql.schema.*
@@ -73,7 +74,7 @@ class DownstreamQueryModifierUnionRootSpec extends Specification {
 
         Map<String, FragmentDefinition> emptyFragmentsByName = emptyMap()
         queryModifierWithUnionRootType = new DownstreamQueryModifier(rootType, serviceMetadataMock,
-                emptyFragmentsByName, graphQLSchemaMock)
+                emptyFragmentsByName, graphQLSchemaMock, GraphQLContext.newContext().build())
     }
 
 
