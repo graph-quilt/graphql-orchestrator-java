@@ -4,17 +4,19 @@ import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetchingEnvironment;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static com.intuit.graphql.orchestrator.utils.FederationConstants._ENTITIES_FIELD_NAME;
 
+@Slf4j
 public class EntityFetcherBatchResultTransformer  implements BatchResultTransformer {
     private final String providerNamespace;
     private final String entityName;
@@ -31,31 +33,13 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
     @Override
     public List<DataFetcherResult<Object>> toBatchResult(DataFetcherResult<Map<String, Object>> dataFetcherResult,
                                                          List<DataFetchingEnvironment> dataFetchingEnvironments) {
-        if(dataFetcherResult.hasErrors()) {
-            throw EntityFetchingException.builder()
-                    .serviceNameSpace(providerNamespace)
-                    .fieldName(extFieldName)
-                    .parentTypeName(entityName)
-                    .additionalInfo(
-                        dataFetcherResult.getErrors().stream()
-                        .map(GraphQLError::getMessage)
-                        .reduce("", (partialString, errMsg) -> StringUtils.join(partialString, errMsg, " "))
-                    )
-                    .build();
-        }
-
         List<DataFetcherResult<Object>> dataFetcherResults = new ArrayList<>();
         List<Map<String, Object>> _entities = (MapUtils.isEmpty(dataFetcherResult.getData())) ? Collections.emptyList() : (List<Map<String, Object>>) dataFetcherResult.getData().get(_ENTITIES_FIELD_NAME);
-        if(CollectionUtils.isNotEmpty(_entities)) {
-            _entities.forEach(entityResult -> {
-                Object fieldData = (entityResult != null) ? entityResult.get(this.extFieldName) : null;
 
-                dataFetcherResults.add(DataFetcherResult.newResult()
-                        .data(fieldData)
-                        .build()
-                );
-            });
-        } else {
+        if(CollectionUtils.isEmpty(_entities)) {
+            //Should not happen; if it did, downstream did not create entity fetcher correctly or is not using DGS
+            log.warn("Provider {} is not using DGS or invalid version", providerNamespace);
+
             throw EntityFetchingException.builder()
                     .serviceNameSpace(providerNamespace)
                     .parentTypeName(entityName)
@@ -64,6 +48,51 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
                     .build();
         }
 
+        mapErrorsToEntities(dataFetcherResult, _entities);
+
+        //using IntStream instead of regular for loop or atomic reference, so we can parallelize this if we want
+        IntStream.range(0, _entities.size()).forEach( idx -> {
+            Map<String, Object> entityInfo = _entities.get(idx);
+            Object fieldData = (entityInfo != null) ? entityInfo.get(this.extFieldName) : null;
+            List<GraphQLError> graphQLErrors = (List<GraphQLError>) entityInfo.getOrDefault("errors", new ArrayList<>());
+
+            dataFetcherResults.add(DataFetcherResult.newResult()
+                    .data(fieldData)
+                    .errors(graphQLErrors)
+                    .build()
+            );
+        });
+
         return dataFetcherResults;
+    }
+
+    private void mapErrorsToEntities( DataFetcherResult<Map<String, Object>> dataFetcherResult, List<Map<String, Object>> entityList) {
+        if(dataFetcherResult.hasErrors()) {
+            dataFetcherResult.getErrors().forEach(error -> {
+                error.getExtensions().put("serviceNamespace", providerNamespace);
+                error.getExtensions().put("parentTypename", entityName);
+                error.getExtensions().put("fieldName", extFieldName);
+                error.getExtensions().put("downstreamErrors", error.toSpecification());
+
+                //Decided to ignore if errors have no path to match field resolver. This should not happen though.
+                if(error.getPath() != null) {
+                    //path is always _entities/entityIdx/entityField for entity fetch
+                    Integer pathIndex = (Integer) error.getPath().get(1);
+                    Map<String, Object> entityInfo = entityList.get(pathIndex);
+
+                    if(entityInfo != null) {
+                       List<GraphQLError> errors = (List<GraphQLError>) entityInfo.get("errors");
+                       boolean containsKey = errors != null;
+                       //this case should not happen, but adding check just in case
+                       if(!containsKey) {
+                            errors = new ArrayList<>();
+                            entityInfo.put("errors" ,errors);
+                       }
+
+                       errors.add(error);
+                    }
+                }
+            });
+        }
     }
 }
