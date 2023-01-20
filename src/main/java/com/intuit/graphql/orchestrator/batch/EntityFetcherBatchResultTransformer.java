@@ -22,6 +22,8 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
     private final String entityName;
     private final String extFieldName;
 
+    private final int ENTITY_PATH_IDX = 1;
+
     public static final String NO_ENTITY_FIELD = "Faulty entity response due to null _entities field";
 
     public EntityFetcherBatchResultTransformer(String providerNamespace, String entityName, String fieldName) {
@@ -38,7 +40,7 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
 
         if(CollectionUtils.isEmpty(_entities)) {
             //Should not happen; if it did, downstream did not create entity fetcher correctly or is not using DGS
-            log.warn("Provider {} is not using DGS or invalid version", providerNamespace);
+            log.warn("Provider {} is not Federation subgraph specification compliant. _entities field missing or empty in the response.", providerNamespace);
 
             throw EntityFetchingException.builder()
                     .serviceNameSpace(providerNamespace)
@@ -77,7 +79,7 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
                 //Decided to ignore if errors have no path to match field resolver. This should not happen though.
                 if(error.getPath() != null) {
                     //path is always _entities/entityIdx/entityField for entity fetch
-                    Integer pathIndex = (Integer) error.getPath().get(1);
+                    Integer pathIndex = (Integer) error.getPath().get(ENTITY_PATH_IDX);
                     Map<String, Object> entityInfo = entityList.get(pathIndex);
 
                     if(entityInfo != null) {
