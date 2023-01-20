@@ -1,5 +1,8 @@
 package com.intuit.graphql.orchestrator.batch;
 
+import static com.intuit.graphql.orchestrator.utils.SelectionSetUtil.isEmpty;
+
+import com.intuit.graphql.orchestrator.utils.SelectionSetUtil;
 import graphql.language.Field;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.Selection;
@@ -43,10 +46,10 @@ public class QueryOptimizer {
 
   private SelectionSet transform(SelectionSet selections) {
     SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
-    final GroupedSelectionSet groupedSelectionSet = groupSelections(
-        selections.getSelections());
+    final GroupedSelectionSet groupedSelectionSet = groupSelections(selections.getSelections());
     groupedSelectionSet.getDistinctSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
-    groupedSelectionSet.getGroupedFields().values().forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
+    groupedSelectionSet.getGroupedFields().values()
+        .forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
     return mergedSelectionSetBuilder.build();
   }
 
@@ -54,10 +57,10 @@ public class QueryOptimizer {
     final Field firstField = fields.get(0);
     // distinct field
     if (fields.size() == 1) {
-      return fields.get(0);
+      return firstField;
     }
     // leaf node
-    if (firstField.getSelectionSet() == null) {
+    if (isEmpty(firstField.getSelectionSet())) {
       return firstField;
     }
     SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
@@ -71,6 +74,7 @@ public class QueryOptimizer {
 
   @Getter
   static class GroupedSelectionSet {
+
     List<Selection> distinctSelections = new ArrayList<>();
     Map<String, List<Field>> groupedFields = new HashMap<>();
   }
