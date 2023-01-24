@@ -1,11 +1,13 @@
 package com.intuit.graphql.orchestrator.datafetcher
 
 import com.google.common.collect.ImmutableMap
+import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType
 import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.batch.QueryExecutor
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.GraphQLContext
 import graphql.execution.DataFetcherResult
 import graphql.execution.MergedField
@@ -99,9 +101,51 @@ class RestDataFetcherSpec extends Specification {
         noExceptionThrown()
     }
 
-    // TODO see if needed
-    // public void canExecuteRequestWithEmptySelectionSet() {
-    // }
+    def "returns correct namespace"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getNameSpace() >> "TestNamespace"
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
+
+        when:
+        String actualNamespace = restDataFetcher.getNamespace()
+
+        then:
+        actualNamespace == "TestNamespace"
+    }
+
+    def "returns correct DataFetcherType"() {
+        given:
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
+
+        when:
+        DataFetcherContext.DataFetcherType actualDataFetcherType = restDataFetcher.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.REST
+    }
+
+    def "returns correct ServiceType"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getSeviceType() >> ServiceType.REST
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        RestDataFetcher restDataFetcher = new RestDataFetcher(serviceMetadata)
+
+        when:
+        ServiceType actualServiceType = restDataFetcher.getServiceType()
+
+        then:
+        actualServiceType == ServiceType.REST
+    }
 
     private DataFetchingEnvironment createTestDataFetchingEnvironment(
             OperationDefinition opDef, MergedField field, Map<String, Object> variables) {

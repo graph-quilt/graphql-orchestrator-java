@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator.batch
 
 import com.google.common.collect.ImmutableMap
 import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.authorization.BatchFieldAuthorization
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorization
 import com.intuit.graphql.orchestrator.batch.GraphQLTestUtil.PassthroughQueryModifier
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
 import graphql.GraphQLContext
@@ -53,19 +53,19 @@ class GraphQLServiceBatchLoaderSpec extends Specification {
 
     public VariableDefinitionFilter mockVariableDefinitionFilter
 
-    public BatchFieldAuthorization mockBatchFieldAuthorization
+    public FieldAuthorization mocFieldAuthorization
 
     def setup() {
         mockServiceProvider = Mock(ServiceProvider)
         mockServiceMetadata = Mock(ServiceMetadataImpl)
         mockVariableDefinitionFilter = Mock(VariableDefinitionFilter)
-        mockBatchFieldAuthorization = Mock(BatchFieldAuthorization)
+        mocFieldAuthorization = Mock(FieldAuthorization)
 
         mockServiceMetadata.requiresTypenameInjection() >> false
         mockVariableDefinitionFilter.getVariableReferencesFromNode(
                 _ as GraphQLSchema, _ as GraphQLObjectType, _ as Map, _ as Map, _ as Node) >> Collections.emptySet()
 
-        mockBatchFieldAuthorization.getFutureAuthData() >> CompletableFuture.completedFuture("TestFutureAuthData")
+        mocFieldAuthorization.getFutureAuthData() >> CompletableFuture.completedFuture("TestFutureAuthData")
 
         mockServiceProvider.isFederationProvider() >> false
         mockServiceMetadata.getServiceProvider() >> mockServiceProvider
@@ -168,7 +168,7 @@ class GraphQLServiceBatchLoaderSpec extends Specification {
                 .query(queryType).build()
 
         GraphQLContext graphQLContext = GraphQLContext.newContext().build()
-        graphQLContext.put(BatchFieldAuthorization.class, mockBatchFieldAuthorization)
+        graphQLContext.put(FieldAuthorization.class, mocFieldAuthorization)
 
         DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
                 .variables(ImmutableMap.of("1", "3"))
@@ -285,7 +285,7 @@ class GraphQLServiceBatchLoaderSpec extends Specification {
         OperationDefinition opDef = newOperationDefinition().operation(Operation.MUTATION).build()
 
         GraphQLContext graphQLContext = GraphQLContext.newContext().build()
-        graphQLContext.put(BatchFieldAuthorization.class, mockBatchFieldAuthorization)
+        graphQLContext.put(FieldAuthorization.class, mocFieldAuthorization)
 
         DataFetchingEnvironment dfe1 = newDataFetchingEnvironment()
                 .variables(ImmutableMap.of("1", "3"))

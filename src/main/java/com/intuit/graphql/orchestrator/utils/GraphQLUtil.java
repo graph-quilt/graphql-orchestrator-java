@@ -1,8 +1,5 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import static graphql.schema.GraphQLTypeUtil.isNotWrapped;
-import static graphql.schema.GraphQLTypeUtil.unwrapOne;
-
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
 import graphql.language.AstTransformer;
@@ -21,10 +18,14 @@ import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static graphql.schema.GraphQLTypeUtil.isNotWrapped;
+import static graphql.schema.GraphQLTypeUtil.unwrapOne;
 
 /**
  * This class contains helper methods for GraphQL types. This class will often contain modifications of already built
