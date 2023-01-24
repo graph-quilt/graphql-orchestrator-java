@@ -1,5 +1,20 @@
 package com.intuit.graphql.orchestrator.schema.transform;
 
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
+import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeExtensionDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeExtensionDefinition;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
+import static java.lang.String.format;
+
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -17,8 +32,6 @@ import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflic
 import com.intuit.graphql.orchestrator.xtext.DataFetcherContext;
 import com.intuit.graphql.orchestrator.xtext.FieldContext;
 import com.intuit.graphql.orchestrator.xtext.UnifiedXtextGraph;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -26,21 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_DIRECTIVE_NAME;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTERNAL_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationUtils.isTypeSystemForBaseType;
-import static com.intuit.graphql.orchestrator.utils.XtextGraphUtils.addToCodeRegistry;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInterfaceTypeExtensionDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isObjectTypeExtensionDefinition;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
-import static java.lang.String.format;
+import org.apache.commons.lang3.StringUtils;
 
 public class FederationTransformerPostMerge implements Transformer<UnifiedXtextGraph, UnifiedXtextGraph> {
 
@@ -76,6 +75,7 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
               FieldContext fieldContext = new FieldContext(entityExtensionMetadata.getTypeName(), fieldName);
               DataFetcherContext dataFetcherContext = DataFetcherContext
                       .newBuilder()
+                      .namespace(entityExtensionMetadata.getFederationMetadata().getServiceProvider().getNameSpace())
                       .dataFetcherType(DataFetcherContext.DataFetcherType.ENTITY_FETCHER)
                       .entityExtensionMetadata(entityExtensionMetadata)
                       .build();

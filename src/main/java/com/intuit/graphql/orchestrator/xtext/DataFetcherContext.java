@@ -39,7 +39,7 @@ public class DataFetcherContext {
   }
 
   public enum DataFetcherType {
-    STATIC, SERVICE, PROPERTY, RESOLVER_ARGUMENT, RESOLVER_ON_FIELD_DEFINITION, ENTITY_FETCHER;
+    STATIC, SERVICE, PROPERTY, RESOLVER_ARGUMENT, RESOLVER_ON_FIELD_DEFINITION, ENTITY_FETCHER, REST
   }
 
   public static final class Builder {

@@ -1,10 +1,10 @@
 package com.intuit.graphql.orchestrator;
 
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
+import com.intuit.graphql.orchestrator.utils.MultipartUtil;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
+import graphql.ExecutionResultImpl;
 import graphql.GraphQL;
 import graphql.GraphQLContext;
 import graphql.execution.AsyncExecutionStrategy;
@@ -13,20 +13,26 @@ import graphql.execution.ExecutionStrategy;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
+import graphql.execution.reactive.SubscriptionPublisher;
 import graphql.schema.GraphQLSchema;
+import lombok.extern.slf4j.Slf4j;
+import org.dataloader.BatchLoader;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
+import reactor.core.publisher.Flux;
+
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.dataloader.BatchLoader;
-import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderRegistry;
+
+import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class GraphQLOrchestrator {
@@ -71,26 +77,68 @@ public class GraphQLOrchestrator {
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput) {
+    return execute(executionInput, false);
+  }
 
+  public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, boolean hasDefer) {
+    if(hasDefer) {
+      return executeWithDefer(executionInput);
+    }
+      final GraphQL graphQL = constructGraphQL();
+
+      final ExecutionInput newExecutionInput = executionInput
+              .transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
+
+      if (newExecutionInput.getContext() instanceof GraphQLContext) {
+        ((GraphQLContext) newExecutionInput.getContext())
+                .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
+      }
+      return graphQL.executeAsync(newExecutionInput);
+  }
+
+  private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput) {
+    List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
+            .map(ei -> {
+              DataLoaderRegistry registry = buildNewDataLoaderRegistry();
+              GraphQLContext graphqlContext = GraphQLContext.newContext()
+                      .of(executionInput.getGraphQLContext())
+                      .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, registry)
+                      .build();
+              return ei.transform(builder -> {
+                builder.dataLoaderRegistry(registry);
+                builder.context(graphqlContext);
+              });
+            })
+            .collect(Collectors.toList());
+
+    int expectedResponses = splitExecutionInputs.size();
+    AtomicInteger responses = new AtomicInteger(0);
+
+    Flux<Object> executionResultPublisher = Flux.fromIterable(splitExecutionInputs)
+            .map(constructGraphQL()::executeAsync)
+            .map(CompletableFuture::join)
+            .doOnNext(executionResult -> responses.getAndIncrement())
+            .map(ExecutionResultImpl.newExecutionResult()::from)
+            .map(builder -> builder.addExtension("hasMoreData", (expectedResponses != responses.get())))
+            .map(ExecutionResultImpl.Builder::build)
+            .map(Object.class::cast)
+            .take(expectedResponses);
+
+    SubscriptionPublisher multiResultPublisher = new SubscriptionPublisher(executionResultPublisher, null);
+
+    return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult().data(multiResultPublisher).build());
+  }
+
+  private GraphQL constructGraphQL() {
     final GraphQL.Builder graphqlBuilder = GraphQL.newGraphQL(runtimeGraph.getExecutableSchema())
-        .instrumentation(new ChainedInstrumentation(instrumentations))
-        .executionIdProvider(executionIdProvider)
-        .queryExecutionStrategy(queryExecutionStrategy);
+            .instrumentation(new ChainedInstrumentation(instrumentations))
+            .executionIdProvider(executionIdProvider)
+            .queryExecutionStrategy(queryExecutionStrategy);
 
     if (Objects.nonNull(mutationExecutionStrategy)) {
       graphqlBuilder.mutationExecutionStrategy(mutationExecutionStrategy);
     }
-
-    final GraphQL graphQL = graphqlBuilder.build();
-
-    final ExecutionInput newExecutionInput = executionInput
-        .transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
-
-    if (newExecutionInput.getContext() instanceof GraphQLContext) {
-      ((GraphQLContext) executionInput.getContext())
-          .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
-    }
-    return graphQL.executeAsync(newExecutionInput);
+    return graphqlBuilder.build();
   }
 
   public GraphQLSchema getSchema() {
