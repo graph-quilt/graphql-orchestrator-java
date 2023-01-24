@@ -33,7 +33,7 @@ class FieldResolverDirectiveTopLevelSpec extends BaseIntegrationTestSpecificatio
 
     def USERS_WITH_LINK_DOWNSTREAM_QUERY5 = "query GetQuery {userById(id:\"user-1\") {petId1 id firstName}}"
 
-    def USERS_WITH_LINK_DOWNSTREAM_QUERY6 = "query GetQuery {userById(id:\"user-1\") {petId1 id firstName}}"
+    def USERS_WITH_LINK_DOWNSTREAM_QUERY6 = "query GetQuery {userById(id:\"user-1\") {petId1 firstName id}}"
 
     def PETBYID_1_DOWNSTREAM_QUERY = "query GetQuery_Resolver_Directive_Query {petById1_0:petById1(id:\"pet-1\") {... on Cat {name catBreed} ... on Dog {name dogBreed} __typename}}"
 

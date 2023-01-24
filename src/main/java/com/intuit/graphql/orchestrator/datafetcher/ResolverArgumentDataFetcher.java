@@ -1,13 +1,14 @@
 package com.intuit.graphql.orchestrator.datafetcher;
 
+import com.intuit.graphql.orchestrator.ServiceProvider.ServiceType;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDirective;
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext.DataFetcherType;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
 import graphql.VisibleForTesting;
 import graphql.execution.Async;
 import graphql.execution.DataFetcherResult;
 import graphql.language.OperationDefinition;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<Comp
 
   private final String namespace;
   private final Map<ResolverArgumentDirective, OperationDefinition> resolverQueryByDirective;
+  private final ServiceType serviceType;
 
   @VisibleForTesting
   ResolverArgumentDataFetcherHelper helper;
@@ -39,6 +41,7 @@ public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<Comp
   private ResolverArgumentDataFetcher(final Builder builder) {
     resolverQueryByDirective = builder.resolverQueryByDirective;
     namespace = builder.namespace;
+    serviceType = builder.serviceType;
     this.helper = new ResolverArgumentDataFetcherHelper(namespace);
     this.argumentResolver = ArgumentResolver.newBuilder().build();
   }
@@ -115,10 +118,21 @@ public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<Comp
     return retVal;
   }
 
+  @Override
+  public DataFetcherType getDataFetcherType() {
+    return DataFetcherType.RESOLVER_ARGUMENT;
+  }
+
+  @Override
+  public ServiceType getServiceType() {
+    return this.serviceType;
+  }
+
   public static final class Builder {
 
     private Map<ResolverArgumentDirective, OperationDefinition> resolverQueryByDirective = new HashMap<>();
     private String namespace;
+    private ServiceType serviceType;
 
     private Builder() {
     }
@@ -130,6 +144,11 @@ public class ResolverArgumentDataFetcher implements ServiceAwareDataFetcher<Comp
 
     public Builder namespace(final String val) {
       namespace = Objects.requireNonNull(val);
+      return this;
+    }
+
+    public Builder serviceType(final ServiceType serviceType) {
+      this. serviceType = serviceType;
       return this;
     }
 

@@ -4,16 +4,16 @@ import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
 
-class DefaultBatchFieldAuthorizationSpec extends Specification {
+class DefaultFieldAuthorizationSpec extends Specification {
 
-    def specUnderTest = new DefaultBatchFieldAuthorization()
+    def specUnderTest = new DefaultFieldAuthorization()
 
     def "future auth data must be null"() {
         when:
         CompletableFuture<?> actual =  specUnderTest.getFutureAuthData()
 
         then:
-        actual.get() == null
+        actual.get() == ""
     }
 
 }
