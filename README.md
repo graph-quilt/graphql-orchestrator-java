@@ -11,7 +11,7 @@ A powerful Java library for aggregating and executing GraphQL operations from mu
 
 ### Introduction
 
-graphql-orchestrator-java simplifies the process of accessing data from various GraphQL microservices by providing a unified GraphQL schema. 
+**graphql-orchestrator-java** simplifies the process of accessing data from various GraphQL microservices by providing a unified GraphQL schema. 
 This enables you to query multiple microservices through a single endpoint, reducing complexity and improving performance.
 
 The library uses a [a recursive strategy](./mkdocs/docs/key-concepts/merging-types.md) to aggregate and combine the schemas from these microservices 
@@ -19,6 +19,15 @@ and orchestrates the GraphQL queries to the appropriate services at runtime, usi
 library as the execution engine.
 
 It also supports Apollo Federation directives for schema composition. Currently, it supports `@key, @requires, @extends, and @external` directives.
+
+### Features 
+
+* [Apollo Federation Style Schema Composition](https://netflix.github.io/dgs/federation/)
+* [Recursive Stitching](https://graph-quilt.github.io/docs/merging-types/)
+* [Query Batching](https://graph-quilt.github.io/docs/graphql-query-execution/)
+* [Type Conflict Resolution Strategy](https://graph-quilt.github.io/docs/conflict-resolution/)
+* [Pluggable `graphql-java` Instrumentation](https://github.com/graph-quilt/graphql-authorization-java)
+
 
 ## Getting Started
 
