@@ -14,11 +14,12 @@ A powerful Java library for aggregating and executing GraphQL operations from mu
 **graphql-orchestrator-java** simplifies the process of accessing data from various GraphQL microservices by providing a unified GraphQL schema. 
 This enables you to query multiple microservices through a single endpoint, reducing complexity and improving performance.
 
-The library uses a [a recursive strategy](./mkdocs/docs/key-concepts/merging-types.md) to aggregate and combine the schemas from these microservices 
-and orchestrates the GraphQL queries to the appropriate services at runtime, using the popular [graphql-java](https://github.com/graphql-java/graphql-java) 
-library as the execution engine.
+The library supports two strategies to aggregate and combine the schemas from multiple microservices
+* Schema Stitching with [a recursive strategy](./mkdocs/docs/key-concepts/merging-types.md)
+* [Apollo Federation Style](https://netflix.github.io/dgs/federation/) Schema Composition. (_Currently, it supports `@key, @requires, @extends, and @external` directives)
 
-It also supports Apollo Federation directives for schema composition. Currently, it supports `@key, @requires, @extends, and @external` directives.
+At query execution time, it orchestrates the GraphQL queries to the appropriate micro-services, using the popular [graphql-java](https://github.com/graphql-java/graphql-java) 
+library as the execution engine.
 
 ### Features 
 
@@ -45,7 +46,7 @@ It also supports Apollo Federation directives for schema composition. Currently,
 
 * Implement the ServiceProvider interface. You will need a new instance for each GraphQL Service.
 
-Consider the following 2 services below
+Consider the following 2 service providers below
 
 ```java
 class PersonNameService implements ServiceProvider {
@@ -159,7 +160,6 @@ If you are interested in contributing to this project, please read the [CONTRIBU
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ### Acknowledgments
-Thanks to the GraphQL community for their support and inspiration.
-Thanks to the contributors of this project for their hard work and dedication.
-Please note that it is a basic example and you may want to add more details or explanations to suit your project.
+- Thanks to the contributors of the [graphql-java](https://github.com/graphql-java/graphql-java) library.
+- Thanks to the contributors of this project for their hard work and dedication.
 
