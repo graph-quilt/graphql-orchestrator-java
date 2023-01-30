@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.intuit.graphql</groupId>
   <artifactId>graphql-orchestrator-java</artifactId>
-  <version>X.Y.Z-query1</version>
+  <version>X.Y.Z-QUERY-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>graphql-orchestrator-java</name>
   <description>GraphQL Orchestrator combines multiple graphql services into a single unified schema</description>
@@ -382,7 +382,7 @@
     <connection>scm:git:https://github.com/intuit/graphql-orchestrator-java
     </connection>
     <url>https://github.com/intuit/graphql-orchestrator-java</url>
-    <tag>graphql-orchestrator-java-X.Y.Z-query</tag>
+    <tag>graphql-orchestrator-java-5.0.0-beta3</tag>
   </scm>
 
   <distributionManagement>
