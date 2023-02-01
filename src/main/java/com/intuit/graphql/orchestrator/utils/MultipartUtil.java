@@ -124,8 +124,10 @@ public class MultipartUtil {
 
       newField = parentField.transform(builder -> builder.directives(prunedDirectives));
     } else {
+        Field __typeName = Field.newField().name("__typename").build();
+
         newField = parentField.transform(builder -> builder.selectionSet(
-              SelectionSet.newSelectionSet().selection(currentField).build()
+              SelectionSet.newSelectionSet().selection(currentField).selection(__typeName).build()
       ));
     }
 

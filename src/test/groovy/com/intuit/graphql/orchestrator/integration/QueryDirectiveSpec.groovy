@@ -264,7 +264,7 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
         given:
 
         def initialEI = "query getPetsDeferred {pets {id name}}"
-        def deferredEI = "query getPetsDeferred {pets {type}}"
+        def deferredEI = "query getPetsDeferred {pets {type __typename}}"
 
         def petsInitResponse = [
                 data: [
@@ -279,9 +279,9 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
         def petsDeferResponse = [
                 data: [
                         pets: [
-                                [type: "DOG" ],
-                                [type: "RABBIT"],
-                                [type: "CAT"]
+                                [type: "DOG", "__typename": "Pet" ],
+                                [type: "RABBIT", "__typename": "Pet"],
+                                [type: "CAT", "__typename": "Pet"]
                         ]
                 ]
         ]
@@ -348,16 +348,19 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
         deferPet1.keySet().contains("id") == false
         deferPet1.keySet().contains("name") == false
         deferPet1.get("type") == "DOG"
+        deferPet1.get("__typename") == "Pet"
 
         Map<String, Object> deferPet2 = deferDataValue.get("pets").get(1)
         deferPet2.keySet().contains("id") == false
         deferPet2.keySet().contains("name") == false
         deferPet2.get("type") == "RABBIT"
+        deferPet2.get("__typename") == "Pet"
 
         Map<String, Object> deferPet3 = deferDataValue.get("pets").get(2)
         deferPet3.keySet().contains("id") == false
         deferPet3.keySet().contains("name") == false
         deferPet3.get("type") == "CAT"
+        deferPet3.get("__typename") == "Pet"
 
     }
 
