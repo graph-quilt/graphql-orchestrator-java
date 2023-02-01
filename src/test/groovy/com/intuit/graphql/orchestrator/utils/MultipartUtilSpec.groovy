@@ -25,6 +25,7 @@ class MultipartUtilSpec extends Specification {
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldC\n" +
+                "    __typename\n" +
                 "  }\n" +
                 "}\n"
     }
@@ -43,6 +44,7 @@ class MultipartUtilSpec extends Specification {
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    aliasB: fieldB\n" +
+                "    __typename\n" +
                 "  }\n" +
                 "}\n"
     }
@@ -63,6 +65,7 @@ class MultipartUtilSpec extends Specification {
         splitSet.get(1).query == "query {\n" +
                 "  getFoo(id: \"inputA\") {\n" +
                 "    fieldB\n" +
+                "    __typename\n" +
                 "  }\n" +
                 "}\n"
     }
@@ -81,11 +84,13 @@ class MultipartUtilSpec extends Specification {
         splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldB\n" +
+                "    __typename\n" +
                 "  }\n" +
                 "}\n"
         splitSet.get(2).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldC\n" +
+                "    __typename\n" +
                 "  }\n" +
                 "}\n"
 
@@ -107,7 +112,9 @@ class MultipartUtilSpec extends Specification {
                 "  queryA {\n" +
                 "    objectField {\n" +
                 "      fieldC\n" +
+                "      __typename\n" +
                 "    }\n" +
+                "    __typename\n" +
                 "  }\n" +
                 "}\n"
     }
