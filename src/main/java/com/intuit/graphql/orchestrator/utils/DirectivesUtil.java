@@ -21,6 +21,8 @@ class DirectivesUtil {
 
   static final String NO_LONGER_SUPPORTED = "No longer supported";
 
+  static final String DEFER_DIRECTIVE_NAME = "defer";
+
   static final GraphQLDirective DEPRECATED_DIRECTIVE;
 
   private DirectivesUtil() {
@@ -30,6 +32,7 @@ class DirectivesUtil {
     DEPRECATED_DIRECTIVE = createDeprecatedDirective();
   }
 
+
   /**
    * creates GraphQLDirective for @deprecated directive.
    *
@@ -37,29 +40,29 @@ class DirectivesUtil {
    */
   private static GraphQLDirective createDeprecatedDirective() {
     GraphQLArgument reasonArgument = GraphQLArgument.newArgument()
-            .name("reason")
-            .type(Scalars.GraphQLString)
-            .defaultValue(NO_LONGER_SUPPORTED)
-            .build();
+        .name("reason")
+        .type(Scalars.GraphQLString)
+        .defaultValue(NO_LONGER_SUPPORTED)
+        .build();
 
     return GraphQLDirective.newDirective()
-            .name("deprecated")
-            .argument(reasonArgument)
-            .validLocation(DirectiveLocation.FIELD_DEFINITION)
-            .validLocation(DirectiveLocation.ENUM_VALUE)
-            .build();
+        .name("deprecated")
+        .argument(reasonArgument)
+        .validLocation(DirectiveLocation.FIELD_DEFINITION)
+        .validLocation(DirectiveLocation.ENUM_VALUE)
+        .build();
   }
 
   public static String buildDeprecationReason(List<GraphQLDirective> directives) {
     if (CollectionUtils.isNotEmpty(directives)) {
 
       Optional<GraphQLDirective> directive = directives.stream()
-              .filter(d -> "deprecated".equals(d.getName()))
-              .findFirst();
+          .filter(d -> "deprecated".equals(d.getName()))
+          .findFirst();
 
       if (directive.isPresent()) {
         Map<String, String> args = directive.get().getArguments().stream()
-                .collect(toMap(GraphQLArgument::getName, arg -> (String) arg.getArgumentValue().getValue()));
+            .collect(toMap(GraphQLArgument::getName, arg -> (String) arg.getArgumentValue().getValue()));
         if (args.isEmpty()) {
           return NO_LONGER_SUPPORTED; // default value from spec
         } else {
@@ -70,4 +73,5 @@ class DirectivesUtil {
     }
     return null;
   }
+
 }
