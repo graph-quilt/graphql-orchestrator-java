@@ -30,7 +30,7 @@ public class DownStreamQueryOptimizer {
       if (selection instanceof Field) {
         Field field = (Field) selection;
         // do not merge if field has arguments
-        if (isNotEmpty(field.getArguments())) {
+        if (isNotEmpty(field.getArguments()) || isNotEmpty(field.getDirectives())) {
           groupedSelectionSet.getDistinctSelections().add(selection);
         } else {
           groupedSelectionSet.getGroupedFields().computeIfAbsent(field.getName(), k -> new ArrayList<>()).add(field);
