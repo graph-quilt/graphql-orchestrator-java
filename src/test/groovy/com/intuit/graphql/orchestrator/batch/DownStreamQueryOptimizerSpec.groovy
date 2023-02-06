@@ -7,11 +7,11 @@ import spock.lang.Specification
 
 import static graphql.language.OperationDefinition.Operation.QUERY
 
-class QueryOptimizerSpec extends Specification {
+class DownStreamQueryOptimizerSpec extends Specification {
 
     def "test Default Methods"() {
         given:
-        QueryOptimizer queryOptimizer = new QueryOptimizer(QUERY)
+        DownStreamQueryOptimizer queryOptimizer = new DownStreamQueryOptimizer(QUERY)
 
         String query = '''                                    
                query myQuery {

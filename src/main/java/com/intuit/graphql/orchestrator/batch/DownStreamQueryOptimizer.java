@@ -2,7 +2,6 @@ package com.intuit.graphql.orchestrator.batch;
 
 import static com.intuit.graphql.orchestrator.utils.SelectionSetUtil.isEmpty;
 
-import com.intuit.graphql.orchestrator.utils.SelectionSetUtil;
 import graphql.language.Field;
 import graphql.language.OperationDefinition.Operation;
 import graphql.language.Selection;
@@ -14,11 +13,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 
-public class QueryOptimizer {
+public class DownStreamQueryOptimizer {
 
   private final Operation operationType;
 
-  public QueryOptimizer(Operation operationType) {
+  public DownStreamQueryOptimizer(Operation operationType) {
     this.operationType = operationType;
   }
 
