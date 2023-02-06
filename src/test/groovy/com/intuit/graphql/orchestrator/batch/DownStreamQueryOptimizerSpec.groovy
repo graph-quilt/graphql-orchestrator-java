@@ -6,7 +6,6 @@ import graphql.language.Document
 import graphql.language.Field
 import graphql.language.FragmentSpread
 import graphql.language.InlineFragment
-import graphql.language.OperationDefinition
 import graphql.language.StringValue
 import spock.lang.Specification
 
