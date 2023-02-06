@@ -3,7 +3,7 @@ type Query {
 }
 
 type Person {
-    pets: [Pet]
+    pets(animalType: AnimalType!, pureBred: Boolean!): [Pet]
 }
 
 type Mutation {
@@ -26,4 +26,9 @@ input InputPet{
     weight: Float
     purebred: Boolean
     tag: String
+}
+
+enum AnimalType {
+    DOG
+    CAT
 }

@@ -1,15 +1,16 @@
 package com.intuit.graphql.orchestrator.utils;
 
-import static java.util.stream.Collectors.toMap;
-
 import graphql.Scalars;
 import graphql.introspection.Introspection.DirectiveLocation;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.collections4.CollectionUtils;
+
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Holds creates and maintains DEPRECATED_DIRECTIVE object and Directives specific util functions. The @skip and
@@ -36,29 +37,29 @@ class DirectivesUtil {
    */
   private static GraphQLDirective createDeprecatedDirective() {
     GraphQLArgument reasonArgument = GraphQLArgument.newArgument()
-        .name("reason")
-        .type(Scalars.GraphQLString)
-        .defaultValue(NO_LONGER_SUPPORTED)
-        .build();
+            .name("reason")
+            .type(Scalars.GraphQLString)
+            .defaultValue(NO_LONGER_SUPPORTED)
+            .build();
 
     return GraphQLDirective.newDirective()
-        .name("deprecated")
-        .argument(reasonArgument)
-        .validLocation(DirectiveLocation.FIELD_DEFINITION)
-        .validLocation(DirectiveLocation.ENUM_VALUE)
-        .build();
+            .name("deprecated")
+            .argument(reasonArgument)
+            .validLocation(DirectiveLocation.FIELD_DEFINITION)
+            .validLocation(DirectiveLocation.ENUM_VALUE)
+            .build();
   }
 
   public static String buildDeprecationReason(List<GraphQLDirective> directives) {
     if (CollectionUtils.isNotEmpty(directives)) {
 
       Optional<GraphQLDirective> directive = directives.stream()
-          .filter(d -> "deprecated".equals(d.getName()))
-          .findFirst();
+              .filter(d -> "deprecated".equals(d.getName()))
+              .findFirst();
 
       if (directive.isPresent()) {
         Map<String, String> args = directive.get().getArguments().stream()
-            .collect(toMap(GraphQLArgument::getName, arg -> (String) arg.getArgumentValue().getValue()));
+                .collect(toMap(GraphQLArgument::getName, arg -> (String) arg.getArgumentValue().getValue()));
         if (args.isEmpty()) {
           return NO_LONGER_SUPPORTED; // default value from spec
         } else {

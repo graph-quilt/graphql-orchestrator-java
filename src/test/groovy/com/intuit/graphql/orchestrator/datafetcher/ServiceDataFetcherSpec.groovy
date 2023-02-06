@@ -4,6 +4,7 @@ import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.TestServiceProvider
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
+import com.intuit.graphql.orchestrator.xtext.DataFetcherContext
 import graphql.GraphQLContext
 import graphql.execution.MergedField
 import graphql.schema.DataFetchingEnvironment
@@ -66,6 +67,53 @@ class ServiceDataFetcherSpec extends Specification {
         ((CompletableFuture) qresult).getNow("fail") == "qresult"
 
         ((CompletableFuture) mresult).getNow("fail") == "mresult"
+    }
+
+    def "returns correct namespace"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getNameSpace() >> "TestNamespace"
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
+
+        when:
+        String actualNamespace = serviceDataFetcher.getNamespace()
+
+        then:
+        actualNamespace == "TestNamespace"
+    }
+
+    def "returns correct service type"() {
+        given:
+        ServiceProvider serviceProvider = Mock(ServiceProvider.class)
+        serviceProvider.getSeviceType() >> ServiceProvider.ServiceType.GRAPHQL
+
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+        serviceMetadata.getServiceProvider() >> serviceProvider
+
+        ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
+
+        when:
+        ServiceProvider.ServiceType actualServiceType = serviceDataFetcher.getServiceType()
+
+        then:
+        actualServiceType == ServiceProvider.ServiceType.GRAPHQL
+    }
+
+    def "returns correct DataFetcherType"() {
+        given:
+        ServiceMetadata serviceMetadata = Mock(ServiceMetadataImpl.class)
+
+        ServiceDataFetcher serviceDataFetcher = new ServiceDataFetcher(serviceMetadata)
+
+        when:
+        DataFetcherContext.DataFetcherType actualDataFetcherType = serviceDataFetcher.getDataFetcherType()
+
+        then:
+        actualDataFetcherType == DataFetcherContext.DataFetcherType.SERVICE
     }
 
 }

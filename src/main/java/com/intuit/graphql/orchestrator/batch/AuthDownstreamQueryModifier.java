@@ -1,19 +1,29 @@
 package com.intuit.graphql.orchestrator.batch;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getNodesAsPathList;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
 import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
 import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
 import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
 import static graphql.schema.FieldCoordinates.coordinates;
 import static graphql.util.TreeTransformerUtil.changeNode;
 import static graphql.util.TreeTransformerUtil.deleteNode;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationEnvironment;
+import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationResult;
+import com.intuit.graphql.orchestrator.authorization.SelectionSetMetadata;
+import com.intuit.graphql.orchestrator.common.ArgumentValueResolver;
 import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
+import graphql.GraphQLContext;
+import graphql.GraphqlErrorException;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
@@ -30,12 +40,15 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Builder;
+import lombok.NonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 
@@ -47,36 +60,44 @@ import org.apache.commons.collections4.MapUtils;
  *
  * Another function is this class adds required fields to the query if fields
  * are required by other sibling fields which are external or remote.
- *
- * @deprecated  As of release 5.0.15.  To be replaced by {@link AuthDownstreamQueryModifier}
- *
  */
- @Deprecated
-public class DownstreamQueryModifier extends NodeVisitorStub {
+@Builder
+public class AuthDownstreamQueryModifier extends NodeVisitorStub {
 
-  private final GraphQLType rootType;
-  private final ServiceMetadata serviceMetadata;
-  private final SelectionCollector selectionCollector;
-  private final GraphQLSchema graphQLSchema;
+  private static final ArgumentValueResolver ARGUMENT_VALUE_RESOLVER = new ArgumentValueResolver(); // thread-safe
+  private final List<SelectionSetMetadata> processedSelectionSetMetadata = new ArrayList<>();
+  private final List<GraphqlErrorException> declinedFieldsErrors = new ArrayList<>();
 
-  public DownstreamQueryModifier(
-      GraphQLType rootType,
-      ServiceMetadata serviceMetadata,
-      Map<String, FragmentDefinition> fragmentsByName,
-      GraphQLSchema graphQLSchema) {
-    Objects.requireNonNull(rootType);
-    Objects.requireNonNull(serviceMetadata);
-    Objects.requireNonNull(fragmentsByName);
-    this.rootType = rootType;
-    this.serviceMetadata = serviceMetadata;
-    this.selectionCollector = new SelectionCollector(fragmentsByName);
-    this.graphQLSchema = graphQLSchema;
-  }
+  private boolean hasEmptySelectionSet;
+
+  /**
+   * For top level fields, should be Query, Mutation.  in case of fragment, should
+   * be the type of parent field
+   */
+  @NonNull private final GraphQLType rootParentType;
+  @NonNull private FieldAuthorization fieldAuthorization;
+  @NonNull private GraphQLContext graphQLContext;
+  @NonNull private Map<String, Object> queryVariables;
+  @NonNull private final GraphQLSchema graphQLSchema;
+  @NonNull private final SelectionCollector selectionCollector;
+  @NonNull private final ServiceMetadata serviceMetadata; // service metadata for the root
+  private Object authData;
 
   @Override
   public TraversalControl visitField(Field node, TraverserContext<Node> context) {
     if (context.visitedNodes().isEmpty()) {
-      context.setVar(GraphQLType.class, rootType);
+      GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) rootParentType;
+      GraphQLFieldDefinition fieldDefinition = getFieldDefinition(node.getName(), parentType);
+      requireNonNull(fieldDefinition, "Failed to get Field Definition for " + node.getName());
+
+      context.setVar(GraphQLType.class, fieldDefinition.getType());
+      FieldAuthorizationResult fieldAuthorizationResult = authorize(node, fieldDefinition, parentType, context);
+      if (!fieldAuthorizationResult.isAllowed()) {
+        decreaseParentSelectionSetCount(context.getParentContext());
+        this.declinedFieldsErrors.add(fieldAuthorizationResult.getGraphqlErrorException());
+        return deleteNode(context);
+      }
+
       if(!serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().isEmpty()) {
         String renamedKey =  getRenameKey(null, node.getName(), true);
         String originalName = serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().get(renamedKey);
@@ -88,17 +109,20 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
       return TraversalControl.CONTINUE;
     } else {
       GraphQLFieldsContainer parentType = context.getParentContext().getVar(GraphQLType.class);
+      GraphQLFieldDefinition fieldDefinition = getFieldDefinition(node.getName(), parentType);
+      requireNonNull(fieldDefinition, "Failed to get Field Definition for " + node.getName());
 
-      String fieldName = node.getName();
-      GraphQLFieldDefinition fieldDefinition = getFieldDefinition(fieldName, parentType);
-      requireNonNull(fieldDefinition, "Failed to get Field Definition for " + fieldName);
-
-      // TODO consider the entire condition to be abstracted in
-      //  serviceMetadata.isFieldExternal(fieldCoordinates).
-      //  This requires a complete set of field coordinates that the service owns
       if (serviceMetadata.shouldModifyDownStreamQuery() && (hasResolverDirective(fieldDefinition)
-          || isExternalField(parentType.getName(), fieldName))) {
+          || isExternalField(parentType.getName(), node.getName()))) {
+        decreaseParentSelectionSetCount(context.getParentContext());
         return deleteNode(context);
+      } else {
+        FieldAuthorizationResult fieldAuthorizationResult = authorize(node, fieldDefinition, parentType, context);
+        if (!fieldAuthorizationResult.isAllowed()) {
+          decreaseParentSelectionSetCount(context.getParentContext());
+          this.declinedFieldsErrors.add(fieldAuthorizationResult.getGraphqlErrorException());
+          return deleteNode(context);
+        }
       }
 
       String renameKey = getRenameKey(parentType.getName(), node.getName(), false);
@@ -129,11 +153,39 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
     return parentType.getFieldDefinition(name);
   }
 
+  private void decreaseParentSelectionSetCount(TraverserContext<Node> parentContext) {
+    if (nonNull(parentContext) && nonNull(parentContext.getVar(SelectionSetMetadata.class))) {
+      SelectionSetMetadata selectionSetMetadata = parentContext.getVar(SelectionSetMetadata.class);
+      selectionSetMetadata.decreaseRemainingSelection();
+      if (!hasEmptySelectionSet && selectionSetMetadata.getRemainingSelectionsCount() == 0) {
+        hasEmptySelectionSet = true;
+      }
+    }
+  }
+
+  private FieldAuthorizationResult authorize(Field node, GraphQLFieldDefinition fieldDefinition,
+      GraphQLFieldsContainer parentType, TraverserContext<Node> context) {
+    String fieldName = node.getName();
+    FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parentType.getName(), fieldName);
+    Map<String, Object> argumentValues = ARGUMENT_VALUE_RESOLVER.resolve(graphQLSchema, fieldDefinition, node,
+        queryVariables);
+    FieldAuthorizationEnvironment fieldAuthorizationEnvironment = FieldAuthorizationEnvironment
+        .builder()
+        .field(node)
+        .fieldCoordinates(fieldCoordinates)
+        .authData(authData)
+        .argumentValues(argumentValues)
+        .path(getNodesAsPathList(context))
+        .build();
+    return fieldAuthorization.authorize(fieldAuthorizationEnvironment);
+  }
+
   @Override
   public TraversalControl visitFragmentDefinition(
       FragmentDefinition node, TraverserContext<Node> context) {
     // if modifying selection set in a fragment definition, this will be the first code to visit.
-    context.setVar(GraphQLType.class, rootType);
+    String typeName = node.getTypeCondition().getName();
+    context.setVar(GraphQLType.class, graphQLSchema.getType(typeName));
     return TraversalControl.CONTINUE;
   }
 
@@ -146,19 +198,20 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
 
   @Override
   public TraversalControl visitOperationDefinition(OperationDefinition node, TraverserContext<Node> context) {
-    context.setVar(GraphQLType.class, rootType);
+    context.setVar(GraphQLType.class, this.rootParentType);
     return TraversalControl.CONTINUE;
   }
 
   @Override
   public TraversalControl visitSelectionSet(SelectionSet node, TraverserContext<Node> context) {
-    if (getParentType(context) instanceof GraphQLUnionType) {
+    GraphQLType parentType = getParentType(context);
+    if (parentType instanceof GraphQLUnionType) {
       return TraversalControl.CONTINUE;
     }
 
-    GraphQLFieldsContainer parentType = (GraphQLFieldsContainer) getParentType(context);
-    context.setVar(GraphQLType.class, parentType);
-    String parentTypeName = parentType.getName();
+    GraphQLFieldsContainer parentFieldContainerType = (GraphQLFieldsContainer) parentType;
+    context.setVar(GraphQLType.class, parentFieldContainerType);
+    String parentTypeName = parentFieldContainerType.getName();
 
     Map<String, Field> selectedFields =  this.selectionCollector.collectFields(node);
 
@@ -172,6 +225,15 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
         .build();
 
     Set<Field> fieldsToAdd = fedRequiredFieldsCollector.get();
+
+    if (!context.isVisited()) {
+      int selectionCount = node.getSelections().size() + CollectionUtils.size(fieldsToAdd);
+      List<Object> pathList = getNodesAsPathList(context);
+      String selectionSetPath = pathListToFQN(pathList);
+      SelectionSetMetadata selectionSetMetadata = new SelectionSetMetadata(selectionCount, selectionSetPath);
+      context.setVar(SelectionSetMetadata.class, selectionSetMetadata);
+      processedSelectionSetMetadata.add(selectionSetMetadata);
+    }
 
     if (CollectionUtils.isNotEmpty(fieldsToAdd)) {
       SelectionSet newNode = node.transform(builder -> {
@@ -216,5 +278,19 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
   private GraphQLType getParentType(TraverserContext<Node> context) {
     GraphQLType parentType = context.getParentContext().getVar(GraphQLType.class);
     return GraphQLTypeUtil.unwrapAll(parentType);
+  }
+
+  public List<GraphqlErrorException> getDeclineFieldErrors() {
+    return declinedFieldsErrors;
+  }
+
+  public List<SelectionSetMetadata> getEmptySelectionSets() {
+    return this.processedSelectionSetMetadata.stream()
+        .filter(selectionSetMetadata -> selectionSetMetadata.getRemainingSelectionsCount() == 0)
+        .collect(Collectors.toList());
+  }
+
+  public boolean redactedQueryHasEmptySelectionSet() {
+    return hasEmptySelectionSet;
   }
 }

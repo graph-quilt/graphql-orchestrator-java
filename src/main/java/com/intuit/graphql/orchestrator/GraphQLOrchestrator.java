@@ -1,7 +1,5 @@
 package com.intuit.graphql.orchestrator;
 
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
@@ -14,6 +12,11 @@ import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.schema.GraphQLSchema;
+import lombok.extern.slf4j.Slf4j;
+import org.dataloader.BatchLoader;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
+
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,10 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.dataloader.BatchLoader;
-import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderRegistry;
+
+import static java.util.Objects.requireNonNull;
 
 @Slf4j
 public class GraphQLOrchestrator {
@@ -40,8 +41,8 @@ public class GraphQLOrchestrator {
   private final ExecutionStrategy mutationExecutionStrategy;
 
   private GraphQLOrchestrator(final RuntimeGraph runtimeGraph, final List<Instrumentation> instrumentations,
-      final ExecutionIdProvider executionIdProvider, final ExecutionStrategy queryExecutionStrategy,
-      final ExecutionStrategy mutationExecutionStrategy) {
+                              final ExecutionIdProvider executionIdProvider, final ExecutionStrategy queryExecutionStrategy,
+                              final ExecutionStrategy mutationExecutionStrategy) {
     this.runtimeGraph = runtimeGraph;
     this.instrumentations = instrumentations;
     this.executionIdProvider = executionIdProvider;
@@ -62,20 +63,20 @@ public class GraphQLOrchestrator {
     // to create a new DataLoader per request. Else it will use the cache which is shared
     // across request.
     final Map<BatchLoader, DataLoader> temporaryMap = this.runtimeGraph.getBatchLoaderMap().values().stream().distinct()
-        .collect(Collectors.toMap(Function.identity(), DataLoader::new));
+            .collect(Collectors.toMap(Function.identity(), DataLoader::new));
 
     this.runtimeGraph.getBatchLoaderMap()
-        .forEach((key, batchLoader) ->
-            dataLoaderRegistry.register(key, temporaryMap.getOrDefault(batchLoader, new DataLoader(batchLoader))));
+            .forEach((key, batchLoader) ->
+                    dataLoaderRegistry.register(key, temporaryMap.getOrDefault(batchLoader, new DataLoader(batchLoader))));
     return dataLoaderRegistry;
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput) {
 
     final GraphQL.Builder graphqlBuilder = GraphQL.newGraphQL(runtimeGraph.getExecutableSchema())
-        .instrumentation(new ChainedInstrumentation(instrumentations))
-        .executionIdProvider(executionIdProvider)
-        .queryExecutionStrategy(queryExecutionStrategy);
+            .instrumentation(new ChainedInstrumentation(instrumentations))
+            .executionIdProvider(executionIdProvider)
+            .queryExecutionStrategy(queryExecutionStrategy);
 
     if (Objects.nonNull(mutationExecutionStrategy)) {
       graphqlBuilder.mutationExecutionStrategy(mutationExecutionStrategy);
@@ -84,11 +85,11 @@ public class GraphQLOrchestrator {
     final GraphQL graphQL = graphqlBuilder.build();
 
     final ExecutionInput newExecutionInput = executionInput
-        .transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
+            .transform(builder -> builder.dataLoaderRegistry(buildNewDataLoaderRegistry()));
 
     if (newExecutionInput.getContext() instanceof GraphQLContext) {
       ((GraphQLContext) executionInput.getContext())
-          .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
+              .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
     }
     return graphQL.executeAsync(newExecutionInput);
   }
@@ -112,7 +113,7 @@ public class GraphQLOrchestrator {
     private ExecutionStrategy queryExecutionStrategy = new AsyncExecutionStrategy();
     private ExecutionStrategy mutationExecutionStrategy = null;
     private List<Instrumentation> instrumentations = new LinkedList<>(
-        Arrays.asList(new DataLoaderDispatcherInstrumentation()));
+            Arrays.asList(new DataLoaderDispatcherInstrumentation()));
 
     private Builder() {
     }
@@ -154,7 +155,7 @@ public class GraphQLOrchestrator {
 
     public GraphQLOrchestrator build() {
       return new GraphQLOrchestrator(runtimeGraph, instrumentations, executionIdProvider, queryExecutionStrategy,
-          mutationExecutionStrategy);
+              mutationExecutionStrategy);
     }
   }
 }
