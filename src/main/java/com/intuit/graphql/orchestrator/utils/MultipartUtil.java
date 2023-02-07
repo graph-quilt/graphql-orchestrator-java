@@ -1,7 +1,9 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import graphql.ExecutionInput;
+import graphql.language.Argument;
 import graphql.language.AstPrinter;
+import graphql.language.BooleanValue;
 import graphql.language.Definition;
 import graphql.language.Directive;
 import graphql.language.Document;
@@ -14,13 +16,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_IF_ARG;
 
 /**
  * This class contains helper methods for GraphQL types. This class will often contain modifications of already built
@@ -29,79 +30,54 @@ import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTI
 public class MultipartUtil {
 
   public static List<ExecutionInput> splitMultipartExecutionInput(ExecutionInput originalEI) {
-    List<Document> documents = new ArrayList<>();
-    List<Definition> initialQueryDefinitions = new ArrayList<>();
     Document originalDoc = GraphQLUtil.parser.parseDocument(originalEI.getQuery());
+    List<ExecutionInput> eiList = new ArrayList<>();
 
     originalDoc.getDefinitions().forEach(operationDef -> {
-       List<OperationDefinition> splitDefs = splitOperationDefinition((OperationDefinition) operationDef);
+      OperationDefinition mappedOpDef =(OperationDefinition) operationDef;
+      List<String> deferredPaths = new ArrayList<>();
 
-      for (int i = 0; i < splitDefs.size(); i++) {
-        //initial query should be sent first so all the initial operations should be merged in document
-        if(i == 0) {
-          initialQueryDefinitions.add(splitDefs.get(i));
-        } else {
-          List<Definition> multipartOperationDefs = Collections.singletonList(splitDefs.get(i));
-          Document multipartQueryDocument = originalDoc.transform(builder ->
+      //adds all the paths that are needed to split for path to the list
+      addMultipartChildPaths(mappedOpDef.getSelectionSet(), deferredPaths, "");
+
+      if(!deferredPaths.isEmpty()) {
+          constructDeferredOperationDefinitions((OperationDefinition) operationDef, deferredPaths)
+          .stream()
+          .map(Definition.class::cast)
+          .map(Collections::singletonList)
+          .map(multipartOperationDefs -> originalDoc.transform(builder ->
                   builder.definitions(multipartOperationDefs)
-          );
-
-          documents.add(multipartQueryDocument);
-        }
+          ))
+          .map(AstPrinter::printAst)
+          .map(query -> originalEI.transform(builder -> builder.query(query)))
+          .forEach(eiList::add);
       }
     });
 
-    //construct initial query
-    Document initDoc = originalDoc.transform(builder -> builder.definitions(initialQueryDefinitions));
-    //append it to the beginning of list of documents
-    documents.add(0, initDoc);
-
-    return documents.stream()
-      .map(AstPrinter::printAst)
-      .map(query -> originalEI.transform(builder -> builder.query(query)))
-      .collect(Collectors.toList());
+    //add original ei back into list
+    eiList.add(0, originalEI);
+    return eiList;
   }
 
-  private static List<OperationDefinition> splitOperationDefinition(OperationDefinition operationDefinition) {
-    List<String> multipartPaths = new ArrayList<>();
+  private static List<OperationDefinition> constructDeferredOperationDefinitions(OperationDefinition operationDefinition, List<String> multipartPaths) {
     List<SelectionSet> multipartQueries = new ArrayList<>();
-    SelectionSet originalSelectionSet = operationDefinition.getSelectionSet();
 
-    //adds all the paths that are needed to split for path to the list
-    addMultipartChildPaths(operationDefinition.getSelectionSet(), multipartPaths, "");
-
-    AtomicReference<SelectionSet> initialSelectionSetRef = new AtomicReference<>(originalSelectionSet);
+    AtomicReference<SelectionSet> initialSelectionSetRef = new AtomicReference<>(operationDefinition.getSelectionSet());
     multipartPaths.forEach(deferPath -> {
       String[] deferFieldPath = deferPath.split("\\.");
       int lastFieldInPathIndex = deferFieldPath.length -1;
-      String deferParentName = deferFieldPath[lastFieldInPathIndex-1];
       String multipartFieldName = deferFieldPath[lastFieldInPathIndex];
       List<Field> currentFieldPath = getQueryPathFields(initialSelectionSetRef.get(), deferFieldPath);
 
       Field multipartChildFieldContext = null;
-      Field childFieldContext = null;
 
+      //iterates through path and constructs field/selectionSet without defer directive and fields irrelevant fields to defer query
       for (int j = lastFieldInPathIndex; j >= 0; j--) {
-        Field fieldContext = currentFieldPath.get(j);
         Field multipartFieldContext = currentFieldPath.get(j);
-
-        //skip updating deferred field since we are going to remove it
-        if(j != lastFieldInPathIndex) {
-          childFieldContext = updateParentsSelectionSet(fieldContext, childFieldContext, deferParentName, multipartFieldName);
-        }
-
         multipartChildFieldContext = updateMultipartSelectionSet(multipartFieldContext, multipartChildFieldContext, multipartFieldName);
       }
 
       multipartQueries.add(SelectionSet.newSelectionSet().selection(multipartChildFieldContext).build());
-      SelectionSet initialSelectionSet = SelectionSet.newSelectionSet().selection(childFieldContext).build();
-
-      //need to check if last path before adding back in
-      if(deferPath.equals(multipartPaths.get(multipartPaths.size() -1))) {
-        multipartQueries.add(0, initialSelectionSet);
-      } else {
-        initialSelectionSetRef.set(initialSelectionSet);
-      }
     });
 
     return multipartQueries
@@ -112,9 +88,6 @@ public class MultipartUtil {
 
   private static List<Field> getQueryPathFields(SelectionSet originalSelectionSet, String[] fieldKeys) {
     List<Field> currentFieldPath = new ArrayList<>();
-    //todo handle duplicates fieldNames when dealing with nestedQueries
-    Map<String, Field> fieldMap = new HashMap<>();
-
     Field currentField;
 
     for (int i = 0; i < fieldKeys.length; i++) {
@@ -140,32 +113,6 @@ public class MultipartUtil {
               .collect(Collectors.toList()).get(0);
   }
 
-  private static Field updateParentsSelectionSet(Field parentField, Field updatedField, String defersParentName ,String deferFieldName ) {
-    List<Field> newSelections;
-    if(parentField.getName().equals(defersParentName)) {
-      //keep every selection/field in selectionSet that does not pertain to deferred field
-      newSelections = parentField.getSelectionSet()
-              .getSelections()
-              .stream()
-              .map(Field.class::cast)
-              .filter(field -> !field.getName().equals(deferFieldName))
-              .collect(Collectors.toList());
-    } else {
-      //replace the parents selection set with the new selectionSet
-      newSelections = parentField.getSelectionSet()
-              .getSelections()
-              .stream()
-              .map(Field.class::cast)
-              .map(selection -> (selection.getName().equals(updatedField.getName())) ? updatedField : selection)
-              .collect(Collectors.toList());
-    }
-
-    return parentField.transform(builder -> builder.selectionSet(
-        SelectionSet.newSelectionSet().selections(newSelections).build()
-      )
-    );
-  }
-
   private static Field updateMultipartSelectionSet(Field parentField, Field currentField, String deferName) {
     Field newField;
 
@@ -177,8 +124,10 @@ public class MultipartUtil {
 
       newField = parentField.transform(builder -> builder.directives(prunedDirectives));
     } else {
+        Field __typeName = Field.newField().name("__typename").build();
+
         newField = parentField.transform(builder -> builder.selectionSet(
-              SelectionSet.newSelectionSet().selection(currentField).build()
+              SelectionSet.newSelectionSet().selection(currentField).selection(__typeName).build()
       ));
     }
 
@@ -190,7 +139,10 @@ public class MultipartUtil {
       String currentChildName = childSelection.getName();
       String childPath =  (StringUtils.isBlank(currentPath)) ? currentChildName : StringUtils.join( currentPath, ".", currentChildName);
       if(childSelection.hasDirective(DEFER_DIRECTIVE_NAME)) {
-        deferredPaths.add(childPath);
+        Argument ifArg = childSelection.getDirectives(DEFER_DIRECTIVE_NAME).get(0).getArgument(DEFER_IF_ARG);
+        if(ifArg == null || ((BooleanValue) ifArg.getValue()).isValue()) {
+          deferredPaths.add(childPath);
+        }
       }
 
       if(childSelection.getSelectionSet() != null && CollectionUtils.isNotEmpty(childSelection.getSelectionSet().getSelections())) {
@@ -198,5 +150,4 @@ public class MultipartUtil {
       }
     });
   }
-
 }

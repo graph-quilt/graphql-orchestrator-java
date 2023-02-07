@@ -2,34 +2,40 @@ package com.intuit.graphql.orchestrator.utils;
 
 import graphql.Scalars;
 import graphql.introspection.Introspection.DirectiveLocation;
+import graphql.language.BooleanValue;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Holds creates and maintains DEPRECATED_DIRECTIVE object and Directives specific util functions. The @skip and
+ * Holds creates and maintains DEPRECATED_DIRECTIVE object and Directives specific util functions. The skip and
  *
- * @include is used in queries and not used in schema parsing, thus, not included here.
+ * include directives are used in queries and not used in schema parsing, thus, not included here.
  */
-class DirectivesUtil {
+public class DirectivesUtil {
 
   static final String NO_LONGER_SUPPORTED = "No longer supported";
 
-  static final String DEFER_DIRECTIVE_NAME = "defer";
-
   static final GraphQLDirective DEPRECATED_DIRECTIVE;
+  static final GraphQLDirective DEFER_DIRECTIVE;
+  public static final String DEFER_DIRECTIVE_NAME = "defer";
+  public static final String DEFER_IF_ARG = "if";
+  public static final String USE_DEFER = "useDefer";
 
   private DirectivesUtil() {
   }
 
   static {
     DEPRECATED_DIRECTIVE = createDeprecatedDirective();
+    DEFER_DIRECTIVE = createDeferDirective();
   }
 
 
@@ -72,6 +78,28 @@ class DirectivesUtil {
       }
     }
     return null;
+  }
+
+  private static GraphQLDirective createDeferDirective() {
+    GraphQLArgument ifArgument = GraphQLArgument.newArgument()
+            .name(DEFER_IF_ARG)
+            .type(Scalars.GraphQLBoolean)
+            .defaultValueLiteral(BooleanValue.newBooleanValue(true).build())
+            .build();
+
+    return GraphQLDirective.newDirective()
+            .name(DEFER_DIRECTIVE_NAME)
+            .validLocation(DirectiveLocation.FIELD)
+            .validLocation(DirectiveLocation.INLINE_FRAGMENT)
+            .validLocation(DirectiveLocation.FRAGMENT_SPREAD)
+            .argument(ifArgument)
+            .build();
+  }
+
+  public static Set<GraphQLDirective> getBuiltInClientDirectives() {
+    HashSet directives = new HashSet();
+    directives.add(DEFER_DIRECTIVE);
+    return directives;
   }
 
 }

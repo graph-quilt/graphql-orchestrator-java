@@ -1,11 +1,5 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
-import static graphql.language.AstPrinter.printAstCompact;
-import static graphql.language.OperationDefinition.Operation.QUERY;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.authorization.DefaultFieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactor;
 import com.intuit.graphql.orchestrator.authorization.DownstreamQueryRedactorResult;
@@ -37,6 +31,13 @@ import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.MultiValuedMap;
+import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
+import org.apache.commons.lang3.StringUtils;
+import org.dataloader.BatchLoader;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,12 +50,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.ArrayListValuedHashMap;
-import org.apache.commons.lang3.StringUtils;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.schema.transform.DomainTypesTransformer.DELIMITER;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.USE_DEFER;
+import static graphql.language.AstPrinter.printAstCompact;
+import static graphql.language.OperationDefinition.Operation.QUERY;
+import static graphql.schema.GraphQLTypeUtil.unwrapAll;
+import static java.util.Objects.requireNonNull;
 
 public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -123,7 +125,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
           .map(field -> removeFieldsWithExternalTypes(field,
-                operationObjectType, key, authData, fieldAuthorization, queryRedactErrorsByKey))
+                operationObjectType, key, authData, fieldAuthorization, queryRedactErrorsByKey, context))
           .filter(Objects::nonNull) // denied access or has an empty selectionSet
           .forEach(selectionSetBuilder::selection);
       }
@@ -368,10 +370,12 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
   private Field removeFieldsWithExternalTypes(Field origField, GraphQLObjectType operationObjectType,
       DataFetchingEnvironment dfe, Object authData, FieldAuthorization fieldAuthorization,
-      final MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey) {
+      final MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey, GraphQLContext context) {
     
     if (serviceMetadata.shouldModifyDownStreamQuery() ||
-        !(fieldAuthorization instanceof DefaultFieldAuthorization)) {
+        !(fieldAuthorization instanceof DefaultFieldAuthorization) ||
+            context.getOrDefault(USE_DEFER, false)
+    ) {
       GraphQLType origFieldType = getRootFieldDefinition(dfe.getExecutionStepInfo()).getType();
       DownstreamQueryRedactor downstreamQueryRedactor = DownstreamQueryRedactor.builder()
           .root(origField)

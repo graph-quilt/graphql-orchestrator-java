@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator;
 
+import com.intuit.graphql.orchestrator.deferDirective.DeferDirectiveInstrumentation;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import com.intuit.graphql.orchestrator.utils.MultipartUtil;
 import graphql.ExecutionInput;
@@ -20,6 +21,7 @@ import org.dataloader.BatchLoader;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -32,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.USE_DEFER;
 import static java.util.Objects.requireNonNull;
 
 @Slf4j
@@ -92,6 +95,8 @@ public class GraphQLOrchestrator {
       if (newExecutionInput.getContext() instanceof GraphQLContext) {
         ((GraphQLContext) newExecutionInput.getContext())
                 .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, newExecutionInput.getDataLoaderRegistry());
+        ((GraphQLContext) newExecutionInput.getContext())
+                .put(USE_DEFER , false);
       }
       return graphQL.executeAsync(newExecutionInput);
   }
@@ -100,9 +105,11 @@ public class GraphQLOrchestrator {
     List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
             .map(ei -> {
               DataLoaderRegistry registry = buildNewDataLoaderRegistry();
+
               GraphQLContext graphqlContext = GraphQLContext.newContext()
-                      .of(executionInput.getGraphQLContext())
+                      .of((GraphQLContext)executionInput.getContext())
                       .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, registry)
+                      .put(USE_DEFER, true)
                       .build();
               return ei.transform(builder -> {
                 builder.dataLoaderRegistry(registry);
@@ -115,6 +122,7 @@ public class GraphQLOrchestrator {
     AtomicInteger responses = new AtomicInteger(0);
 
     Flux<Object> executionResultPublisher = Flux.fromIterable(splitExecutionInputs)
+            .publishOn(Schedulers.elastic())
             .map(constructGraphQL()::executeAsync)
             .map(CompletableFuture::join)
             .doOnNext(executionResult -> responses.getAndIncrement())
@@ -160,7 +168,7 @@ public class GraphQLOrchestrator {
     private ExecutionStrategy queryExecutionStrategy = new AsyncExecutionStrategy();
     private ExecutionStrategy mutationExecutionStrategy = null;
     private List<Instrumentation> instrumentations = new LinkedList<>(
-        Arrays.asList(new DataLoaderDispatcherInstrumentation()));
+        Arrays.asList(new DataLoaderDispatcherInstrumentation(), new DeferDirectiveInstrumentation()));
 
     private Builder() {
     }

@@ -1,11 +1,5 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
-import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
-import static graphql.language.Field.newField;
-import static graphql.language.InlineFragment.newInlineFragment;
-
 import com.intuit.graphql.orchestrator.ServiceProvider;
 import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import com.intuit.graphql.orchestrator.federation.EntityQuery;
@@ -22,6 +16,9 @@ import graphql.language.TypeName;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
+import org.apache.commons.collections4.CollectionUtils;
+import org.dataloader.BatchLoader;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,8 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.dataloader.BatchLoader;
+
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.unwrapAll;
+import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
+import static graphql.language.Field.newField;
+import static graphql.language.InlineFragment.newInlineFragment;
 
 public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
 
@@ -116,7 +117,9 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         if (!GraphQLTypeUtil.isLeaf(fieldType)) {
             final Field transformedField = (Field) AST_TRANSFORMER.transform(originalField,
                 new DownstreamQueryModifier(fieldType, entityServiceMetadata,
-                    dfe.getFragmentsByName(), dfe.getGraphQLSchema()));
+                    dfe.getFragmentsByName(), dfe.getGraphQLSchema(), dfe.getContext()
+                )
+            );
 
             // is an object
             fieldSelectionSet =

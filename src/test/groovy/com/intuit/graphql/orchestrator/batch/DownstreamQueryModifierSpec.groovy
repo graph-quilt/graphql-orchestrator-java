@@ -10,6 +10,7 @@ import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifier
 import com.intuit.graphql.orchestrator.resolverdirective.DownstreamQueryModifierTestHelper.TestService
 import com.intuit.graphql.orchestrator.schema.ServiceMetadataImpl
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext
+import graphql.GraphQLContext
 import graphql.language.AstTransformer
 import graphql.language.Field
 import graphql.language.FragmentDefinition
@@ -91,7 +92,7 @@ class DownstreamQueryModifierSpec extends Specification {
         serviceMetadataMock.isOwnedByEntityExtension(_) >> false
         serviceMetadataMock.shouldModifyDownStreamQuery() >> true
 
-        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema)
+        subjectUnderTest = new DownstreamQueryModifier(aType, serviceMetadataMock, Collections.emptyMap(), graphQLSchema, GraphQLContext.newContext().build())
     }
 
     def "can Remove Field"() {

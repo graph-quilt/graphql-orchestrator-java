@@ -1,20 +1,12 @@
 package com.intuit.graphql.orchestrator.fieldresolver;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getNameFromFieldReference;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.getFieldType;
-import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
-import static graphql.schema.GraphQLTypeUtil.unwrapAll;
-import static graphql.schema.InputValueWithState.newExternalValue;
-
 import com.intuit.graphql.orchestrator.batch.DownstreamQueryModifier;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverArgumentDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
+import graphql.GraphQLContext;
 import graphql.Scalars;
 import graphql.execution.ValuesResolver;
 import graphql.language.Argument;
@@ -29,14 +21,24 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
+import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.getNameFromFieldReference;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.ifInvalidFieldReferenceThrowException;
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.isReferenceToFieldInParentType;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.getFieldType;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isPrimitiveType;
+import static graphql.schema.GraphQLTypeUtil.unwrapAll;
+import static graphql.schema.InputValueWithState.newExternalValue;
 
 @AllArgsConstructor
 public class FieldResolverBatchSelectionSetSupplier implements Supplier<SelectionSet> {
@@ -65,7 +67,7 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
             GraphQLObjectType rootFieldParentType = graphQLSchema.getQueryType();
             GraphQLType rootFieldType = getFieldType(rootField, rootFieldParentType).get();
             rootField = removeFieldsWithExternalTypes(rootField, rootFieldType, dataFetchingEnvironment
-                .getFragmentsByName(), graphQLSchema);
+                .getFragmentsByName(), graphQLSchema, dataFetchingEnvironment.getContext());
             parentSelectionSetBuilder.selection(rootField);
         }
 
@@ -73,10 +75,11 @@ public class FieldResolverBatchSelectionSetSupplier implements Supplier<Selectio
     }
 
     private Field removeFieldsWithExternalTypes(final Field field,
-        GraphQLType parentType, Map<String, FragmentDefinition> fragmentsByName, GraphQLSchema graphQLSchema) {
+                                                GraphQLType parentType, Map<String, FragmentDefinition> fragmentsByName,
+                                                GraphQLSchema graphQLSchema, GraphQLContext context) {
         // call serviceMetadata.hasFieldResolverDirective() before calling this method
         return (Field) AST_TRANSFORMER.transform(field,
-            new DownstreamQueryModifier(unwrapAll(parentType), serviceMetadata, fragmentsByName, graphQLSchema));
+            new DownstreamQueryModifier(unwrapAll(parentType), serviceMetadata, fragmentsByName, graphQLSchema, context));
     }
 
     private  List<Argument> createFieldArguments(ResolverDirectiveDefinition resolverDirectiveDefinition, DataFetchingEnvironment dataFetchingEnvironment) {
