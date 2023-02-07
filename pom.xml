@@ -39,6 +39,7 @@
     <graphql-sdl-version>3.0.1</graphql-sdl-version>
     <xtextVersion>2.26.0</xtextVersion>
     <graphQLVersion>17.4</graphQLVersion>
+    <reactorVersion>3.4.24</reactorVersion>
   </properties>
 
   <profiles>
@@ -162,7 +163,13 @@
     <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.4.24</version>
+        <version>${reactorVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-test</artifactId>
+      <version>${reactorVersion}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- TEST DEPENDENCIES -->
