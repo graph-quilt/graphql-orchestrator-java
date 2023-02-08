@@ -49,8 +49,8 @@ public class GraphQLOrchestrator {
   private final ExecutionStrategy mutationExecutionStrategy;
 
   private GraphQLOrchestrator(final RuntimeGraph runtimeGraph, final List<Instrumentation> instrumentations,
-      final ExecutionIdProvider executionIdProvider, final ExecutionStrategy queryExecutionStrategy,
-      final ExecutionStrategy mutationExecutionStrategy) {
+                              final ExecutionIdProvider executionIdProvider, final ExecutionStrategy queryExecutionStrategy,
+                              final ExecutionStrategy mutationExecutionStrategy) {
     this.runtimeGraph = runtimeGraph;
     this.instrumentations = instrumentations;
     this.executionIdProvider = executionIdProvider;
@@ -71,11 +71,11 @@ public class GraphQLOrchestrator {
     // to create a new DataLoader per request. Else it will use the cache which is shared
     // across request.
     final Map<BatchLoader, DataLoader> temporaryMap = this.runtimeGraph.getBatchLoaderMap().values().stream().distinct()
-        .collect(Collectors.toMap(Function.identity(), DataLoader::new));
+            .collect(Collectors.toMap(Function.identity(), DataLoader::new));
 
     this.runtimeGraph.getBatchLoaderMap()
-        .forEach((key, batchLoader) ->
-            dataLoaderRegistry.register(key, temporaryMap.getOrDefault(batchLoader, new DataLoader(batchLoader))));
+            .forEach((key, batchLoader) ->
+                    dataLoaderRegistry.register(key, temporaryMap.getOrDefault(batchLoader, new DataLoader(batchLoader))));
     return dataLoaderRegistry;
   }
 
@@ -217,7 +217,7 @@ public class GraphQLOrchestrator {
 
     public GraphQLOrchestrator build() {
       return new GraphQLOrchestrator(runtimeGraph, instrumentations, executionIdProvider, queryExecutionStrategy,
-          mutationExecutionStrategy);
+              mutationExecutionStrategy);
     }
   }
 }

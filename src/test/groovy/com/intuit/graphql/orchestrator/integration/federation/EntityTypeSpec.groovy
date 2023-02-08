@@ -9,6 +9,7 @@ import com.intuit.graphql.orchestrator.testhelpers.MockServiceProvider
 import com.intuit.graphql.orchestrator.testhelpers.ServiceProviderMockResponse
 import graphql.ExecutionInput
 import graphql.ExecutionResult
+import graphql.GraphQLError
 import graphql.schema.GraphQLFieldDefinition
 import graphql.schema.GraphQLObjectType
 import graphql.schema.GraphQLSchema
@@ -23,6 +24,7 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
     String VEHICLE_SCHEMA = """
         type Query {
             getVehicleById(id: String): Vehicle
+            getVehicles: [Vehicle]
         }
         type Vehicle @key(fields: "id") {
             id: String
@@ -82,6 +84,8 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
 
     String VEHICLE_DOWNSTREAM_QUERY = "query mix_type_providers {getVehicleById(id:\"mockVehicle\") {id color}}"
     String VEHICLE_DOWNSTREAM_QUERY_2 = "query mix_type_providers {getVehicleById(id:\"mockVehicle\") {color id}}"
+    String BATCH_VEHICLE_DOWNSTREAM_QUERY = "query mix_type_providers {getVehicles {id color}}"
+    String BATCH_VEHICLE_DOWNSTREAM_QUERY_2 = "query mix_type_providers {getVehicles {color id}}"
     String CAR_DOWNSTREAM_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Vehicle {carInfo {carId capacity __typename}}}}"
     String REVIEWS_DOWNSTREAM_QUERY = "query mix_type_providers_Resolver_Directive_Query {getReviewsById_0:getReviewsById(id:\"test-car\") {rating comment}}"
 
@@ -486,5 +490,216 @@ class EntityTypeSpec extends BaseIntegrationTestSpecification {
         getEntity.get("ext1Field") == "EXT1_SUCCESS"
         getEntity.get("ext2Field") == "EXT2_SUCCESS"
 
+    }
+
+    def "Entities has error extension when entity fetch fails due to downstream error single result"(){
+        given:
+        vehicleEI = ExecutionInput.newExecutionInput().query(VEHICLE_DOWNSTREAM_QUERY).build()
+        vehicleEI2 = ExecutionInput.newExecutionInput().query(VEHICLE_DOWNSTREAM_QUERY_2).build()
+        carEI = ExecutionInput.newExecutionInput().query(CAR_DOWNSTREAM_QUERY).build()
+
+        def vehicleResponse = """
+            {
+              "data": {
+                "getVehicleById": {
+                  "id": "test-car",
+                  "color": "Purple",
+                  "type": "Car"
+                }
+              }
+            }
+        """
+
+        vehicleProvider = MockServiceProvider.builder()
+                .namespace("Vehicle")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("vehicle.graphqls", VEHICLE_SCHEMA))
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(vehicleEI)
+                                .expectResponseRaw(vehicleResponse)
+                                .build()
+                )
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(vehicleEI2)
+                                .expectResponseRaw(vehicleResponse)
+                                .build()
+                )
+                .build()
+
+        def carResponse = """
+            {
+              "errors": [ 
+                {
+                     "message": "Mocked Error", 
+                     "path": ["_entities", 0, "carInfo"], 
+                     "extensions": {}
+                } 
+              ],
+              "data": {
+                   "_entities": [ 
+                        {
+                            "_typename": "Vehicle",
+                            "carInfo": null
+                        }
+                   ]
+                }
+            }
+        """
+
+        carProvider = MockServiceProvider.builder()
+                .namespace("Car")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("car.graphlqs", CAR_SCHEMA))
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(carEI)
+                                .expectResponseRaw(carResponse)
+                                .build()
+                )
+                .build()
+
+        specUnderTest = createGraphQLOrchestrator([carProvider, vehicleProvider])
+
+        String queryString = "query mix_type_providers { getVehicleById(id: \"mockVehicle\") { id color carInfo { carId capacity } } }"
+        ExecutionInput query = ExecutionInput.newExecutionInput()
+                .query(queryString)
+                .build();
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(query).get();
+
+        then:
+        executionResult?.data?.size() != 0
+        LinkedHashMap vehicleById = executionResult?.data.get("getVehicleById")
+        vehicleById.get("id") == "test-car"
+        vehicleById.get("color") == "Purple"
+        vehicleById.get("carInfo") == null
+
+        executionResult?.errors?.size() == 1
+        GraphQLError error = executionResult?.errors.get(0)
+        error.extensions.get("serviceNamespace") == "Car"
+        error.extensions.get("parentTypename") == "Vehicle"
+        error.extensions.get("fieldName") == "carInfo"
+        error.extensions.get("downstreamErrors") != null
+    }
+
+    def "Entities has error extension when entity fetch fails due to downstream error batch result"(){
+        given:
+        vehicleEI = ExecutionInput.newExecutionInput().query(BATCH_VEHICLE_DOWNSTREAM_QUERY).build()
+        vehicleEI2 = ExecutionInput.newExecutionInput().query(BATCH_VEHICLE_DOWNSTREAM_QUERY_2).build()
+        carEI = ExecutionInput.newExecutionInput().query(CAR_DOWNSTREAM_QUERY).build()
+
+        def vehicleResponse = """
+            {
+              "data": {
+                "getVehicles": [
+                {
+                  "id": "test-car",
+                  "color": "Blue",
+                  "type": "Car"
+                },
+                {
+                  "id": "mock-boat",
+                  "color": "Red",
+                  "type": "Boat"
+                }
+                ]
+              }
+            }
+        """
+
+        vehicleProvider = MockServiceProvider.builder()
+                .namespace("Vehicle")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("vehicle.graphqls", VEHICLE_SCHEMA))
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(vehicleEI)
+                                .expectResponseRaw(vehicleResponse)
+                                .build()
+                )
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(vehicleEI2)
+                                .expectResponseRaw(vehicleResponse)
+                                .build()
+                )
+                .build()
+
+        def carResponse = """
+            {
+              "errors": [ 
+                {
+                     "message": "Mocked Error", 
+                     "path": ["_entities", 1, "carInfo"], 
+                     "extensions": {}
+                } 
+              ],
+              "data": {
+                   "_entities": [ 
+                        {
+                            "_typename": "Vehicle",
+                            "carInfo": {
+                                "carId": "test-car",
+                                "capacity": 2,
+                                "__typename": "Car"
+                            }
+                        },
+                        {
+                            "_typename": "Vehicle",
+                            "carInfo": null
+                        }
+                   ]
+                }
+            }
+        """
+
+        carProvider = MockServiceProvider.builder()
+                .namespace("Car")
+                .serviceType(ServiceProvider.ServiceType.FEDERATION_SUBGRAPH)
+                .sdlFiles(ImmutableMap.of("car.graphlqs", CAR_SCHEMA))
+                .mockResponse(
+                        ServiceProviderMockResponse.builder()
+                                .forExecutionInput(carEI)
+                                .expectResponseRaw(carResponse)
+                                .build()
+                )
+                .build()
+
+        specUnderTest = createGraphQLOrchestrator([carProvider, vehicleProvider])
+
+        String queryString = "query mix_type_providers { getVehicles { id color carInfo { carId capacity } } }"
+        ExecutionInput query = ExecutionInput.newExecutionInput()
+                .query(queryString)
+                .build();
+
+        when:
+        ExecutionResult executionResult = specUnderTest.execute(query).get();
+
+        then:
+        executionResult?.data?.size() != 0
+        List<LinkedHashMap> vehicles = executionResult?.data.get("getVehicles")
+        vehicles.size() == 2
+
+        LinkedHashMap vehicle1 = vehicles.get(0)
+        vehicle1.get("id") == "test-car"
+        vehicle1.get("color") == "Blue"
+        LinkedHashMap carInfo = vehicle1.get("carInfo")
+        carInfo.get("carId") == "test-car"
+        carInfo.get("capacity") == 2
+
+        LinkedHashMap vehicle2 = vehicles.get(1)
+        vehicle2.get("id") == "mock-boat"
+        vehicle2.get("color") == "Red"
+        vehicle2.get("carInfo") == null
+
+        executionResult?.errors?.size() == 1
+        GraphQLError error = executionResult?.errors.get(0)
+        error.extensions.get("serviceNamespace") == "Car"
+        error.extensions.get("parentTypename") == "Vehicle"
+        error.extensions.get("fieldName") == "carInfo"
+        error.extensions.get("downstreamErrors") != null
     }
 }
