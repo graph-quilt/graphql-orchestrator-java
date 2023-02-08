@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator;
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferDirectiveInstrumentation;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
-import com.intuit.graphql.orchestrator.utils.MultipartUtil;
+import com.intuit.graphql.orchestrator.utils.MultiEIGenerator;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
@@ -102,39 +102,46 @@ public class GraphQLOrchestrator {
   }
 
   private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput) {
-    List<ExecutionInput>  splitExecutionInputs = MultipartUtil.splitMultipartExecutionInput(executionInput).stream()
-            .map(ei -> {
-              DataLoaderRegistry registry = buildNewDataLoaderRegistry();
-
-              GraphQLContext graphqlContext = GraphQLContext.newContext()
-                      .of((GraphQLContext)executionInput.getContext())
-                      .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, registry)
-                      .put(USE_DEFER, true)
-                      .build();
-              return ei.transform(builder -> {
-                builder.dataLoaderRegistry(registry);
-                builder.context(graphqlContext);
-              });
-            })
-            .collect(Collectors.toList());
-
-    int expectedResponses = splitExecutionInputs.size();
     AtomicInteger responses = new AtomicInteger(0);
+    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput);
 
-    Flux<Object> executionResultPublisher = Flux.fromIterable(splitExecutionInputs)
+    Flux<Object> executionResultPublisher = eiGenerator.generateEIs()
+            .filter(ei -> !ei.getQuery().equals(""))
             .publishOn(Schedulers.elastic())
+            .map(ei -> {
+              log.error("Timestamp processing emittedValue: {}", System.currentTimeMillis());
+              return this.generateEIWIthNewContext(ei);
+            })
             .map(constructGraphQL()::executeAsync)
             .map(CompletableFuture::join)
             .doOnNext(executionResult -> responses.getAndIncrement())
             .map(ExecutionResultImpl.newExecutionResult()::from)
-            .map(builder -> builder.addExtension("hasMoreData", (expectedResponses != responses.get())))
+            .map(builder -> builder.addExtension("hasMoreData", hasMoreData(eiGenerator.getNumOfEIs(), responses.get())))
             .map(ExecutionResultImpl.Builder::build)
             .map(Object.class::cast)
-            .take(expectedResponses);
+            .takeUntil(object -> eiGenerator.getNumOfEIs() != null && !hasMoreData(eiGenerator.getNumOfEIs(), responses.get()));
 
     SubscriptionPublisher multiResultPublisher = new SubscriptionPublisher(executionResultPublisher, null);
 
     return CompletableFuture.completedFuture(ExecutionResultImpl.newExecutionResult().data(multiResultPublisher).build());
+  }
+
+  private boolean hasMoreData(Integer expectedNumOfEIs, Integer numOfResponses) {
+    return expectedNumOfEIs == null || expectedNumOfEIs.intValue() != numOfResponses.intValue();
+  }
+  private ExecutionInput generateEIWIthNewContext(ExecutionInput ei) {
+    DataLoaderRegistry registry = buildNewDataLoaderRegistry();
+
+    GraphQLContext graphqlContext = GraphQLContext.newContext()
+            .of((GraphQLContext)ei.getContext())
+            .put(DATA_LOADER_REGISTRY_CONTEXT_KEY, registry)
+            .put(USE_DEFER, true)
+            .build();
+
+    return ei.transform(builder -> {
+      builder.dataLoaderRegistry(registry);
+      builder.context(graphqlContext);
+    });
   }
 
   private GraphQL constructGraphQL() {

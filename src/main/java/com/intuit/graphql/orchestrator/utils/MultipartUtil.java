@@ -54,8 +54,6 @@ public class MultipartUtil {
       }
     });
 
-    //add original ei back into list
-    eiList.add(0, originalEI);
     return eiList;
   }
 

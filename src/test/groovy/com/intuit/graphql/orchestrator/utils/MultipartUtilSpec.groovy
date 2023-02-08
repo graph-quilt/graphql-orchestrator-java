@@ -20,9 +20,8 @@ class MultipartUtilSpec extends Specification {
         List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
         then:
-        splitSet.size() == 2
-        splitSet.get(0).query == query
-        splitSet.get(1).query == "query {\n" +
+        splitSet.size() == 1
+        splitSet.get(0).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldC\n" +
                 "    __typename\n" +
@@ -39,9 +38,8 @@ class MultipartUtilSpec extends Specification {
         List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
         then:
-        splitSet.size() == 2
-        splitSet.get(0).query == query
-        splitSet.get(1).query == "query {\n" +
+        splitSet.size() == 1
+        splitSet.get(0).query == "query {\n" +
                 "  queryA {\n" +
                 "    aliasB: fieldB\n" +
                 "    __typename\n" +
@@ -58,11 +56,8 @@ class MultipartUtilSpec extends Specification {
         List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
         then:
-        splitSet.size() == 2
-
-        splitSet.get(0).query == query
-
-        splitSet.get(1).query == "query {\n" +
+        splitSet.size() == 1
+        splitSet.get(0).query == "query {\n" +
                 "  getFoo(id: \"inputA\") {\n" +
                 "    fieldB\n" +
                 "    __typename\n" +
@@ -79,15 +74,14 @@ class MultipartUtilSpec extends Specification {
         List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
         then:
-        splitSet.size() == 3
-        splitSet.get(0).query == query
-        splitSet.get(1).query == "query {\n" +
+        splitSet.size() == 2
+        splitSet.get(0).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldB\n" +
                 "    __typename\n" +
                 "  }\n" +
                 "}\n"
-        splitSet.get(2).query == "query {\n" +
+        splitSet.get(1).query == "query {\n" +
                 "  queryA {\n" +
                 "    fieldC\n" +
                 "    __typename\n" +
@@ -106,9 +100,8 @@ class MultipartUtilSpec extends Specification {
         List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
         then:
-        splitSet.size() == 2
-        splitSet.get(0).query == query
-        splitSet.get(1).query == "query {\n" +
+        splitSet.size() == 1
+        splitSet.get(0).query == "query {\n" +
                 "  queryA {\n" +
                 "    objectField {\n" +
                 "      fieldC\n" +
@@ -128,8 +121,7 @@ class MultipartUtilSpec extends Specification {
         List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
         then:
-        splitSet.size() == 1
-        splitSet.get(0).query == query
+        splitSet.size() == 0
     }
 
     //todo
