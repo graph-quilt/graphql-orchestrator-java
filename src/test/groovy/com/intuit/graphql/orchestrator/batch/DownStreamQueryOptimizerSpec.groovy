@@ -34,6 +34,16 @@ class DownStreamQueryOptimizerSpec extends Specification {
 
 
         expect:
+        String expectedQuery = '''
+                query MyQuery {
+                a { b { 
+                   c .
+                   ...fr
+                   ... on F { f }  
+                }
+                
+                fragment fr on D {  d  } 
+                '''
         transformedSelectionSet.selections.size() == 1
         (transformedSelectionSet.selections.get(0) as Field).name == "a"
         (transformedSelectionSet.selections.get(0) as Field).selectionSet.selections.size() == 1

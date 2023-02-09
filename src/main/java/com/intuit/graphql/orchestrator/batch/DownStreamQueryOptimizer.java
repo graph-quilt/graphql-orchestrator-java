@@ -22,6 +22,12 @@ public class DownStreamQueryOptimizer {
     this.operationType = operationType;
   }
 
+  public SelectionSet getTransformedSelectionSet(SelectionSet selectionSet) {
+    if (operationType == Operation.QUERY) {
+      return transform(selectionSet);
+    }
+    return selectionSet;
+  }
   private static GroupedSelectionSet groupSelections(List<Selection> selections) {
     GroupedSelectionSet groupedSelectionSet = new GroupedSelectionSet();
     selections.forEach(selection -> {
@@ -42,13 +48,6 @@ public class DownStreamQueryOptimizer {
       }
     });
     return groupedSelectionSet;
-  }
-
-  public SelectionSet getTransformedSelectionSet(SelectionSet selectionSet) {
-    if (operationType == Operation.QUERY) {
-      return transform(selectionSet);
-    }
-    return selectionSet;
   }
 
   private SelectionSet transform(SelectionSet selections) {
