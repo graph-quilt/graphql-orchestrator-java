@@ -29,7 +29,6 @@ public class MergedFieldModifier {
   }
 
   public MergedFieldModifierResult getFilteredRootField() {
-
     List<Field> validFields = new ArrayList<>();
     String expectedPath = env.getExecutionStepInfo().getPath().toString();
 

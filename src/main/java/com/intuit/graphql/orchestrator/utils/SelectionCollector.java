@@ -1,5 +1,7 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static com.intuit.graphql.orchestrator.utils.SelectionSetUtil.isEmpty;
+
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.FragmentSpread;
@@ -32,7 +34,7 @@ public class SelectionCollector {
   }
 
   public Map<String, Field> collectFields(SelectionSet selectionSet) {
-    if (selectionSet == null || CollectionUtils.isEmpty(selectionSet.getSelections())) {
+    if (isEmpty(selectionSet)) {
       return Collections.emptyMap();
     }
 

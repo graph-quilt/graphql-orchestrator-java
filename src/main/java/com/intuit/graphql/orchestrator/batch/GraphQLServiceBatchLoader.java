@@ -65,7 +65,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
   private final QueryOperationModifier queryOperationModifier;
   private final ServiceMetadata serviceMetadata;
   private final BatchLoaderExecutionHooks<DataFetchingEnvironment, DataFetcherResult<Object>> hooks;
-  private QueryOptimizer queryOptimizer;
+  private DownStreamQueryOptimizer queryOptimizer;
 
   @VisibleForTesting
   VariableDefinitionFilter variableDefinitionFilter = new VariableDefinitionFilter();
@@ -176,9 +176,9 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         .collect(Collectors.toList());
       return CompletableFuture.completedFuture(batchResult);
     }
+    queryOptimizer = new DownStreamQueryOptimizer(operationType);
+    filteredSelection = queryOptimizer.getTransformedSelectionSet(filteredSelection);
 
-    //queryOptimizer = new QueryOptimizer(operationType, filteredSelection);
-    //filteredSelection = queryOptimizer.getTransformedSelectionSet();
     Map<String, Object> mergedVariables = new HashMap<>();
     keys.stream()
         .flatMap(dataFetchingEnvironment -> dataFetchingEnvironment.getVariables().entrySet().stream())
