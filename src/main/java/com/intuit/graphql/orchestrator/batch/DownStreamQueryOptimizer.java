@@ -54,7 +54,6 @@ public class DownStreamQueryOptimizer {
   private SelectionSet transform(SelectionSet selections) {
     final GroupedSelectionSet groupedSelectionSet = groupSelections(selections.getSelections());
     if(groupedSelectionSet.getGroupedFields().size() > 0) {
-      System.out.println("if");
       SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
       groupedSelectionSet.getDistinctSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
       groupedSelectionSet.getGroupedFields().values()
