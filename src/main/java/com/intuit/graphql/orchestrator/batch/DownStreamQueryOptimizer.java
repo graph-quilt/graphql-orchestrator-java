@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import lombok.ToString;
 
 public class DownStreamQueryOptimizer {
 
@@ -51,12 +52,16 @@ public class DownStreamQueryOptimizer {
   }
 
   private SelectionSet transform(SelectionSet selections) {
-    SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
     final GroupedSelectionSet groupedSelectionSet = groupSelections(selections.getSelections());
-    groupedSelectionSet.getDistinctSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
-    groupedSelectionSet.getGroupedFields().values()
-        .forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
-    return mergedSelectionSetBuilder.build();
+    if(groupedSelectionSet.getGroupedFields().size() > 0) {
+      System.out.println("if");
+      SelectionSet.Builder mergedSelectionSetBuilder = SelectionSet.newSelectionSet();
+      groupedSelectionSet.getDistinctSelections().forEach(selection -> mergedSelectionSetBuilder.selection(selection));
+      groupedSelectionSet.getGroupedFields().values()
+          .forEach(fields -> mergedSelectionSetBuilder.selection(mergeFields(fields)));
+      return mergedSelectionSetBuilder.build();
+    }
+    return selections;
   }
 
   private Field mergeFields(final List<Field> fields) {
@@ -79,6 +84,7 @@ public class DownStreamQueryOptimizer {
   }
 
   @Getter
+  @ToString
   static class GroupedSelectionSet {
     List<Selection> distinctSelections = new ArrayList<>();
     Map<String, List<Field>> groupedFields = new HashMap<>();
