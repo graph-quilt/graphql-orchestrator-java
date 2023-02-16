@@ -84,7 +84,6 @@ public class DownStreamQueryOptimizer {
   }
 
   @Getter
-  @ToString
   static class GroupedSelectionSet {
     List<Selection> distinctSelections = new ArrayList<>();
     Map<String, List<Field>> groupedFields = new HashMap<>();
