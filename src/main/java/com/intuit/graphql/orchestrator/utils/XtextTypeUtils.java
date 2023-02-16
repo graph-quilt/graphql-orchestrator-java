@@ -1,5 +1,16 @@
 package com.intuit.graphql.orchestrator.utils;
 
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
+import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
+import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
+import static com.intuit.graphql.utils.XtextTypeUtils.isNonNull;
+import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
+import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
+import static com.intuit.graphql.utils.XtextTypeUtils.unwrapOne;
+import static java.lang.String.format;
+
 import com.intuit.graphql.graphQL.ArgumentsDefinition;
 import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
@@ -22,27 +33,15 @@ import com.intuit.graphql.graphQL.impl.ObjectTypeImpl;
 import com.intuit.graphql.graphQL.impl.PrimitiveTypeImpl;
 import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException;
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EObject;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_INACCESSIBLE_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_KEY_DIRECTIVE;
-import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
-import static com.intuit.graphql.utils.XtextTypeUtils.getObjectType;
-import static com.intuit.graphql.utils.XtextTypeUtils.isNonNull;
-import static com.intuit.graphql.utils.XtextTypeUtils.isWrapped;
-import static com.intuit.graphql.utils.XtextTypeUtils.typeName;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapAll;
-import static com.intuit.graphql.utils.XtextTypeUtils.unwrapOne;
-import static java.lang.String.format;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EObject;
 
 public class XtextTypeUtils {
 
@@ -249,7 +248,9 @@ public class XtextTypeUtils {
 
     if(federatedComparison) {
       if(isEntity(conflictingTypeDefinition) != isEntity(existingTypeDefinition)) {
-        throw new TypeConflictException("Type %s is conflicting with existing type %s. Only one of the types are an entity.");
+        throw new TypeConflictException(String.format("Type %s is conflicting with existing type %s. Only one of the types are an entity.",
+          toDescriptiveString(conflictingTypeDefinition),
+          toDescriptiveString(existingTypeDefinition)));
       }
 
       for(FieldDefinition fieldDefinition :possibleConflictingFieldMap.values()) {
