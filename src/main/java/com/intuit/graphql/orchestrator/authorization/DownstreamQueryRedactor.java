@@ -8,9 +8,10 @@ import graphql.language.FragmentDefinition;
 import graphql.language.Node;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLType;
-import java.util.Map;
 import lombok.Builder;
 import lombok.NonNull;
+
+import java.util.Map;
 
 @Builder
 public class DownstreamQueryRedactor {
@@ -31,7 +32,9 @@ public class DownstreamQueryRedactor {
     return new DownstreamQueryRedactorResult(
         transformedRoot,
         downstreamQueryModifier.getDeclineFieldErrors(),
-        downstreamQueryModifier.redactedQueryHasEmptySelectionSet());
+        downstreamQueryModifier.redactedQueryHasEmptySelectionSet(),
+        downstreamQueryModifier.getFragmentSpreadsRemoved()
+      );
   }
 
   private AuthDownstreamQueryModifier createQueryModifier() {

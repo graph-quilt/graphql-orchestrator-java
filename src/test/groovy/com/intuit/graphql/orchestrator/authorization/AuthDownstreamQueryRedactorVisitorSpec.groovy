@@ -54,6 +54,56 @@ class AuthDownstreamQueryRedactorVisitorSpec extends Specification {
         }
     """
 
+    def testDeferInlineFragmentQuery = """
+        { 
+            a { 
+                ... on B1 @defer {
+                    c1 { 
+                        s1 
+                    }
+                }   
+                b2 { i1 } 
+            } 
+        }
+    """
+
+    def testIfDeferInlineFragmentQuery = """
+        { 
+            a { 
+                ... on B1 @defer(if:false) {
+                    c1 { 
+                        s1 
+                    }
+                }   
+                b2 { i1 } 
+            } 
+        }
+    """
+
+    def testDeferSpreadFragmentQuery = """
+        { 
+            a { 
+                ... DeferredFrag @defer  
+                b2 { i1 } 
+            } 
+        }
+        fragment DeferredFrag on B1 {
+            c1
+        } 
+    """
+
+    def testIfDeferSpreadFragmentQuery = """
+        { 
+            a { 
+                ... DeferredFrag @defer(if: false)  
+                b2 { i1 } 
+            } 
+        }
+        fragment DeferredFrag on B1 {
+            c1
+        } 
+    """
+
     static final Object TEST_AUTH_DATA = "TestAuthDataCanBeAnyObject"
 
     Field mockField = Mock()
@@ -211,4 +261,244 @@ class AuthDownstreamQueryRedactorVisitorSpec extends Specification {
                 .createDeniedResult(testGraphqlErrorException)
     }
 
+    def "deferred inline fragments are removed"() {
+        given:
+
+        Document document = new Parser().parseDocument(testDeferInlineFragmentQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(Collections.emptyMap())
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragmentsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        mockGraphQLContext.getOrDefault("useDefer", false) >> true
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        rootField.getName() == "a"
+        rootField.selectionSet.selections.size() == 2
+        ((InlineFragment)(rootField.selectionSet.selections.get(0))).getTypeCondition().name == "B1"
+        ((Field)(rootField.selectionSet.selections.get(1))).getName() == "b2"
+
+        transformedField.getName() == "a"
+        transformedField.selectionSet.selections.size() == 1
+        ((Field)(transformedField.selectionSet.selections.get(0))).getName() == "b2"
+
+        mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "deferred inline fragments with if argument as false are kept"() {
+        given:
+
+        Document document = new Parser().parseDocument(testIfDeferInlineFragmentQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(Collections.emptyMap())
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragmentsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        mockGraphQLContext.getOrDefault("useDefer", false) >> true
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        rootField.getName() == "a"
+        rootField.selectionSet.selections.size() == 2
+        ((InlineFragment)(rootField.selectionSet.selections.get(0))).getTypeCondition().name == "B1"
+        ((Field)(rootField.selectionSet.selections.get(1))).getName() == "b2"
+
+        transformedField.getName() == "a"
+        transformedField.selectionSet.selections.size() == 2
+        ((InlineFragment)(transformedField.selectionSet.selections.get(0))).getTypeCondition().name == "B1"
+        ((Field)(transformedField.selectionSet.selections.get(1))).getName() == "b2"
+
+        mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "deferred fragment spreads are removed"() {
+        given:
+
+        Document document = new Parser().parseDocument(testDeferSpreadFragmentQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+        FragmentDefinition mockedFragmentDef = Mock()
+        HashMap<String, FragmentDefinition> fragsByName = ["DeferredFrag": mockedFragmentDef]
+        Field mockCField = Mock()
+        SelectionSet selectionSet = SelectionSet.newSelectionSet().selection(mockCField).build()
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(Collections.emptyMap())
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        mockGraphQLContext.getOrDefault("useDefer", false) >> true
+        mockedFragmentDef.getSelectionSet() >> selectionSet
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        rootField.getName() == "a"
+        rootField.selectionSet.selections.size() == 2
+        ((FragmentSpread)(rootField.selectionSet.selections.get(0))).getName() == "DeferredFrag"
+        ((Field)(rootField.selectionSet.selections.get(1))).getName() == "b2"
+
+        transformedField.getName() == "a"
+        transformedField.selectionSet.selections.size() == 1
+        ((Field)(transformedField.selectionSet.selections.get(0))).getName() == "b2"
+
+        specUnderTest.fragmentSpreadsRemoved.size() == 1
+        specUnderTest.fragmentSpreadsRemoved.get(0) == "DeferredFrag"
+
+        mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "deferred fragment spreads with if argument as false are kept"() {
+        given:
+
+        Document document = new Parser().parseDocument(testIfDeferSpreadFragmentQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+        FragmentDefinition mockedFragmentDef = Mock()
+        HashMap<String, FragmentDefinition> fragsByName = ["DeferredFrag": mockedFragmentDef]
+        Field mockCField = Mock()
+        SelectionSet selectionSet = SelectionSet.newSelectionSet().selection(mockCField).build()
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(Collections.emptyMap())
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        mockGraphQLContext.getOrDefault("useDefer", false) >> true
+        mockedFragmentDef.getSelectionSet() >> selectionSet
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        rootField.getName() == "a"
+        rootField.selectionSet.selections.size() == 2
+        ((FragmentSpread)(rootField.selectionSet.selections.get(0))).getName() == "DeferredFrag"
+        ((Field)(rootField.selectionSet.selections.get(1))).getName() == "b2"
+
+        transformedField.getName() == "a"
+        transformedField.selectionSet.selections.size() == 2
+        ((FragmentSpread)(transformedField.selectionSet.selections.get(0))).getName() == "DeferredFrag"
+        ((Field)(transformedField.selectionSet.selections.get(1))).getName() == "b2"
+
+        mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "Exception when defer directive is not in supported location"() {
+        given:
+
+        Document document = new Parser().parseDocument(testIfDeferSpreadFragmentQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+        FragmentDefinition mockedFragmentDef = Mock()
+        HashMap<String, FragmentDefinition> fragsByName = ["DeferredFrag": mockedFragmentDef]
+        Field mockCField = Mock()
+        SelectionSet selectionSet = SelectionSet.newSelectionSet().selection(mockCField).build()
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(Collections.emptyMap())
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        mockGraphQLContext.getOrDefault("useDefer", false) >> true
+        mockedFragmentDef.getSelectionSet() >> selectionSet
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        rootField.getName() == "a"
+        rootField.selectionSet.selections.size() == 2
+        ((FragmentSpread)(rootField.selectionSet.selections.get(0))).getName() == "DeferredFrag"
+        ((Field)(rootField.selectionSet.selections.get(1))).getName() == "b2"
+
+        transformedField.getName() == "a"
+        transformedField.selectionSet.selections.size() == 2
+        ((FragmentSpread)(transformedField.selectionSet.selections.get(0))).getName() == "DeferredFrag"
+        ((Field)(transformedField.selectionSet.selections.get(1))).getName() == "b2"
+
+        mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
 }
