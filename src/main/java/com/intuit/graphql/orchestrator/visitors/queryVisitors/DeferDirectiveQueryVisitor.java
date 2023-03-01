@@ -40,26 +40,35 @@ import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_IF_ARG;
 import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
 import static graphql.util.TreeTransformerUtil.changeNode;
 
+/*
+* Purpose of class: traverse query and create forked ei whenever there is a valid defer directive
+* */
 @Builder
-public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
+public class DeferDirectiveQueryVisitor extends QueryVisitorStub {
 
+    //constants
     public static final String GENERATED_EIS = "GENERATED_EIS";
+    private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
+
+    //variables that will be manipulated throughout
     private final List<ExecutionInput> generatedEIs =  new ArrayList<>();
     private final Set<String> neededFragmentSpreads = new HashSet<>();
-    private final Map<String, FragmentDefinition> neededFragmentDefinitions = new HashMap<>();
 
+    //variables that are set when visitor is built
     private ExecutionInput originalEI;
-    //Gets set when originalEI is set in builder
     private final Document rootNode;
     private final Map<String, FragmentDefinition> fragmentDefinitionMap;
-
-    private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
     private final PruneChildDeferSelectionsModifier PRUNE_CHILD_MODIFIER = PruneChildDeferSelectionsModifier
             .builder()
             .nestedDefersAllowed(true)
             .build();
 
 
+    /*
+    * Functions:
+    *    Updates the field if it contains defer directive.
+    *    If it is a valid deferred node, generate new EI
+    */
     @Override
     public TraversalControl visitField(Field node, TraverserContext<Node> context) {
         if(containsValidDeferDirective(node)) {
@@ -75,6 +84,11 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
         return TraversalControl.CONTINUE;
     }
 
+    /*
+     * Functions:
+     *    Updates the FragmentSpread if it contains defer directive.
+     *    If it is a valid deferred node, generate new EI
+     */
     @Override
     public TraversalControl visitFragmentSpread(FragmentSpread node, TraverserContext<Node> context) {
         if(containsValidDeferDirective(node)) {
@@ -106,6 +120,10 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
         return TraversalControl.CONTINUE;
     }
 
+    /*
+    * Checks if it is necessary to create ei for deferred field.
+    * Currently, selection should be skipped if all the children field are deferred resulting in an empty selection set.
+    */
     private boolean isValidDeferredSelection(Node selection) {
         Optional<SelectionSet> possibleSelectionSet = ((List<Node>)selection.getChildren())
                 .stream()
@@ -113,15 +131,22 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
                 .map(SelectionSet.class::cast)
                 .findAny();
 
-        //it is leaf node with no children or at least one of the children are not deferred
+                //it is leaf node with no children
         return !possibleSelectionSet.isPresent() ||
+                // at least one of the children are not deferred
                 possibleSelectionSet.get().getChildren().stream().anyMatch(child -> !containsValidDeferDirective(child));
     }
 
+    /*
+    * Verifies that Node has defer directive that is not disabled
+    */
     private boolean containsValidDeferDirective(Node node) {
         return node instanceof DirectivesContainer && containsValidDeferDirective((DirectivesContainer) node);
     }
 
+    /*
+     * Verifies that DirectiveContainer has defer directive that is not disabled
+     */
     private boolean containsValidDeferDirective(DirectivesContainer directivesContainer) {
         //DirectivesContainer returns list as List<Object> so casting to correct type
         List<Directive> nodesDirectives = directivesContainer.getDirectives();
@@ -138,14 +163,19 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
 
     }
 
+    /*
+    * Generates an Execution Input given the node and the context
+    * */
     private ExecutionInput generateDeferredEI(Node currentNode, TraverserContext<Node> context) {
+        //prune defer information from children
         Node prunedNode = AST_TRANSFORMER.transform(currentNode, PRUNE_CHILD_MODIFIER);
         List<Node> parentNodes = getParentDefinitions(context);
-        //prune information that does not pertain to defer
+        //builds new OperationDefinition consisting with only pruned nodes
         for (Node parentNode : parentNodes) {
             prunedNode = constructNewPrunedNode(parentNode, prunedNode);
         }
 
+        //Gets all the definitions for the fragment spreads
         List<FragmentDefinition> fragmentSpreadDefs = this.neededFragmentSpreads
                 .stream()
                 .map(fragmentDefinitionMap::get)
@@ -160,10 +190,14 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
 
         String query = AstPrinter.printAst(deferredDocument);
 
-        //need to add the variables and context back into this
         return originalEI.transform(builder -> builder.query(query));
     }
 
+    /*
+    * Transforms node by removing defer directive from the node.
+    * Returns transformed node
+    * Throws an exception if it is at a location that is not supported.
+    * */
     private Node pruneDeferDirective(Node deferredNode) {
         List<Directive> prunedDirectives;
         if(deferredNode instanceof Field) {
@@ -199,6 +233,10 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
                 .collect(Collectors.toList());
     }
 
+    /*
+    * Generates new node
+    * Transforms the parentNode with a new selection set consisting of the pruned child and typename fields
+    * */
     private Node constructNewPrunedNode(Node parentNode, Node prunedChild) {
         List<Selection> selections = new ArrayList<>();
         selections.add((Selection) prunedChild);
@@ -214,6 +252,7 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
         if(parentNode instanceof Field) {
             return ((Field) parentNode).transform(builder -> builder.selectionSet(prunedSelectionSet));
         } else if (parentNode instanceof FragmentDefinition) {
+            //add fragment spread names here in case of nested fragment spreads
             return ((FragmentDefinition) parentNode).transform(builder -> builder.selectionSet(prunedSelectionSet));
         } else if (parentNode instanceof InlineFragment) {
             return ((InlineFragment) parentNode).transform(builder -> builder.selectionSet(prunedSelectionSet));
@@ -224,6 +263,10 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
         throw new GraphQLException("Could not construct query due to invalid directive location");
     }
 
+    /*
+    * Returns anything that will be used by the parent visitor
+    * */
+    //Could possibly change this to a builder for the QueryCreatorResult
     @Override
     public Map<String, Object> getResults() {
         HashMap results = new HashMap();
@@ -231,26 +274,26 @@ public class ClientDirectiveQueryVisitor extends QueryVisitorStub {
         return results;
     }
 
-    public static ClientDirectiveQueryVisitorBuilder builder() {
-        return new ClientDirectiveQueryVisitorBuilder();
+    public static DeferDirectiveQueryVisitorBuilder builder() {
+        return new DeferDirectiveQueryVisitorBuilder();
     }
 
-    public static class ClientDirectiveQueryVisitorBuilder {
+    public static class DeferDirectiveQueryVisitorBuilder {
         ExecutionInput originalEI;
         Document rootNode;
         Map<String, FragmentDefinition> fragmentDefinitionMap;
 
-        public ClientDirectiveQueryVisitorBuilder originalEI (ExecutionInput originalEI) {
+        public DeferDirectiveQueryVisitorBuilder originalEI (ExecutionInput originalEI) {
             this.originalEI = originalEI;
             return rootNode(originalEI);
         }
 
-        public ClientDirectiveQueryVisitorBuilder rootNode(ExecutionInput ei) {
+        public DeferDirectiveQueryVisitorBuilder rootNode(ExecutionInput ei) {
             this.rootNode = GraphQLUtil.parser.parseDocument(ei.getQuery());
             return fragmentDefinitionMap(rootNode);
         }
 
-        public ClientDirectiveQueryVisitorBuilder fragmentDefinitionMap(Document rootNode) {
+        public DeferDirectiveQueryVisitorBuilder fragmentDefinitionMap(Document rootNode) {
             this.fragmentDefinitionMap = rootNode.getDefinitionsOfType(FragmentDefinition.class)
                     .stream()
                     .collect(Collectors.toMap(FragmentDefinition::getName ,Function.identity()));

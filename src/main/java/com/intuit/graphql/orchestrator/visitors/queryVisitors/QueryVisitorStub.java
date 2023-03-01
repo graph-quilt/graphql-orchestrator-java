@@ -49,7 +49,11 @@ import graphql.util.TraverserContext;
 import java.util.HashMap;
 import java.util.Map;
 
-public class QueryVisitorStub extends NodeVisitorStub {
+/*
+* Skeleton Visitor class that just extends NodeVisitorStub.
+* It allows Visitors to get results and share the context between QueryVisitorStub
+* */
+public abstract class QueryVisitorStub extends NodeVisitorStub {
 
     public TraversalControl visitArgument(Argument node, TraverserContext<Node> context) {
         return TraversalControl.CONTINUE;

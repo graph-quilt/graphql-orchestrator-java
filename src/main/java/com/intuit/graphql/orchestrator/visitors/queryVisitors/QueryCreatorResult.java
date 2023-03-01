@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 
 import java.util.List;
 
-import static com.intuit.graphql.orchestrator.visitors.queryVisitors.ClientDirectiveQueryVisitor.GENERATED_EIS;
+import static com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferDirectiveQueryVisitor.GENERATED_EIS;
 
 @AllArgsConstructor
 public class QueryCreatorResult {
