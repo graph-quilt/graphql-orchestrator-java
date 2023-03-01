@@ -87,12 +87,18 @@ public class DirectivesUtil {
             .defaultValueLiteral(BooleanValue.newBooleanValue(true).build())
             .build();
 
+    GraphQLArgument labelArgument = GraphQLArgument.newArgument()
+            .name(DEFER_IF_ARG)
+            .type(Scalars.GraphQLString)
+            .build();
+
     return GraphQLDirective.newDirective()
             .name(DEFER_DIRECTIVE_NAME)
             .validLocation(DirectiveLocation.FIELD)
             .validLocation(DirectiveLocation.INLINE_FRAGMENT)
             .validLocation(DirectiveLocation.FRAGMENT_SPREAD)
             .argument(ifArgument)
+            .argument(labelArgument)
             .build();
   }
 

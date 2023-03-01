@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,7 +118,9 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
     Map<String, FragmentDefinition> mergedFragmentDefinitions = new HashMap<>();
 
+    //Possibly add a complex object to hold these two
     MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey = new ArrayListValuedHashMap<>();
+    Set<String> removedFragments = new HashSet<>();
 
     for (final DataFetchingEnvironment key : keys) {
       MergedFieldModifierResult result = new MergedFieldModifier(key).getFilteredRootField();
@@ -125,7 +128,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
       if (filteredRootField != null) {
         filteredRootField.getFields().stream()
           .map(field -> removeFieldsWithExternalTypes(field,
-                operationObjectType, key, authData, fieldAuthorization, queryRedactErrorsByKey, context))
+                operationObjectType, key, authData, fieldAuthorization, queryRedactErrorsByKey, removedFragments, context))
           .filter(Objects::nonNull) // denied access or has an empty selectionSet
           .forEach(selectionSetBuilder::selection);
       }
@@ -195,6 +198,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         .collect(Collectors.toList());
 
     List<Definition> fragmentsAsDefinitions = mergedFragmentDefinitions.values().stream()
+        .filter(fragment -> !removedFragments.contains(fragment.getName()))
         .map(GraphQLObjects::<Definition>cast).collect(Collectors.toList());
 
     OperationDefinition query = OperationDefinition.newOperationDefinition()
@@ -228,6 +232,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
     if (serviceMetadata.requiresTypenameInjection()) {
       query = queryOperationModifier.modifyQuery(graphQLSchema, query, mergedFragmentDefinitions, filteredVariables);
     }
+
 
     return execute(context, query, filteredVariables, fragmentsAsDefinitions)
         .thenApply(queryResponseModifier::modify)
@@ -370,7 +375,7 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
 
   private Field removeFieldsWithExternalTypes(Field origField, GraphQLObjectType operationObjectType,
       DataFetchingEnvironment dfe, Object authData, FieldAuthorization fieldAuthorization,
-      final MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey, GraphQLContext context) {
+      final MultiValuedMap<String, GraphqlErrorException> queryRedactErrorsByKey, Set<String> removedFragments, GraphQLContext context) {
     
     if (serviceMetadata.shouldModifyDownStreamQuery() ||
         !(fieldAuthorization instanceof DefaultFieldAuthorization) ||
@@ -391,6 +396,10 @@ public class GraphQLServiceBatchLoader implements BatchLoader<DataFetchingEnviro
         String keyPath = dfe.getExecutionStepInfo().getPath().toString();
         queryRedactErrorsByKey.putAll(keyPath, redactResult.getErrors());
       }
+      if (CollectionUtils.isNotEmpty(redactResult.getFragmentSpreadsRemoved())) {
+        removedFragments.addAll(redactResult.getFragmentSpreadsRemoved());
+      }
+
       if (redactResult.isHasEmptySelectionSet()) {
         return null; // if null, not added to selection
       }

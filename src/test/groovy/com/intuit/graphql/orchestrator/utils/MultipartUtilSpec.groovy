@@ -130,12 +130,167 @@ class MultipartUtilSpec extends Specification {
     //todo
     def "can split EI with variables" () {}
 
-    //todo
-    def "can split EI with inline fragment" () {}
+    def "can split EI with inline fragment"() {
+        given:
+        String query = """
+                        query {
+                            queryA {
+                                fieldA
+                                objectField {
+                                    fieldB
+                                }
+                                ... on ObjectType @defer {
+                                    fieldC
+                                }
+                            }
+                        }
+        """
 
-    //todo
-    def "can split EI with fragment spread"() {}
+        when:
+        ExecutionInput input = ExecutionInput.newExecutionInput(query).build()
+        List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
 
+        then:
+        splitSet.size() == 1
+        splitSet.get(0).query == "query {\n" +
+                "  queryA {\n" +
+                "    ... on ObjectType {\n" +
+                "      fieldC\n" +
+                "    }\n" +
+                "    __typename\n" +
+                "  }\n" +
+                "}\n"
+    }
+
+    def "split EI has correct inline fragments different types"() {
+        given:
+        String query = """
+                        query {
+                            queryA {
+                                fieldA
+                                objectField1 {
+                                    fieldB
+                                }
+                                ... on ObjectType1 @defer {
+                                    fieldC
+                                }
+                                objectField2 {
+                                    fieldD
+                                }
+                                ... on ObjectType2 @defer {
+                                    fieldE
+                                }
+                            }
+                        }
+        """
+
+        when:
+        ExecutionInput input = ExecutionInput.newExecutionInput(query).build()
+        List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
+
+        then:
+        splitSet.size() == 2
+        splitSet.get(0).query == "query {\n" +
+                "  queryA {\n" +
+                "    ... on ObjectType1 {\n" +
+                "      fieldC\n" +
+                "    }\n" +
+                "    __typename\n" +
+                "  }\n" +
+                "}\n"
+        splitSet.get(1).query == "query {\n" +
+                "  queryA {\n" +
+                "    ... on ObjectType2 {\n" +
+                "      fieldE\n" +
+                "    }\n" +
+                "    __typename\n" +
+                "  }\n" +
+                "}\n"
+    }
+
+    def "split EI has correct inline fragments non merged types"() {
+        given:
+        String query = """
+                        query {
+                            queryA {
+                                fieldA
+                                objectField1 {
+                                    fieldB
+                                }
+                                ... on ObjectType @defer {
+                                    fieldC
+                                }
+                                objectField2 {
+                                    fieldD
+                                }
+                                ... on ObjectType @defer {
+                                    fieldE
+                                }
+                            }
+                        }
+        """
+
+        when:
+        ExecutionInput input = ExecutionInput.newExecutionInput(query).build()
+        List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
+
+        then:
+        splitSet.size() == 2
+        splitSet.get(0).query == "query {\n" +
+                "  queryA {\n" +
+                "    ... on ObjectType {\n" +
+                "      fieldC\n" +
+                "    }\n" +
+                "    __typename\n" +
+                "  }\n" +
+                "}\n"
+        splitSet.get(1).query == "query {\n" +
+                "  queryA {\n" +
+                "    ... on ObjectType {\n" +
+                "      fieldE\n" +
+                "    }\n" +
+                "    __typename\n" +
+                "  }\n" +
+                "}\n"
+    }
+
+    def "can split EI with fragment spread"() {
+        given:
+        String query = """
+                         query {
+                            queryA {
+                                fieldA
+                                objectField {
+                                    fieldB
+                                    ... deferredInfo @defer
+                                }
+                                
+                            }
+                        }
+                        fragment deferredInfo on ObjectType {
+                            fieldC
+                        }
+        """
+
+        when:
+        ExecutionInput input = ExecutionInput.newExecutionInput(query).build()
+        List<ExecutionInput> splitSet = MultipartUtil.splitMultipartExecutionInput(input)
+
+        then:
+        splitSet.size() == 1
+        splitSet.get(0).query == "query {\n" +
+                         "  queryA {\n" +
+                         "    objectField {\n" +
+                         "      ...deferredInfo\n" +
+                         "      __typename\n" +
+                         "    }\n" +
+                         "    __typename\n" +
+                         "  }\n" +
+                         "}\n" +
+                         "\nfragment deferredInfo on ObjectType {\n" +
+                         "  fieldC\n" +
+                         "}\n"
+    }
 
     // end to end tests
 
