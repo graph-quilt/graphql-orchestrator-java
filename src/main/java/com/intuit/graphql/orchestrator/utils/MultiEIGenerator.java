@@ -1,7 +1,12 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorVisitor;
 import graphql.ExecutionInput;
+import graphql.language.AstTransformer;
+import graphql.language.Document;
+import graphql.parser.Parser;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
@@ -10,10 +15,9 @@ import java.util.List;
 
 @Slf4j
 public class MultiEIGenerator {
-
-    private List<ExecutionInput> eis = new ArrayList<>();
+    private final List<ExecutionInput> eis = new ArrayList<>();
     private Integer numOfEIs = null;
-    private final static String EMPTY_QUERY ="";
+    private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
     @VisibleForTesting
     private long timeProcessedSplit = 0;
@@ -39,7 +43,12 @@ public class MultiEIGenerator {
                 this.timeProcessedSplit = System.currentTimeMillis();
                 //Adds elements to list of eis that need to be processed
                 try {
-                    this.eis.addAll(MultipartUtil.splitMultipartExecutionInput(emittedEI));
+                    Document rootDocument = new Parser().parseDocument(emittedEI.getQuery());
+                    QueryCreatorVisitor queryCreatorVisitor = new QueryCreatorVisitor(emittedEI);
+                    AST_TRANSFORMER.transform(rootDocument, queryCreatorVisitor);
+                    QueryCreatorResult creatorResult = new QueryCreatorResult(queryCreatorVisitor);
+
+                    this.eis.addAll(creatorResult.getForkedDeferEIs());
                 }
                 catch (Exception ex) {
                     sink.error(ex);
