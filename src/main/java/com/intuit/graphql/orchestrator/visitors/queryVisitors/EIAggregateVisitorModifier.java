@@ -20,12 +20,12 @@ import java.util.List;
 * This visitor also maintains and passes the aggregate information like shared context and results of visitors
 */
 @Getter
-public class AggregateQueryModifier extends NodeVisitorStub {
+public class EIAggregateVisitorModifier extends NodeVisitorStub {
 
     List<QueryVisitorStub> visitorStubs;
     TraversalControl visitorResult = TraversalControl.CONTINUE;
 
-    public AggregateQueryModifier(ExecutionInput originalEI, DeferOptions options) {
+    public EIAggregateVisitorModifier(ExecutionInput originalEI, DeferOptions options) {
         this.visitorStubs = new ArrayList<>();
         //Note !Order is important!
         //TODO add an option for nested defers as feature flag

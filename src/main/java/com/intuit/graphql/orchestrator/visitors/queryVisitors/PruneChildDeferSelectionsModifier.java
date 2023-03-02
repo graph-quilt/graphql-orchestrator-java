@@ -2,6 +2,8 @@ package com.intuit.graphql.orchestrator.visitors.queryVisitors;
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
 import graphql.GraphQLException;
+import graphql.language.Directive;
+import graphql.language.DirectivesContainer;
 import graphql.language.Field;
 import graphql.language.FragmentSpread;
 import graphql.language.InlineFragment;
@@ -14,6 +16,7 @@ import lombok.Builder;
 
 import static com.intuit.graphql.orchestrator.deferDirective.DeferUtil.containsEnabledDeferDirective;
 import static com.intuit.graphql.orchestrator.deferDirective.DeferUtil.hasNonDeferredSelection;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
 import static graphql.util.TreeTransformerUtil.changeNode;
 import static graphql.util.TreeTransformerUtil.deleteNode;
@@ -44,13 +47,26 @@ public class PruneChildDeferSelectionsModifier extends NodeVisitorStub {
         return changeNode(context, newSelectionSet);
     }
 
-    private TraversalControl deleteDeferIfExists(Node node, TraverserContext<Node> context) {
-        if(containsEnabledDeferDirective(node) && hasNonDeferredSelection(node)) {
-            if(this.deferOptions.isNestedDefersAllowed()) {
-                return deleteNode(context);
-            } else {
+    public TraversalControl visitDirective(Directive node, TraverserContext<Node> context) {
+        //removes unnecessary and disabled defer directive if exists
+        if(DEFER_DIRECTIVE_NAME.equals(node.getName())) {
+            deleteNode(context);
+        }
+
+        return this.visitNode(node, context);
+    }
+
+    private TraversalControl deleteDeferIfExists(DirectivesContainer node, TraverserContext<Node> context) {
+        //skip if it does not have the defer directive
+        if(node.hasDirective(DEFER_DIRECTIVE_NAME) && containsEnabledDeferDirective(node)) {
+            //if node has an enabled defer, check if option allows it
+            if(!this.deferOptions.isNestedDefersAllowed()) {
                 throw new GraphQLException("Nested defers are currently unavailable.");
             }
+
+           if(hasNonDeferredSelection(node)) {
+               return deleteNode(context);
+           }
         }
 
         return TraversalControl.CONTINUE;

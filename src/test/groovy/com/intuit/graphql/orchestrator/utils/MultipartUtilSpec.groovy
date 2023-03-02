@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator.utils
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.AggregateQueryModifier
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.EIAggregateVisitorModifier
 import graphql.ExecutionInput
 import graphql.language.AstTransformer
 import graphql.language.Document
@@ -25,7 +25,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB fieldC @defer } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -46,7 +46,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { aliasA: fieldA  aliasB: fieldB @defer } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -66,7 +66,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { getFoo(id: \"inputA\") { fieldA fieldB @defer } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -87,7 +87,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB @defer fieldC @defer } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -116,7 +116,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField { fieldB fieldC @defer } } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -139,7 +139,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB fieldC @defer(if: false) } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -154,7 +154,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField { fieldB nestedObject @defer { fieldC @defer} } } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -181,7 +181,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField @defer { fieldB fieldC @defer } } }"
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -230,7 +230,7 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -272,7 +272,7 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -323,7 +323,7 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -370,7 +370,7 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()

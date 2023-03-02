@@ -3,7 +3,7 @@ package com.intuit.graphql.orchestrator.utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult;
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.AggregateQueryModifier;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.EIAggregateVisitorModifier;
 import graphql.ExecutionInput;
 import graphql.language.Document;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,7 @@ public class MultiEIGenerator {
                 //Adds elements to list of eis that need to be processed
                 try {
                     Document rootDocument = parser.parseDocument(emittedEI.getQuery());
-                    AggregateQueryModifier aggregateQueryModifier = new AggregateQueryModifier(emittedEI, deferOptions);
+                    EIAggregateVisitorModifier aggregateQueryModifier = new EIAggregateVisitorModifier(emittedEI, deferOptions);
                     AST_TRANSFORMER.transform(rootDocument, aggregateQueryModifier);
                     QueryCreatorResult creatorResult = aggregateQueryModifier.generateResults();
 
