@@ -227,7 +227,7 @@ public abstract class QueryVisitorStub extends NodeVisitorStub {
         return new HashMap<>();
     }
 
-    public Map<String, Object> getResults() {
-        return new HashMap<>();
+    public QueryCreatorResult.QueryCreatorResultBuilder addResultsToBuilder(QueryCreatorResult.QueryCreatorResultBuilder builder) {
+        return builder;
     }
 }

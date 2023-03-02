@@ -1,13 +1,14 @@
 package com.intuit.graphql.orchestrator.utils
 
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorVisitor
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.AggregateQueryModifier
 import graphql.ExecutionInput
 import graphql.language.AstTransformer
 import graphql.language.Document
 import graphql.parser.Parser
 import lombok.extern.slf4j.Slf4j
-import spock.lang.Specification
+import spock.lang.Specification 
 /**
  * Covers test for ObjectTypeExtension, InterfaceTypeExtension, UnionTypeExtension, EnumTypeExtension,
  * InputObjectTypeExtension TODO ScalarTypeExtension.
@@ -15,16 +16,19 @@ import spock.lang.Specification
 @Slf4j
 class MultipartUtilSpec extends Specification {
     private static final AstTransformer AST_TRANSFORMER = new AstTransformer()
+    private static final DeferOptions deferOptions = DeferOptions.builder()
+            .nestedDefersAllowed(true)
+            .build()
 
     def "can split Execution input"() {
         given:
         String query = "query { queryA { fieldA fieldB fieldC @defer } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -42,10 +46,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { aliasA: fieldA  aliasB: fieldB @defer } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -62,10 +66,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { getFoo(id: \"inputA\") { fieldA fieldB @defer } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -83,10 +87,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB @defer fieldC @defer } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -112,10 +116,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField { fieldB fieldC @defer } } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -135,10 +139,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB fieldC @defer(if: false) } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -150,10 +154,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField { fieldB nestedObject @defer { fieldC @defer} } } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -177,10 +181,10 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField @defer { fieldB fieldC @defer } } }"
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -226,10 +230,10 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -268,10 +272,10 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -319,10 +323,10 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -366,10 +370,10 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        QueryCreatorVisitor visitor = new QueryCreatorVisitor(ExecutionInput.newExecutionInput(query).build())
+        AggregateQueryModifier visitor = new AggregateQueryModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = new QueryCreatorResult(visitor)
+        QueryCreatorResult creatorResult = visitor.generateResults()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()

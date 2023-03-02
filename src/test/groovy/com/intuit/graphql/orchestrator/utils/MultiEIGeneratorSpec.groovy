@@ -1,5 +1,6 @@
 package com.intuit.graphql.orchestrator.utils
 
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
 import graphql.ExecutionInput
 import graphql.parser.InvalidSyntaxException
 import reactor.test.StepVerifier
@@ -8,6 +9,9 @@ import spock.lang.Specification
 class MultiEIGeneratorSpec extends Specification {
 
     MultiEIGenerator multiEIGenerator
+    DeferOptions options = DeferOptions.builder()
+            .nestedDefersAllowed(true)
+            .build()
 
     def "Generator split query correctly"() {
         given:
@@ -31,7 +35,7 @@ class MultiEIGeneratorSpec extends Specification {
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())
@@ -64,7 +68,7 @@ class MultiEIGeneratorSpec extends Specification {
         long timeEmitted = 0;
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())
@@ -94,7 +98,7 @@ class MultiEIGeneratorSpec extends Specification {
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())
@@ -109,7 +113,7 @@ class MultiEIGeneratorSpec extends Specification {
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())

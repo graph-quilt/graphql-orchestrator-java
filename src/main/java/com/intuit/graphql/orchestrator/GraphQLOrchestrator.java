@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator;
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferDirectiveInstrumentation;
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import com.intuit.graphql.orchestrator.utils.MultiEIGenerator;
 import graphql.ExecutionInput;
@@ -80,12 +81,12 @@ public class GraphQLOrchestrator {
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput) {
-    return execute(executionInput, false);
+    return execute(executionInput, null, false);
   }
 
-  public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, boolean hasDefer) {
+  public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, DeferOptions deferOptions, boolean hasDefer) {
     if(hasDefer) {
-      return executeWithDefer(executionInput);
+      return executeWithDefer(executionInput, deferOptions);
     }
       final GraphQL graphQL = constructGraphQL();
 
@@ -101,9 +102,9 @@ public class GraphQLOrchestrator {
       return graphQL.executeAsync(newExecutionInput);
   }
 
-  private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput) {
+  private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput, DeferOptions options) {
     AtomicInteger responses = new AtomicInteger(0);
-    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput);
+    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput, options);
 
     Flux<Object> executionResultPublisher = eiGenerator.generateEIs()
             .filter(ei -> !ei.getQuery().equals(""))

@@ -1,29 +1,32 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult;
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorVisitor;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.AggregateQueryModifier;
 import graphql.ExecutionInput;
-import graphql.language.AstTransformer;
 import graphql.language.Document;
-import graphql.parser.Parser;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
+
 @Slf4j
 public class MultiEIGenerator {
     private final List<ExecutionInput> eis = new ArrayList<>();
+    private final DeferOptions deferOptions;
     private Integer numOfEIs = null;
-    private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
     @VisibleForTesting
     private long timeProcessedSplit = 0;
 
-    public MultiEIGenerator(ExecutionInput ei) {
+    public MultiEIGenerator(ExecutionInput ei, DeferOptions deferOptions) {
         this.eis.add(ei);
+        this.deferOptions = deferOptions;
     }
 
     public Flux<ExecutionInput> generateEIs() {
@@ -43,10 +46,10 @@ public class MultiEIGenerator {
                 this.timeProcessedSplit = System.currentTimeMillis();
                 //Adds elements to list of eis that need to be processed
                 try {
-                    Document rootDocument = new Parser().parseDocument(emittedEI.getQuery());
-                    QueryCreatorVisitor queryCreatorVisitor = new QueryCreatorVisitor(emittedEI);
-                    AST_TRANSFORMER.transform(rootDocument, queryCreatorVisitor);
-                    QueryCreatorResult creatorResult = new QueryCreatorResult(queryCreatorVisitor);
+                    Document rootDocument = parser.parseDocument(emittedEI.getQuery());
+                    AggregateQueryModifier aggregateQueryModifier = new AggregateQueryModifier(emittedEI, deferOptions);
+                    AST_TRANSFORMER.transform(rootDocument, aggregateQueryModifier);
+                    QueryCreatorResult creatorResult = aggregateQueryModifier.generateResults();
 
                     this.eis.addAll(creatorResult.getForkedDeferEIs());
                 }
