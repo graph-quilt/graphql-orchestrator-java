@@ -20,12 +20,12 @@ import java.util.List;
 * This visitor also maintains and passes the aggregate information like shared context and results of visitors
 */
 @Getter
-public class EIAggregateVisitorModifier extends NodeVisitorStub {
+public class EIAggregateVisitor extends NodeVisitorStub {
 
     List<QueryVisitorStub> visitorStubs;
     TraversalControl visitorResult = TraversalControl.CONTINUE;
 
-    public EIAggregateVisitorModifier(ExecutionInput originalEI, DeferOptions options) {
+    public EIAggregateVisitor(ExecutionInput originalEI, DeferOptions options) {
         this.visitorStubs = new ArrayList<>();
         //Note !Order is important!
         //TODO add an option for nested defers as feature flag
@@ -41,43 +41,37 @@ public class EIAggregateVisitorModifier extends NodeVisitorStub {
     /*
     * Visits Field and proceeds to call every visitor in list before traversing
     */
+    @Override
     public TraversalControl visitField(Field node, TraverserContext<Node> context) {
-        for (NodeVisitorStub visitor: visitorStubs) {
-            this.visitorResult = visitor.visitField(node, context);
-            //Do not process the remaining visitor since it should not traverse anymore
-            if(this.visitorResult != TraversalControl.CONTINUE) {
-                break;
-            }
-        }
-
-        //calls the parents original method if it was set to continue
-        return (this.visitorResult == TraversalControl.CONTINUE) ? this.visitSelection(node, context) : this.visitorResult;
+        return visitorStubs.stream()
+                .map(visitor -> visitor.visitField(node, context))
+                .filter(result -> !TraversalControl.CONTINUE.equals(result))
+                .findFirst()
+                .orElse(this.visitSelection(node, context));
     }
 
+    /*
+     * Visits Field and proceeds to call every visitor in list before traversing
+     */
+    @Override
     public TraversalControl visitFragmentSpread(FragmentSpread node, TraverserContext<Node> context) {
-        for (NodeVisitorStub visitor: visitorStubs) {
-            this.visitorResult = visitor.visitFragmentSpread(node, context);
-            //Do not process the remaining visitor since it should not traverse anymore
-            if(this.visitorResult != TraversalControl.CONTINUE) {
-                break;
-            }
-        }
-
-        //calls the parents original method if it was set to continue
-        return (this.visitorResult == TraversalControl.CONTINUE) ? this.visitSelection(node, context) : this.visitorResult;
+        return visitorStubs.stream()
+                .map(visitor -> visitor.visitFragmentSpread(node, context))
+                .filter(result -> !TraversalControl.CONTINUE.equals(result))
+                .findFirst()
+                .orElse(this.visitSelection(node, context));
     }
 
+    /*
+     * Visits Field and proceeds to call every visitor in list before traversing
+     */
+    @Override
     public TraversalControl visitInlineFragment(InlineFragment node, TraverserContext<Node> context) {
-        for (NodeVisitorStub visitor: visitorStubs) {
-            this.visitorResult = visitor.visitInlineFragment(node, context);
-            //Do not process the remaining visitor since it should not traverse anymore
-            if(this.visitorResult != TraversalControl.CONTINUE) {
-                break;
-            }
-        }
-
-        //calls the parents original method if it was set to continue
-        return (this.visitorResult == TraversalControl.CONTINUE) ? this.visitSelection(node, context) : this.visitorResult;
+        return visitorStubs.stream()
+                .map(visitor -> visitor.visitInlineFragment(node, context))
+                .filter(result -> !TraversalControl.CONTINUE.equals(result))
+                .findFirst()
+                .orElse(this.visitSelection(node, context));
     }
 
     /*

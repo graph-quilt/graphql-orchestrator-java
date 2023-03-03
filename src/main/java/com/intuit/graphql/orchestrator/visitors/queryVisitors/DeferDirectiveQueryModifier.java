@@ -53,7 +53,7 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
     //variables that are set when visitor is built
     @NonNull private final Document rootNode;
     @NonNull private final Map<String, FragmentDefinition> fragmentDefinitionMap;
-    @NonNull private final PruneChildDeferSelectionsModifier CHILD_MODIFIER;
+    @NonNull private final PruneChildDeferSelectionsModifier childModifier;
     @NonNull private ExecutionInput originalEI;
 
     @NonNull private DeferOptions deferOptions;
@@ -103,7 +103,7 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
     * */
     private ExecutionInput generateDeferredEI(Node currentNode, TraverserContext<Node> context) {
         //prune defer information from children
-        Node prunedNode = AST_TRANSFORMER.transform(currentNode, CHILD_MODIFIER);
+        Node prunedNode = AST_TRANSFORMER.transform(currentNode, childModifier);
         List<Node> parentNodes = getParentDefinitions(context);
 
         Set<String> neededFragmentSpreads = new HashSet<>();
@@ -153,7 +153,7 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
         List<Selection> selections = new ArrayList<>();
         selections.add((Selection) prunedChild);
 
-        if(parentNode instanceof Field || parentNode instanceof FragmentDefinition || parentNode instanceof InlineFragment) {
+        if(parentNode instanceof SelectionSetContainer && !(parentNode instanceof OperationDefinition)) {
             selections.add(__typenameField);
         }
 
@@ -201,12 +201,12 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
             return rootNode(originalEI);
         }
 
-        public DeferDirectiveQueryModifierBuilder rootNode(ExecutionInput ei) {
+        private DeferDirectiveQueryModifierBuilder rootNode(ExecutionInput ei) {
             this.rootNode = GraphQLUtil.parser.parseDocument(ei.getQuery());
             return fragmentDefinitionMap(rootNode);
         }
 
-        public DeferDirectiveQueryModifierBuilder fragmentDefinitionMap(Document rootNode) {
+        private DeferDirectiveQueryModifierBuilder fragmentDefinitionMap(Document rootNode) {
             this.fragmentDefinitionMap = rootNode.getDefinitionsOfType(FragmentDefinition.class)
                     .stream()
                     .collect(Collectors.toMap(FragmentDefinition::getName ,Function.identity()));
@@ -219,8 +219,8 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
             return childModifier(options);
         }
 
-        public DeferDirectiveQueryModifierBuilder childModifier(DeferOptions options) {
-            this.CHILD_MODIFIER = PruneChildDeferSelectionsModifier.builder()
+        private DeferDirectiveQueryModifierBuilder childModifier(DeferOptions options) {
+            this.childModifier = PruneChildDeferSelectionsModifier.builder()
                     .deferOptions(options)
                     .build();
 

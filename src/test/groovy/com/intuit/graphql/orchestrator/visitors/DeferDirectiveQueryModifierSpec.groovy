@@ -1,23 +1,27 @@
-package com.intuit.graphql.orchestrator.utils
+package com.intuit.graphql.orchestrator.visitors
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferDirectiveQueryModifier
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.EIAggregateVisitor
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.EIAggregateVisitorModifier
 import graphql.ExecutionInput
-import graphql.language.AstTransformer
+import graphql.GraphQLException
 import graphql.language.Document
 import graphql.parser.Parser
+import helpers.BaseIntegrationTestSpecification
 import lombok.extern.slf4j.Slf4j
-import spock.lang.Specification 
+
 /**
  * Covers test for ObjectTypeExtension, InterfaceTypeExtension, UnionTypeExtension, EnumTypeExtension,
  * InputObjectTypeExtension TODO ScalarTypeExtension.
  */
 @Slf4j
-class MultipartUtilSpec extends Specification {
-    private static final AstTransformer AST_TRANSFORMER = new AstTransformer()
+class DeferDirectiveQueryModifierSpec extends BaseIntegrationTestSpecification {
     private static final DeferOptions deferOptions = DeferOptions.builder()
             .nestedDefersAllowed(true)
+            .build()
+    private static final DeferOptions disabledDeferOptions = DeferOptions.builder()
+            .nestedDefersAllowed(false)
             .build()
 
     def "can split Execution input"() {
@@ -25,10 +29,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB fieldC @defer } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -46,10 +55,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { aliasA: fieldA  aliasB: fieldB @defer } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -66,10 +80,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { getFoo(id: \"inputA\") { fieldA fieldB @defer } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -87,10 +106,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB @defer fieldC @defer } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -116,10 +140,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField { fieldB fieldC @defer } } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -139,10 +168,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA fieldB fieldC @defer(if: false) } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -154,10 +188,15 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField { fieldB nestedObject @defer { fieldC @defer} } } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -181,7 +220,7 @@ class MultipartUtilSpec extends Specification {
         String query = "query { queryA { fieldA objectField @defer { fieldB fieldC @defer } } }"
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        EIAggregateVisitor visitor = new EIAggregateVisitor(ExecutionInput.newExecutionInput(query).build(), deferOptions)
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
         QueryCreatorResult creatorResult = visitor.generateResults()
@@ -210,6 +249,25 @@ class MultipartUtilSpec extends Specification {
                 "}\n"
     }
 
+    def "exception thrown for nested defer selections when option is off"() {
+        given:
+        String query = "query { queryA { fieldA objectField @defer { fieldB fieldC @defer } } }"
+
+        when:
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(disabledDeferOptions)
+                .build()
+
+        Document document = new Parser().parseDocument(query)
+        AST_TRANSFORMER.transform(document, visitor)
+
+        then:
+        def exception = thrown(GraphQLException)
+        exception.getMessage() ==~ "Nested defers are currently unavailable."
+    }
+
     //todo
     def "can split EI with variables" () {}
 
@@ -230,10 +288,15 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -272,10 +335,15 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -323,10 +391,15 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -370,10 +443,15 @@ class MultipartUtilSpec extends Specification {
         """
 
         when:
-        EIAggregateVisitorModifier visitor = new EIAggregateVisitorModifier(ExecutionInput.newExecutionInput(query).build(), deferOptions)
+        ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
+        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
         Document document = new Parser().parseDocument(query)
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.generateResults()
+        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
         List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
@@ -392,5 +470,73 @@ class MultipartUtilSpec extends Specification {
                          "}\n"
     }
 
-    // end to end tests
+    def "thrown exception when building with null defer options"(){
+        given:
+        ExecutionInput ei = ExecutionInput.newExecutionInput()
+                .query("query { test }")
+                .build()
+
+        when:
+        DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(null)
+                .build()
+
+        then:
+        thrown(NullPointerException)
+    }
+
+    def "thrown exception when building with null ei"(){
+        given:
+        ExecutionInput ei = ExecutionInput.newExecutionInput()
+                .query("query { test }")
+                .build()
+
+        when:
+        DeferDirectiveQueryModifier.builder()
+                .originalEI(null)
+                .deferOptions(deferOptions)
+                .build()
+
+        then:
+        thrown(NullPointerException)
+    }
+
+    def "sets rootNode and fragments when setting ei for builder"() {
+        given:
+        ExecutionInput ei = ExecutionInput.newExecutionInput()
+                .query("query { ... TestFrag } fragment TestFrag on type { testField }")
+                .build()
+
+        when:
+        DeferDirectiveQueryModifier modifier = DeferDirectiveQueryModifier.builder()
+            .originalEI(ei)
+            .deferOptions(deferOptions)
+            .build()
+
+        then:
+        modifier.originalEI != null
+        modifier.originalEI == ei
+
+        modifier.fragmentDefinitionMap != null
+        modifier.fragmentDefinitionMap.size() == 1
+        modifier.fragmentDefinitionMap.containsKey("TestFrag")
+    }
+
+    def "sets child modifier when setting deferOptions for builder"() {
+        given:
+        ExecutionInput ei = ExecutionInput.newExecutionInput()
+                .query("query { test }")
+                .build()
+
+        when:
+        DeferDirectiveQueryModifier modifier = DeferDirectiveQueryModifier.builder()
+                .originalEI(ei)
+                .deferOptions(deferOptions)
+                .build()
+
+        then:
+        modifier.deferOptions != null
+        modifier.childModifier != null
+    }
 }

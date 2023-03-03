@@ -6,6 +6,7 @@ import graphql.language.Directive;
 import graphql.language.DirectivesContainer;
 import graphql.language.Node;
 import graphql.language.SelectionSet;
+import lombok.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,12 +15,23 @@ import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTI
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_IF_ARG;
 
 public class DeferUtil {
+    private static final SelectionSet EMPTY_SELECTION_SET = SelectionSet.newSelectionSet().build();
 
     /*
      * Checks if it is necessary to create ei for deferred field.
      * Currently, selection should be skipped if all the children field are deferred resulting in an empty selection set.
      */
-    public static boolean hasNonDeferredSelection(Node selection) {
+    public static boolean hasNonDeferredSelection(@NonNull  Node selection) {
+//        return ((List<Node>)selection.getChildren())
+//                .stream()
+//                .filter(SelectionSet.class::isInstance)
+//                .map(SelectionSet.class::cast)
+//                .findFirst()
+//                .orElse(EMPTY_SELECTION_SET)
+//                .getChildren()
+//                .stream()
+//                .anyMatch(child -> !containsEnabledDeferDirective(child));
+
         Optional<SelectionSet> possibleSelectionSet = ((List<Node>)selection.getChildren())
                 .stream()
                 .filter(SelectionSet.class::isInstance)
@@ -35,14 +47,14 @@ public class DeferUtil {
     /*
      * Verifies that Node has defer directive that is not disabled
      */
-    public static  boolean containsEnabledDeferDirective(Node node) {
+    public static boolean containsEnabledDeferDirective(Node node) {
         return node instanceof DirectivesContainer && containsEnabledDeferDirective((DirectivesContainer) node);
     }
 
     /*
      * Verifies that DirectiveContainer has defer directive that is not disabled
      */
-    public static  boolean containsEnabledDeferDirective(DirectivesContainer directivesContainer) {
+    public static boolean containsEnabledDeferDirective(DirectivesContainer directivesContainer) {
         //DirectivesContainer returns list as List<Object> so casting to correct type
         List<Directive> nodesDirectives = directivesContainer.getDirectives();
 
