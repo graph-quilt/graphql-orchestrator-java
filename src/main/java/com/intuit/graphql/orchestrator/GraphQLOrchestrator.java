@@ -104,7 +104,7 @@ public class GraphQLOrchestrator {
 
   private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput, DeferOptions options) {
     AtomicInteger responses = new AtomicInteger(0);
-    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput, options);
+    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput, options, this.getSchema());
 
     Flux<Object> executionResultPublisher = eiGenerator.generateEIs()
             .filter(ei -> !ei.getQuery().equals(""))

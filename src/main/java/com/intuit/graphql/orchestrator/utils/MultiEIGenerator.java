@@ -2,31 +2,40 @@ package com.intuit.graphql.orchestrator.utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult;
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.EIAggregateVisitor;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferQueryCreatorVisitor;
 import graphql.ExecutionInput;
+import graphql.analysis.QueryTransformer;
 import graphql.language.Document;
+import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
+import graphql.language.SelectionSet;
+import graphql.schema.GraphQLSchema;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
 
 @Slf4j
 public class MultiEIGenerator {
     private final List<ExecutionInput> eis = new ArrayList<>();
     private final DeferOptions deferOptions;
+    private final GraphQLSchema schema;
     private Integer numOfEIs = null;
 
     @VisibleForTesting
     private long timeProcessedSplit = 0;
 
-    public MultiEIGenerator(ExecutionInput ei, DeferOptions deferOptions) {
+    public MultiEIGenerator(ExecutionInput ei, DeferOptions deferOptions, GraphQLSchema schema) {
         this.eis.add(ei);
         this.deferOptions = deferOptions;
+        this.schema = schema;
     }
 
     public Flux<ExecutionInput> generateEIs() {
@@ -47,11 +56,46 @@ public class MultiEIGenerator {
                 //Adds elements to list of eis that need to be processed
                 try {
                     Document rootDocument = parser.parseDocument(emittedEI.getQuery());
-                    EIAggregateVisitor aggregateQueryModifier = new EIAggregateVisitor(emittedEI, deferOptions);
-                    AST_TRANSFORMER.transform(rootDocument, aggregateQueryModifier);
-                    QueryCreatorResult creatorResult = aggregateQueryModifier.generateResults();
+//                    EIAggregateVisitor aggregateQueryModifier = new EIAggregateVisitor(emittedEI, deferOptions);
 
-                    this.eis.addAll(creatorResult.getForkedDeferEIs());
+//                    DeferQueryCreatorVisitor visitor = DeferQueryCreatorVisitor.builder().originalEI(emittedEI).deferOptions(deferOptions).build();
+
+                    Map<String, FragmentDefinition> fragmentDefinitionMap = rootDocument.getDefinitionsOfType(FragmentDefinition.class)
+                            .stream()
+                            .collect(Collectors.toMap(FragmentDefinition::getName , Function.identity()));
+
+
+//                    AST_TRANSFORMER.transform(rootDocument, visitor);
+
+                    ExecutionInput finalEmittedEI = emittedEI;
+                    AtomicReference<OperationDefinition> operationDefinitionReference = new AtomicReference<>();
+                    rootDocument.getDefinitionsOfType(OperationDefinition.class)
+                    .stream()
+                    .peek(operationDefinitionReference::set)
+                    .map(OperationDefinition::getSelectionSet)
+                    .map(SelectionSet::getSelections)
+                    .flatMap(List::stream)
+                    .forEach(selection -> {
+                        QueryTransformer transformer = QueryTransformer.newQueryTransformer()
+                                .schema(this.schema)
+                                .root(selection)
+                                .rootParentType(this.schema.getQueryType())
+                                .fragmentsByName(fragmentDefinitionMap)
+                                .variables(finalEmittedEI.getVariables())
+                                .build();
+
+                        DeferQueryCreatorVisitor visitor = DeferQueryCreatorVisitor.builder()
+                                .deferOptions(deferOptions)
+                                .originalEI(finalEmittedEI)
+                                .operationDefinition(operationDefinitionReference.get())
+                                .build();
+
+                        transformer.transform(visitor);
+
+                        this.eis.addAll(visitor.getGeneratedEIs());
+                    });
+
+//                    this.eis.addAll(creatorResult.getForkedDeferEIs());
                 }
                 catch (Exception ex) {
                     sink.error(ex);

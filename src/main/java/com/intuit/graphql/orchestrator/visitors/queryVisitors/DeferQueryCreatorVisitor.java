@@ -4,6 +4,10 @@ import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
 import com.intuit.graphql.orchestrator.utils.GraphQLUtil;
 import graphql.ExecutionInput;
 import graphql.GraphQLException;
+import graphql.analysis.QueryVisitorFieldEnvironment;
+import graphql.analysis.QueryVisitorFragmentSpreadEnvironment;
+import graphql.analysis.QueryVisitorInlineFragmentEnvironment;
+import graphql.analysis.QueryVisitorStub;
 import graphql.language.AstPrinter;
 import graphql.language.Definition;
 import graphql.language.Document;
@@ -16,9 +20,10 @@ import graphql.language.OperationDefinition;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import graphql.language.SelectionSetContainer;
-import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import graphql.util.TreeTransformerUtil;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 
 import java.util.ArrayList;
@@ -36,37 +41,32 @@ import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTI
 import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
 import static com.intuit.graphql.orchestrator.utils.IntrospectionUtil.__typenameField;
 import static com.intuit.graphql.orchestrator.utils.NodeUtils.removeDirectiveFromNode;
-import static graphql.util.TreeTransformerUtil.changeNode;
 
-/*
-* Purpose of class: traverse query and create forked ei whenever there is a valid defer directive
-*/
 @Builder
-public class DeferDirectiveQueryModifier extends QueryVisitorStub {
+public class DeferQueryCreatorVisitor extends QueryVisitorStub {
 
-    //constants
-    public static final String GENERATED_EIS = "GENERATED_EIS";
-
-    //variables that will be manipulated throughout
-    private final List<ExecutionInput> generatedEIs =  new ArrayList<>();
-
-    //variables that are set when visitor is built
     @NonNull private final Document rootNode;
+
+    @NonNull private final OperationDefinition operationDefinition;
     @NonNull private final Map<String, FragmentDefinition> fragmentDefinitionMap;
     @NonNull private final PruneChildDeferSelectionsModifier childModifier;
     @NonNull private ExecutionInput originalEI;
 
     @NonNull private DeferOptions deferOptions;
 
+    @Getter
+    private final List<ExecutionInput> generatedEIs =  new ArrayList<>();
+
+
 
     /*
-    * Functions:
-    *    Updates the field if it contains defer directive.
-    *    If it is a valid deferred node, generate new EI
-    */
+     * Functions:
+     *    Updates the field if it contains defer directive.
+     *    If it is a valid deferred node, generate new EI
+     */
     @Override
-    public TraversalControl visitField(Field node, TraverserContext<Node> context) {
-        return updateDeferredInfoForNode(node, context);
+    public void visitField(QueryVisitorFieldEnvironment queryVisitorFieldEnvironment) {
+        updateDeferredInfoForNode(queryVisitorFieldEnvironment.getField(), queryVisitorFieldEnvironment.getTraverserContext());
     }
 
     /*
@@ -75,16 +75,16 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
      *    If it is a valid deferred node, generate new EI
      */
     @Override
-    public TraversalControl visitFragmentSpread(FragmentSpread node, TraverserContext<Node> context) {
-        return updateDeferredInfoForNode(node, context);
+    public void visitInlineFragment(QueryVisitorInlineFragmentEnvironment queryVisitorInlineFragmentEnvironment) {
+        updateDeferredInfoForNode(queryVisitorInlineFragmentEnvironment.getInlineFragment(), queryVisitorInlineFragmentEnvironment.getTraverserContext());
     }
 
     @Override
-    public TraversalControl visitInlineFragment(InlineFragment node, TraverserContext<Node> context) {
-       return updateDeferredInfoForNode(node, context);
+    public void visitFragmentSpread(QueryVisitorFragmentSpreadEnvironment queryVisitorFragmentSpreadEnvironment) {
+        updateDeferredInfoForNode(queryVisitorFragmentSpreadEnvironment.getFragmentSpread(), queryVisitorFragmentSpreadEnvironment.getTraverserContext());
     }
 
-    private TraversalControl updateDeferredInfoForNode(Node node, TraverserContext<Node> context) {
+    private void updateDeferredInfoForNode(Node node, TraverserContext<Node> context) {
         if(containsEnabledDeferDirective(node)) {
             Node prunedNode = removeDirectiveFromNode(node, DEFER_DIRECTIVE_NAME);
 
@@ -92,15 +92,14 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
                 generatedEIs.add(generateDeferredEI(prunedNode, context));
             }
 
-            return changeNode(context, prunedNode);
+            //update node so children nodes has the correct definition
+            TreeTransformerUtil.changeNode(context, prunedNode);
         }
-
-        return TraversalControl.CONTINUE;
     }
 
     /*
-    * Generates an Execution Input given the node and the context
-    * */
+     * Generates an Execution Input given the node and the context
+     * */
     private ExecutionInput generateDeferredEI(Node currentNode, TraverserContext<Node> context) {
         //prune defer information from children
         Node prunedNode = AST_TRANSFORMER.transform(currentNode, childModifier);
@@ -127,11 +126,16 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
+        SelectionSet ss = SelectionSet.newSelectionSet().selection((Selection) prunedNode).build();
+        OperationDefinition newOperation = this.operationDefinition.transform(builder -> builder.selectionSet(
+                ss
+        ));
+
         List<Definition> deferredDefinitions = new ArrayList<>();
-        deferredDefinitions.add((OperationDefinition) prunedNode);
+        deferredDefinitions.add(newOperation);
         deferredDefinitions.addAll(fragmentSpreadDefs);
 
-        Document  deferredDocument = this.rootNode.transform(builder -> builder.definitions(deferredDefinitions));
+        Document deferredDocument = this.rootNode.transform(builder -> builder.definitions(deferredDefinitions));
 
         String query = AstPrinter.printAst(deferredDocument);
 
@@ -146,9 +150,9 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
     }
 
     /*
-    * Generates new node
-    * Transforms the parentNode with a new selection set consisting of the pruned child and typename fields
-    * */
+     * Generates new node
+     * Transforms the parentNode with a new selection set consisting of the pruned child and typename fields
+     * */
     private Node constructNewPrunedNode(Node parentNode, Node prunedChild) {
         List<Selection> selections = new ArrayList<>();
         selections.add((Selection) prunedChild);
@@ -175,19 +179,15 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
         throw new GraphQLException("Could not construct query due to invalid directive location");
     }
 
-    /*
-    * Returns anything that will be used by the parent visitor
-    * */
-    public QueryCreatorResult.QueryCreatorResultBuilder addResultsToBuilder(QueryCreatorResult.QueryCreatorResultBuilder builder) {
-        return builder.forkedDeferEIs(this.generatedEIs);
+
+
+    public static DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder builder() {
+        return new DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder();
     }
 
-    public static DeferDirectiveQueryModifierBuilder builder() {
-        return new DeferDirectiveQueryModifierBuilder();
-    }
-
-    public static class DeferDirectiveQueryModifierBuilder {
+    public static class DeferQueryCreatorVisitorBuilder {
         ExecutionInput originalEI;
+        OperationDefinition operationDefinition;
         Document rootNode;
         Map<String, FragmentDefinition> fragmentDefinitionMap;
 
@@ -195,31 +195,33 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
 
         PruneChildDeferSelectionsModifier childModifier;
 
-
-        public DeferDirectiveQueryModifierBuilder originalEI (ExecutionInput originalEI) {
+        public DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder originalEI (ExecutionInput originalEI) {
             this.originalEI = originalEI;
             return rootNode(originalEI);
         }
 
-        private DeferDirectiveQueryModifierBuilder rootNode(ExecutionInput ei) {
-            this.rootNode = GraphQLUtil.parser.parseDocument(ei.getQuery());
-            return fragmentDefinitionMap(rootNode);
-        }
-
-        private DeferDirectiveQueryModifierBuilder fragmentDefinitionMap(Document rootNode) {
-            this.fragmentDefinitionMap = rootNode.getDefinitionsOfType(FragmentDefinition.class)
-                    .stream()
-                    .collect(Collectors.toMap(FragmentDefinition::getName ,Function.identity()));
+        public DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder operationDefinition (OperationDefinition operationDefinition) {
+            this.operationDefinition = operationDefinition;
             return this;
         }
 
-        public DeferDirectiveQueryModifierBuilder deferOptions(DeferOptions options) {
+        public DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder deferOptions(DeferOptions options) {
             this.deferOptions = options;
 
             return childModifier(options);
         }
 
-        private DeferDirectiveQueryModifierBuilder childModifier(DeferOptions options) {
+        private DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder fragmentDefinitionMap(Document rootNode) {
+            this.fragmentDefinitionMap = rootNode.getDefinitionsOfType(FragmentDefinition.class)
+                    .stream()
+                    .collect(Collectors.toMap(FragmentDefinition::getName , Function.identity()));
+            return this;
+        }
+        private DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder rootNode(ExecutionInput ei) {
+            this.rootNode = GraphQLUtil.parser.parseDocument(ei.getQuery());
+            return fragmentDefinitionMap(rootNode);
+        }
+        private DeferQueryCreatorVisitor.DeferQueryCreatorVisitorBuilder childModifier(DeferOptions options) {
             this.childModifier = PruneChildDeferSelectionsModifier.builder()
                     .deferOptions(options)
                     .build();
@@ -227,4 +229,6 @@ public class DeferDirectiveQueryModifier extends QueryVisitorStub {
             return this;
         }
     }
+
+
 }

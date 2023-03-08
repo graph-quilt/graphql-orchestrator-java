@@ -2,14 +2,19 @@ package com.intuit.graphql.orchestrator.visitors
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferDirectiveQueryModifier
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferQueryCreatorVisitor
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.EIAggregateVisitor
 import com.intuit.graphql.orchestrator.visitors.queryVisitors.QueryCreatorResult
 import graphql.ExecutionInput
 import graphql.GraphQLException
+import graphql.analysis.QueryTransformer
 import graphql.language.Document
+import graphql.language.OperationDefinition
 import graphql.parser.Parser
 import helpers.BaseIntegrationTestSpecification
 import lombok.extern.slf4j.Slf4j
+
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser
 
 /**
  * Covers test for ObjectTypeExtension, InterfaceTypeExtension, UnionTypeExtension, EnumTypeExtension,
@@ -30,17 +35,23 @@ class DeferDirectiveQueryModifierSpec extends BaseIntegrationTestSpecification {
 
         when:
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
-        DeferDirectiveQueryModifier visitor = DeferDirectiveQueryModifier.builder()
+        Document rootDocument = parser.parseDocument(query)
+        OperationDefinition opDef = rootDocument.getFirstDefinitionOfType(OperationDefinition).get()
+
+        DeferQueryCreatorVisitor visitor = DeferQueryCreatorVisitor.builder()
                 .originalEI(ei)
+                .operationDefinition(opDef)
                 .deferOptions(deferOptions)
                 .build()
 
         Document document = new Parser().parseDocument(query)
+
+        QueryTransformer.newQueryTransformer().root()
+
         AST_TRANSFORMER.transform(document, visitor)
-        QueryCreatorResult creatorResult = visitor.addResultsToBuilder(QueryCreatorResult.builder()).build()
 
         then:
-        List<ExecutionInput> splitSet = creatorResult.getForkedDeferEIs()
+        List<ExecutionInput> splitSet = visitor.getGeneratedEIs()
         splitSet.size() == 1
         splitSet.get(0).query == "query {\n" +
                 "  queryA {\n" +
