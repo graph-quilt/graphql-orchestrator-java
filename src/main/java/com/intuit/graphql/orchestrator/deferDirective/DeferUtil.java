@@ -5,60 +5,42 @@ import graphql.language.BooleanValue;
 import graphql.language.Directive;
 import graphql.language.DirectivesContainer;
 import graphql.language.Node;
+import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import lombok.NonNull;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTIVE_NAME;
 import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_IF_ARG;
 
 public class DeferUtil {
-    private static final SelectionSet EMPTY_SELECTION_SET = SelectionSet.newSelectionSet().build();
-
-    /*
+    /**
      * Checks if it is necessary to create ei for deferred field.
      * Currently, selection should be skipped if all the children field are deferred resulting in an empty selection set.
+     * @param selection: node to check if children are all deferred
+     * @return boolean: true if all children are deferred, false otherwise
      */
-    public static boolean hasNonDeferredSelection(@NonNull  Node selection) {
-//        return ((List<Node>)selection.getChildren())
-//                .stream()
-//                .filter(SelectionSet.class::isInstance)
-//                .map(SelectionSet.class::cast)
-//                .findFirst()
-//                .orElse(EMPTY_SELECTION_SET)
-//                .getChildren()
-//                .stream()
-//                .anyMatch(child -> !containsEnabledDeferDirective(child));
-
-        Optional<SelectionSet> possibleSelectionSet = ((List<Node>)selection.getChildren())
+    public static boolean hasNonDeferredSelection(@NonNull  Selection selection) {
+        return ((List<Node>)selection.getChildren())
                 .stream()
                 .filter(SelectionSet.class::isInstance)
                 .map(SelectionSet.class::cast)
-                .findAny();
-
-        //it is leaf node with no children
-        return !possibleSelectionSet.isPresent() ||
-                // at least one of the children are not deferred
-                possibleSelectionSet.get().getChildren().stream().anyMatch(child -> !containsEnabledDeferDirective(child));
+                .findAny()
+                .get()
+                .getSelections()
+                .stream()
+                .anyMatch(child -> !containsEnabledDeferDirective(child));
     }
 
-    /*
+    /**
      * Verifies that Node has defer directive that is not disabled
+     * @param node: node to check if contains defer directive
+     * @return boolean: true if node has an enabled defer, false otherwise
      */
-    public static boolean containsEnabledDeferDirective(Node node) {
-        return node instanceof DirectivesContainer && containsEnabledDeferDirective((DirectivesContainer) node);
-    }
-
-    /*
-     * Verifies that DirectiveContainer has defer directive that is not disabled
-     */
-    public static boolean containsEnabledDeferDirective(DirectivesContainer directivesContainer) {
-        //DirectivesContainer returns list as List<Object> so casting to correct type
-        List<Directive> nodesDirectives = directivesContainer.getDirectives();
-
-        return nodesDirectives
+    public static boolean containsEnabledDeferDirective(Selection node) {
+        return node instanceof DirectivesContainer &&
+                ((List<Directive>) ((DirectivesContainer) node).getDirectives())
                 .stream()
                 .filter(directive ->  DEFER_DIRECTIVE_NAME.equals(directive.getName()))
                 .findFirst()
@@ -67,6 +49,5 @@ public class DeferUtil {
                     return ifArg == null || ((BooleanValue) ifArg.getValue()).isValue();
                 })
                 .orElse(false);
-
     }
 }

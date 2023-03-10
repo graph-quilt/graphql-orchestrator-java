@@ -2,7 +2,7 @@ package com.intuit.graphql.orchestrator.utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
-import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferQueryCreatorVisitor;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferQueryExtractor;
 import graphql.ExecutionInput;
 import graphql.analysis.QueryTransformer;
 import graphql.language.Document;
@@ -56,16 +56,9 @@ public class MultiEIGenerator {
                 //Adds elements to list of eis that need to be processed
                 try {
                     Document rootDocument = parser.parseDocument(emittedEI.getQuery());
-//                    EIAggregateVisitor aggregateQueryModifier = new EIAggregateVisitor(emittedEI, deferOptions);
-
-//                    DeferQueryCreatorVisitor visitor = DeferQueryCreatorVisitor.builder().originalEI(emittedEI).deferOptions(deferOptions).build();
-
                     Map<String, FragmentDefinition> fragmentDefinitionMap = rootDocument.getDefinitionsOfType(FragmentDefinition.class)
                             .stream()
                             .collect(Collectors.toMap(FragmentDefinition::getName , Function.identity()));
-
-
-//                    AST_TRANSFORMER.transform(rootDocument, visitor);
 
                     ExecutionInput finalEmittedEI = emittedEI;
                     AtomicReference<OperationDefinition> operationDefinitionReference = new AtomicReference<>();
@@ -84,18 +77,18 @@ public class MultiEIGenerator {
                                 .variables(finalEmittedEI.getVariables())
                                 .build();
 
-                        DeferQueryCreatorVisitor visitor = DeferQueryCreatorVisitor.builder()
+                        DeferQueryExtractor visitor = DeferQueryExtractor.builder()
                                 .deferOptions(deferOptions)
                                 .originalEI(finalEmittedEI)
+                                .rootNode(rootDocument)
                                 .operationDefinition(operationDefinitionReference.get())
+                                .fragmentDefinitionMap(fragmentDefinitionMap)
                                 .build();
 
                         transformer.transform(visitor);
 
-                        this.eis.addAll(visitor.getGeneratedEIs());
+                        this.eis.addAll(visitor.getExtractedEIs());
                     });
-
-//                    this.eis.addAll(creatorResult.getForkedDeferEIs());
                 }
                 catch (Exception ex) {
                     sink.error(ex);

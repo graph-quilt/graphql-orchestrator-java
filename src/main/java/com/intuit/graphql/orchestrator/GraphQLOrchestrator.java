@@ -42,6 +42,8 @@ import static java.util.Objects.requireNonNull;
 public class GraphQLOrchestrator {
 
   public static final String DATA_LOADER_REGISTRY_CONTEXT_KEY = DataLoaderRegistry.class.getName() + ".context.key";
+  private static final DeferOptions DEFAULT_DEFER_OPTIONS = DeferOptions.builder().nestedDefersAllowed(false).build();
+  private static final boolean DISABLED_DEFER = false;
 
   private final RuntimeGraph runtimeGraph;
   private final List<Instrumentation> instrumentations;
@@ -81,7 +83,7 @@ public class GraphQLOrchestrator {
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput) {
-    return execute(executionInput, null, false);
+    return execute(executionInput, DEFAULT_DEFER_OPTIONS, DISABLED_DEFER);
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, DeferOptions deferOptions, boolean hasDefer) {

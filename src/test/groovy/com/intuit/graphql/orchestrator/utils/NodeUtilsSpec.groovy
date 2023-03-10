@@ -5,7 +5,7 @@ import graphql.language.Field
 import graphql.language.SelectionSet
 import helpers.BaseIntegrationTestSpecification
 
-import static com.intuit.graphql.orchestrator.utils.NodeUtils.removeDirectiveFromNode
+import static NodeUtils.removeDirectiveFromNode
 
 class NodeUtilsSpec extends BaseIntegrationTestSpecification {
     def "removeDirectiveFromNode throws exception if node is null"(){

@@ -23,14 +23,6 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
         thrown(NullPointerException)
     }
 
-    def "hasNonDeferredSelection return true if node has no child selections"(){
-        when:
-        Field node = Field.newField("testField").build()
-
-        then:
-        hasNonDeferredSelection(node)
-    }
-
     def "hasNonDeferredSelection return true if node has child selections do not have defer"(){
         when:
             Field childField1 = Field.newField("childField").build()
@@ -89,7 +81,7 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
 
     def "containsEnabledDeferDirective returns false for non DirectiveContainer"() {
         when:
-        Document node = Document.newDocument().build()
+        SelectionCollectorSpec.NewImplementationSelection node = new SelectionCollectorSpec.NewImplementationSelection()
 
         then:
         !containsEnabledDeferDirective(node)
@@ -126,7 +118,7 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
         InlineFragment node = InlineFragment.newInlineFragment().directive(enabledDefer).build()
 
         then:
-        containsEnabledDeferDirective(node)
+        containsEnabledDeferDirective((DirectivesContainer)node)
     }
 
     def "InlineFragment with disabled defer returns false"() {
@@ -134,7 +126,7 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
         InlineFragment node = InlineFragment.newInlineFragment().directive(disabledDefer).build()
 
         then:
-        !containsEnabledDeferDirective(node)
+        !containsEnabledDeferDirective((DirectivesContainer)node)
     }
 
     def "InlineFragment without defer directive returns false"() {
@@ -144,7 +136,7 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
                 .build()
 
         then:
-        !containsEnabledDeferDirective(node)
+        !containsEnabledDeferDirective((DirectivesContainer)node)
     }
 
     def "Field with defer returns true"() {
@@ -152,7 +144,7 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
         Field node = Field.newField("testField").directive(enabledDefer).build()
 
         then:
-        containsEnabledDeferDirective(node)
+        containsEnabledDeferDirective((Selection)node)
     }
 
     def "Field with disabled defer returns false"() {
@@ -160,7 +152,7 @@ class DeferUtilSpec extends BaseIntegrationTestSpecification{
         Field node = Field.newField("testField").directive(disabledDefer).build()
 
         then:
-        !containsEnabledDeferDirective(node)
+        !containsEnabledDeferDirective((Selection)node)
     }
 
     def "Field without defer directive returns false"() {
