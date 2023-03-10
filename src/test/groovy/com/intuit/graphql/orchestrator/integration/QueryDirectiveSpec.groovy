@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.integration
 import com.google.common.collect.ImmutableMap
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import com.intuit.graphql.orchestrator.ServiceProvider
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
 import com.intuit.graphql.orchestrator.testhelpers.MockServiceProvider
 import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import com.intuit.graphql.orchestrator.utils.GraphQLUtil
@@ -308,7 +309,11 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
             }
         ''').build()
 
-        ExecutionResult executionResult = specUnderTest.execute(petsEI, true).get()
+        DeferOptions deferOptions = DeferOptions.builder()
+                .nestedDefersAllowed(true)
+                .build()
+
+        ExecutionResult executionResult = specUnderTest.execute(petsEI, deferOptions,true).get()
         SubscriptionPublisher subscriptionPublisher = (SubscriptionPublisher)executionResult.data
         Flux<Object> publisher = (Flux) subscriptionPublisher.upstreamPublisher;
         List<ExecutionResult> results = (List<ExecutionResult>) publisher.collectList().block()

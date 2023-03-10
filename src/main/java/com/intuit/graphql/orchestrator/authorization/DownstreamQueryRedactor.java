@@ -3,7 +3,6 @@ package com.intuit.graphql.orchestrator.authorization;
 import com.intuit.graphql.orchestrator.batch.AuthDownstreamQueryModifier;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
-import graphql.language.AstTransformer;
 import graphql.language.FragmentDefinition;
 import graphql.language.Node;
 import graphql.schema.DataFetchingEnvironment;
@@ -13,11 +12,10 @@ import lombok.NonNull;
 
 import java.util.Map;
 
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.AST_TRANSFORMER;
+
 @Builder
 public class DownstreamQueryRedactor {
-
-  private static final AstTransformer AST_TRANSFORMER = new AstTransformer();
-
   @NonNull private Node<?> root;
   @NonNull private GraphQLType rootType;
   @NonNull private GraphQLType rootParentType;

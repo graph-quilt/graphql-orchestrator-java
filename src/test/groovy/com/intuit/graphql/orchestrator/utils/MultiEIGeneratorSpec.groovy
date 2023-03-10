@@ -1,13 +1,63 @@
 package com.intuit.graphql.orchestrator.utils
 
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions
 import graphql.ExecutionInput
 import graphql.parser.InvalidSyntaxException
+import graphql.scalar.GraphqlStringCoercing
+import graphql.schema.GraphQLFieldDefinition
+import graphql.schema.GraphQLObjectType
+import graphql.schema.GraphQLScalarType
+import graphql.schema.GraphQLSchema
 import reactor.test.StepVerifier
 import spock.lang.Specification
 
 class MultiEIGeneratorSpec extends Specification {
 
     MultiEIGenerator multiEIGenerator
+    DeferOptions options = DeferOptions.builder()
+            .nestedDefersAllowed(true)
+            .build()
+
+    GraphQLScalarType scalarType = GraphQLScalarType.newScalar()
+        .name("scale")
+        .coercing(new GraphqlStringCoercing())
+        .build()
+
+    GraphQLFieldDefinition idField = GraphQLFieldDefinition.newFieldDefinition()
+            .name("id")
+            .type(scalarType)
+            .build()
+
+    GraphQLFieldDefinition nameField = GraphQLFieldDefinition.newFieldDefinition()
+            .name("name")
+            .type(scalarType)
+            .build()
+
+    GraphQLFieldDefinition typeField = GraphQLFieldDefinition.newFieldDefinition()
+            .name("type")
+            .type(scalarType)
+            .build()
+
+    GraphQLObjectType petType = GraphQLObjectType.newObject()
+            .name("Pet")
+            .field(idField)
+            .field(nameField)
+            .field(typeField)
+            .build()
+
+    GraphQLFieldDefinition petsQuery = GraphQLFieldDefinition.newFieldDefinition()
+            .name("pets")
+            .type(petType)
+            .build()
+
+    GraphQLObjectType queryType = GraphQLObjectType.newObject()
+            .name("query")
+            .field(petsQuery)
+            .build()
+
+    GraphQLSchema schema = GraphQLSchema.newSchema().query(queryType).additionalType(petType).build()
+
+
 
     def "Generator split query correctly"() {
         given:
@@ -31,7 +81,7 @@ class MultiEIGeneratorSpec extends Specification {
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options, schema)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())
@@ -64,7 +114,7 @@ class MultiEIGeneratorSpec extends Specification {
         long timeEmitted = 0;
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options, schema)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())
@@ -94,7 +144,7 @@ class MultiEIGeneratorSpec extends Specification {
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options, schema)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())
@@ -109,7 +159,7 @@ class MultiEIGeneratorSpec extends Specification {
         ExecutionInput ei = ExecutionInput.newExecutionInput(query).build()
 
         when:
-        multiEIGenerator = new MultiEIGenerator(ei)
+        multiEIGenerator = new MultiEIGenerator(ei, options, schema)
 
         then:
         StepVerifier.create(multiEIGenerator.generateEIs())

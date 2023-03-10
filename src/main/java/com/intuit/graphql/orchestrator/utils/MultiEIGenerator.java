@@ -1,25 +1,41 @@
 package com.intuit.graphql.orchestrator.utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
+import com.intuit.graphql.orchestrator.visitors.queryVisitors.DeferQueryExtractor;
 import graphql.ExecutionInput;
+import graphql.analysis.QueryTransformer;
+import graphql.language.Document;
+import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
+import graphql.language.SelectionSet;
+import graphql.schema.GraphQLSchema;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.intuit.graphql.orchestrator.utils.GraphQLUtil.parser;
 
 @Slf4j
 public class MultiEIGenerator {
-
-    private List<ExecutionInput> eis = new ArrayList<>();
+    private final List<ExecutionInput> eis = new ArrayList<>();
+    private final DeferOptions deferOptions;
+    private final GraphQLSchema schema;
     private Integer numOfEIs = null;
-    private final static String EMPTY_QUERY ="";
 
     @VisibleForTesting
     private long timeProcessedSplit = 0;
 
-    public MultiEIGenerator(ExecutionInput ei) {
+    public MultiEIGenerator(ExecutionInput ei, DeferOptions deferOptions, GraphQLSchema schema) {
         this.eis.add(ei);
+        this.deferOptions = deferOptions;
+        this.schema = schema;
     }
 
     public Flux<ExecutionInput> generateEIs() {
@@ -39,7 +55,40 @@ public class MultiEIGenerator {
                 this.timeProcessedSplit = System.currentTimeMillis();
                 //Adds elements to list of eis that need to be processed
                 try {
-                    this.eis.addAll(MultipartUtil.splitMultipartExecutionInput(emittedEI));
+                    Document rootDocument = parser.parseDocument(emittedEI.getQuery());
+                    Map<String, FragmentDefinition> fragmentDefinitionMap = rootDocument.getDefinitionsOfType(FragmentDefinition.class)
+                            .stream()
+                            .collect(Collectors.toMap(FragmentDefinition::getName , Function.identity()));
+
+                    ExecutionInput finalEmittedEI = emittedEI;
+                    AtomicReference<OperationDefinition> operationDefinitionReference = new AtomicReference<>();
+                    rootDocument.getDefinitionsOfType(OperationDefinition.class)
+                    .stream()
+                    .peek(operationDefinitionReference::set)
+                    .map(OperationDefinition::getSelectionSet)
+                    .map(SelectionSet::getSelections)
+                    .flatMap(List::stream)
+                    .forEach(selection -> {
+                        QueryTransformer transformer = QueryTransformer.newQueryTransformer()
+                                .schema(this.schema)
+                                .root(selection)
+                                .rootParentType(this.schema.getQueryType())
+                                .fragmentsByName(fragmentDefinitionMap)
+                                .variables(finalEmittedEI.getVariables())
+                                .build();
+
+                        DeferQueryExtractor visitor = DeferQueryExtractor.builder()
+                                .deferOptions(deferOptions)
+                                .originalEI(finalEmittedEI)
+                                .rootNode(rootDocument)
+                                .operationDefinition(operationDefinitionReference.get())
+                                .fragmentDefinitionMap(fragmentDefinitionMap)
+                                .build();
+
+                        transformer.transform(visitor);
+
+                        this.eis.addAll(visitor.getExtractedEIs());
+                    });
                 }
                 catch (Exception ex) {
                     sink.error(ex);

@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator;
 
 import com.intuit.graphql.orchestrator.deferDirective.DeferDirectiveInstrumentation;
+import com.intuit.graphql.orchestrator.deferDirective.DeferOptions;
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph;
 import com.intuit.graphql.orchestrator.utils.MultiEIGenerator;
 import graphql.ExecutionInput;
@@ -41,6 +42,8 @@ import static java.util.Objects.requireNonNull;
 public class GraphQLOrchestrator {
 
   public static final String DATA_LOADER_REGISTRY_CONTEXT_KEY = DataLoaderRegistry.class.getName() + ".context.key";
+  private static final DeferOptions DEFAULT_DEFER_OPTIONS = DeferOptions.builder().nestedDefersAllowed(false).build();
+  private static final boolean DISABLED_DEFER = false;
 
   private final RuntimeGraph runtimeGraph;
   private final List<Instrumentation> instrumentations;
@@ -80,12 +83,12 @@ public class GraphQLOrchestrator {
   }
 
   public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput) {
-    return execute(executionInput, false);
+    return execute(executionInput, DEFAULT_DEFER_OPTIONS, DISABLED_DEFER);
   }
 
-  public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, boolean hasDefer) {
+  public CompletableFuture<ExecutionResult> execute(ExecutionInput executionInput, DeferOptions deferOptions, boolean hasDefer) {
     if(hasDefer) {
-      return executeWithDefer(executionInput);
+      return executeWithDefer(executionInput, deferOptions);
     }
       final GraphQL graphQL = constructGraphQL();
 
@@ -101,9 +104,9 @@ public class GraphQLOrchestrator {
       return graphQL.executeAsync(newExecutionInput);
   }
 
-  private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput) {
+  private CompletableFuture<ExecutionResult> executeWithDefer(ExecutionInput executionInput, DeferOptions options) {
     AtomicInteger responses = new AtomicInteger(0);
-    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput);
+    MultiEIGenerator eiGenerator = new MultiEIGenerator(executionInput, options, this.getSchema());
 
     Flux<Object> executionResultPublisher = eiGenerator.generateEIs()
             .filter(ei -> !ei.getQuery().equals(""))
