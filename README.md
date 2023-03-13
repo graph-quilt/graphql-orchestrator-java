@@ -15,7 +15,7 @@ A powerful Java library for aggregating and executing GraphQL operations from mu
 This enables you to query multiple microservices through a single endpoint, reducing complexity and improving performance.
 
 The library supports two strategies to aggregate and combine the schemas from multiple microservices
-* Schema Stitching with [a recursive strategy](./mkdocs/docs/key-concepts/merging-types.md)
+* Schema Stitching with [a recursive strategy](https://graph-quilt.github.io/docs/merging-types/)
 * [Apollo Federation Style](https://netflix.github.io/dgs/federation/) Schema Composition. (_Currently, it supports `@key, @requires, @extends, and @external` directives)
 
 At query execution time, it orchestrates the GraphQL queries to the appropriate micro-services, using the popular [graphql-java](https://github.com/graphql-java/graphql-java) 

@@ -1,16 +1,5 @@
 package com.intuit.graphql.orchestrator.schema.type.conflict.resolver;
 
-import com.intuit.graphql.graphQL.EnumTypeDefinition;
-import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
-import com.intuit.graphql.graphQL.ObjectTypeDefinition;
-import com.intuit.graphql.graphQL.TypeDefinition;
-import com.intuit.graphql.graphQL.UnionTypeDefinition;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.checkFieldsCompatibility;
@@ -19,6 +8,16 @@ import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInaccessibl
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isScalarType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
+
+import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
+import com.intuit.graphql.graphQL.ObjectTypeDefinition;
+import com.intuit.graphql.graphQL.TypeDefinition;
+import com.intuit.graphql.graphQL.UnionTypeDefinition;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 
 public class XtextTypeConflictResolver {
 
@@ -56,7 +55,9 @@ public class XtextTypeConflictResolver {
 
       if(!isInaccessibleComparison) {
         if(isEntity(conflictingType) != isEntity(existingType)) {
-          throw new TypeConflictException("Type %s is conflicting with existing type %s. Only one of the types are an entity.");
+          throw new TypeConflictException(String.format("Type %s is conflicting with existing type %s. Only one of the types are an entity.",
+            toDescriptiveString(conflictingType),
+            toDescriptiveString(existingType)));
         }
 
         //In this specific case one is an entity and another is not an entity
