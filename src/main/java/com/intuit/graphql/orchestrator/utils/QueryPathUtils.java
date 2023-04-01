@@ -4,11 +4,12 @@ import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.Node;
 import graphql.util.TraverserContext;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 
 public class QueryPathUtils {
 

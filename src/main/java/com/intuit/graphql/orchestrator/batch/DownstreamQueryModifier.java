@@ -1,19 +1,14 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
-import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static graphql.util.TreeTransformerUtil.changeNode;
-import static graphql.util.TreeTransformerUtil.deleteNode;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.federation.RequiredFieldsCollector;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
+import graphql.GraphQLContext;
+import graphql.language.Argument;
+import graphql.language.BooleanValue;
+import graphql.language.Directive;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
@@ -30,14 +25,27 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_IF_ARG;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.USE_DEFER;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static graphql.util.TreeTransformerUtil.changeNode;
+import static graphql.util.TreeTransformerUtil.deleteNode;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -59,11 +67,14 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
   private final SelectionCollector selectionCollector;
   private final GraphQLSchema graphQLSchema;
 
+  private final GraphQLContext graphQLContext;
+
   public DownstreamQueryModifier(
-      GraphQLType rootType,
-      ServiceMetadata serviceMetadata,
-      Map<String, FragmentDefinition> fragmentsByName,
-      GraphQLSchema graphQLSchema) {
+          GraphQLType rootType,
+          ServiceMetadata serviceMetadata,
+          Map<String, FragmentDefinition> fragmentsByName,
+          GraphQLSchema graphQLSchema,
+          GraphQLContext context) {
     Objects.requireNonNull(rootType);
     Objects.requireNonNull(serviceMetadata);
     Objects.requireNonNull(fragmentsByName);
@@ -71,6 +82,7 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
     this.serviceMetadata = serviceMetadata;
     this.selectionCollector = new SelectionCollector(fragmentsByName);
     this.graphQLSchema = graphQLSchema;
+    this.graphQLContext = context;
   }
 
   @Override
@@ -82,6 +94,21 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
         String originalName = serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().get(renamedKey);
         if(originalName != null) {
           return changeNode(context, convertGraphqlFieldWithOriginalName(node, originalName));
+        }
+      }
+
+      if(!node.getDirectives(DEFER_DIRECTIVE_NAME).isEmpty()) {
+        Argument deferArg = node.getDirectives(DEFER_DIRECTIVE_NAME).get(0).getArgument(DEFER_IF_ARG);
+        if(graphQLContext.getOrDefault(USE_DEFER, false) && (deferArg == null || ((BooleanValue)deferArg.getValue()).isValue())) {
+          return deleteNode(context);
+        } else {
+          //remove directive from query since directive is not built in and will fail downstream if added
+          List<Directive> directives = node.getDirectives()
+                  .stream()
+                  .filter(directive -> !DEFER_DIRECTIVE_NAME.equals(directive.getName()))
+                  .collect(Collectors.toList());
+
+          return changeNode(context, node.transform(builder -> builder.directives(directives)));
         }
       }
 
@@ -110,6 +137,21 @@ public class DownstreamQueryModifier extends NodeVisitorStub {
 
         if(originalName != null) {
           return changeNode(context, convertGraphqlFieldWithOriginalName(node, originalName));
+        }
+      }
+
+      if(!node.getDirectives(DEFER_DIRECTIVE_NAME).isEmpty()) {
+        Argument deferArg = node.getDirectives(DEFER_DIRECTIVE_NAME).get(0).getArgument(DEFER_IF_ARG);
+        if(graphQLContext.getOrDefault(USE_DEFER, false) && (deferArg == null || ((BooleanValue)deferArg.getValue()).isValue())) {
+          return deleteNode(context);
+        } else {
+          //remove directive from query since directive is not built in and will fail downstream if added
+          List<Directive> directives = node.getDirectives()
+                  .stream()
+                  .filter(directive -> !DEFER_DIRECTIVE_NAME.equals(directive.getName()))
+                  .collect(Collectors.toList());
+
+          return changeNode(context, node.transform(builder -> builder.directives(directives)));
         }
       }
       return TraversalControl.CONTINUE;

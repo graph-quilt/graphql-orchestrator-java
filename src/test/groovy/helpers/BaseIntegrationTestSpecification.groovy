@@ -10,6 +10,7 @@ import graphql.ExecutionInput
 import graphql.execution.AsyncExecutionStrategy
 import graphql.execution.ExecutionIdProvider
 import graphql.execution.ExecutionStrategy
+import graphql.language.AstTransformer
 import graphql.language.Document
 import graphql.language.OperationDefinition
 import graphql.parser.Parser
@@ -18,6 +19,7 @@ import spock.lang.Specification
 class BaseIntegrationTestSpecification extends Specification {
 
     public static final Parser PARSER = new Parser()
+    public static final AstTransformer AST_TRANSFORMER = new AstTransformer()
 
     def testService
 

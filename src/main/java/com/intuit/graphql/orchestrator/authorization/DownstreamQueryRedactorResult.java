@@ -2,10 +2,11 @@ package com.intuit.graphql.orchestrator.authorization;
 
 import graphql.GraphqlErrorException;
 import graphql.language.Node;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -17,4 +18,7 @@ public class DownstreamQueryRedactorResult {
   private List<GraphqlErrorException> errors;
 
   boolean hasEmptySelectionSet;
+
+  @NonNull
+  private List<String> fragmentSpreadsRemoved;
 }

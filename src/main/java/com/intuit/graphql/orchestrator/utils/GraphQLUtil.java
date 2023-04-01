@@ -38,7 +38,7 @@ public class GraphQLUtil {
   public static final AstTransformer AST_TRANSFORMER = new AstTransformer();
 
   private static final String ERR_CREATE_TYPE_UNEXPECTED_TYPE = "Failed to create Type due to "
-          + "unexpected GraphQL Type %s";
+      + "unexpected GraphQL Type %s";
 
   private GraphQLUtil() {
   }
@@ -71,9 +71,9 @@ public class GraphQLUtil {
 
   public static List<GraphQLError> getErrors(DataFetcherResult<Map<String, Object>> result, Field f) {
     return result.getErrors().stream()
-            .filter(e -> e.getPath() == null || e.getPath().isEmpty() || f.getName()
-                    .equals(String.valueOf(e.getPath().get(0))))
-            .collect(Collectors.toList());
+        .filter(e -> e.getPath() == null || e.getPath().isEmpty() || f.getName()
+            .equals(String.valueOf(e.getPath().get(0))))
+        .collect(Collectors.toList());
   }
 
   public static Type createTypeBasedOnGraphQLType(GraphQLType graphQLType) {
@@ -83,14 +83,14 @@ public class GraphQLUtil {
     }
     if (graphQLType instanceof GraphQLNonNull) {
       return NonNullType.newNonNullType()
-              .type(createTypeBasedOnGraphQLType(((GraphQLNonNull) graphQLType).getWrappedType())).build();
+          .type(createTypeBasedOnGraphQLType(((GraphQLNonNull) graphQLType).getWrappedType())).build();
     }
     if (graphQLType instanceof GraphQLList) {
       return ListType.newListType().type(createTypeBasedOnGraphQLType(((GraphQLList) graphQLType).getWrappedType()))
-              .build();
+          .build();
     }
     throw new CreateTypeException(
-            String.format(ERR_CREATE_TYPE_UNEXPECTED_TYPE, GraphQLTypeUtil.simplePrint(graphQLType)));
+        String.format(ERR_CREATE_TYPE_UNEXPECTED_TYPE, GraphQLTypeUtil.simplePrint(graphQLType)));
   }
 
   public static Optional<GraphQLType> getFieldType(Field field, GraphQLFieldsContainer fieldsContainer) {

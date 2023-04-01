@@ -1,17 +1,5 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
-import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getNodesAsPathList;
-import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
-import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static graphql.util.TreeTransformerUtil.changeNode;
-import static graphql.util.TreeTransformerUtil.deleteNode;
-import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationEnvironment;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationResult;
@@ -23,9 +11,14 @@ import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import com.intuit.graphql.orchestrator.schema.transform.FieldResolverContext;
 import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.GraphQLContext;
+import graphql.GraphQLException;
 import graphql.GraphqlErrorException;
+import graphql.language.Argument;
+import graphql.language.BooleanValue;
+import graphql.language.Directive;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
+import graphql.language.FragmentSpread;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
 import graphql.language.NodeVisitorStub;
@@ -40,6 +33,11 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import lombok.Builder;
+import lombok.NonNull;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,10 +45,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Builder;
-import lombok.NonNull;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_DIRECTIVE_NAME;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.DEFER_IF_ARG;
+import static com.intuit.graphql.orchestrator.utils.DirectivesUtil.USE_DEFER;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getNodesAsPathList;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static graphql.util.TreeTransformerUtil.changeNode;
+import static graphql.util.TreeTransformerUtil.deleteNode;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -67,6 +76,7 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
   private static final ArgumentValueResolver ARGUMENT_VALUE_RESOLVER = new ArgumentValueResolver(); // thread-safe
   private final List<SelectionSetMetadata> processedSelectionSetMetadata = new ArrayList<>();
   private final List<GraphqlErrorException> declinedFieldsErrors = new ArrayList<>();
+  private final List<String> fragmentSpreadsRemoved = new ArrayList<>();
 
   private boolean hasEmptySelectionSet;
 
@@ -98,6 +108,11 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
         return deleteNode(context);
       }
 
+      List<Directive> directives = node.getDirectives();
+      if(containsDeferDirective(directives)) {
+        return pruneDeferInfo(node, context, directives);
+      }
+
       if(!serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().isEmpty()) {
         String renamedKey =  getRenameKey(null, node.getName(), true);
         String originalName = serviceMetadata.getRenamedMetadata().getOriginalFieldNamesByRenamedName().get(renamedKey);
@@ -122,6 +137,22 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
           decreaseParentSelectionSetCount(context.getParentContext());
           this.declinedFieldsErrors.add(fieldAuthorizationResult.getGraphqlErrorException());
           return deleteNode(context);
+        }
+      }
+
+      if(!node.getDirectives(DEFER_DIRECTIVE_NAME).isEmpty()) {
+        Argument deferArg = node.getDirectives(DEFER_DIRECTIVE_NAME).get(0).getArgument(DEFER_IF_ARG);
+        if(graphQLContext.getOrDefault(USE_DEFER, false) && (deferArg == null || ((BooleanValue)deferArg.getValue()).isValue())) {
+          decreaseParentSelectionSetCount(context.getParentContext());
+          return deleteNode(context);
+        } else {
+          //remove directive from query since directive is not built in and will fail downstream if added
+          List<Directive> directives = node.getDirectives()
+                  .stream()
+                  .filter(directive -> !DEFER_DIRECTIVE_NAME.equals(directive.getName()))
+                  .collect(Collectors.toList());
+
+          return changeNode(context, node.transform(builder -> builder.directives(directives)));
         }
       }
 
@@ -193,6 +224,24 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
   public TraversalControl visitInlineFragment(InlineFragment node, TraverserContext<Node> context) {
     String typeName = node.getTypeCondition().getName();
     context.setVar(GraphQLType.class, this.graphQLSchema.getType(typeName));
+
+    List<Directive> directives = node.getDirectives();
+    if(containsDeferDirective(directives)) {
+      return pruneDeferInfo(node, context, directives);
+    }
+
+    return TraversalControl.CONTINUE;
+  }
+
+  @Override
+  public TraversalControl visitFragmentSpread(FragmentSpread node, TraverserContext<Node> context) {
+    context.setVar(GraphQLType.class, this.graphQLSchema.getType(node.getName()));
+
+    List<Directive> directives = node.getDirectives();
+    if(containsDeferDirective(directives)) {
+      return pruneDeferInfo(node, context, directives);
+    }
+
     return TraversalControl.CONTINUE;
   }
 
@@ -280,8 +329,50 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
     return GraphQLTypeUtil.unwrapAll(parentType);
   }
 
+  private boolean containsDeferDirective(List<Directive> directives) {
+    return directives != null && directives.stream()
+            .anyMatch(directive -> DEFER_DIRECTIVE_NAME.equals(directive.getName()));
+  }
+
+  private TraversalControl pruneDeferInfo(Node node, TraverserContext<Node> context, List<Directive> nodeDirectives) {
+    Directive deferDirective = nodeDirectives
+            .stream()
+            .filter(directive -> DEFER_DIRECTIVE_NAME.equals(directive.getName()))
+            .findFirst()
+            .get();
+
+    Argument deferArg = deferDirective.getArgument(DEFER_IF_ARG);
+    if(graphQLContext.getOrDefault(USE_DEFER, false) && (deferArg == null || ((BooleanValue)deferArg.getValue()).isValue())) {
+      decreaseParentSelectionSetCount(context.getParentContext());
+      if(node instanceof FragmentSpread) {
+        this.fragmentSpreadsRemoved.add(((FragmentSpread)node).getName());
+      }
+
+      return deleteNode(context);
+    } else {
+      final List<Directive> directives = nodeDirectives
+              .stream()
+              .filter(directive -> !DEFER_DIRECTIVE_NAME.equals(directive.getName()))
+              .collect(Collectors.toList());
+      //remove directive from query since directive is not built in and will fail downstream if added
+      if(node instanceof Field) {
+        return changeNode(context, ((Field)node).transform(builder -> builder.directives(directives)));
+      } else if(node instanceof InlineFragment) {
+        return changeNode(context, ((InlineFragment)node).transform(builder -> builder.directives(directives)));
+      } else if(node instanceof FragmentSpread) {
+        return changeNode(context, ((FragmentSpread)node).transform(builder -> builder.directives(directives)));
+      } else {
+        throw new GraphQLException("Not Supported Defer Location.");
+      }
+    }
+  }
+
   public List<GraphqlErrorException> getDeclineFieldErrors() {
     return declinedFieldsErrors;
+  }
+
+  public List<String> getFragmentSpreadsRemoved() {
+    return this.fragmentSpreadsRemoved;
   }
 
   public List<SelectionSetMetadata> getEmptySelectionSets() {
