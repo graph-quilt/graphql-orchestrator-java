@@ -27,6 +27,7 @@ import com.intuit.graphql.graphQL.util.GraphQLSwitch;
 import com.intuit.graphql.orchestrator.datafetcher.AliasablePropertyDataFetcher;
 import com.intuit.graphql.orchestrator.schema.SchemaParseException;
 import com.intuit.graphql.orchestrator.schema.transform.ExplicitTypeResolver;
+import com.intuit.graphql.orchestrator.stitching.StitchingException;
 import graphql.Scalars;
 import graphql.introspection.Introspection.DirectiveLocation;
 import graphql.language.StringValue;
@@ -83,8 +84,10 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
   private final Map<String, GraphQLType> graphQLObjectTypes;
   public final Map<String, GraphQLDirective> directiveDefinitions;
   public final HashSet<String> blacklistedTypes;
+  public final Set<String> typesWithInaccessibleFields;
 
   private static final GraphQLScalarType FIELD_SET_SCALAR;
+  private static final String ERRMSG_REUSED_CONFLICTING_TYPE = "FORBIDDEN: Subgraphs %s are reusing type %s with different field definitions.";
 
   static {
     STANDARD_SCALAR_TYPES = ScalarInfo.GRAPHQL_SPECIFICATION_SCALARS.stream()
@@ -122,6 +125,7 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     graphQLObjectTypes = builder.graphQLObjectTypes;
     directiveDefinitions = builder.directiveDefinitions;
     blacklistedTypes = Sets.newHashSet(builder.blacklistedTypes);
+    typesWithInaccessibleFields = Sets.newHashSet(builder.typesWithInaccessibleFields);
 
     createBuiltInDirectives();
   }
@@ -193,6 +197,13 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
     GraphQLType graphQLType = graphQLObjectTypes.get(me);
     if (Objects.nonNull(graphQLType)) {
+      int cachedFieldSize = ((GraphQLObjectType) graphQLType).getFieldDefinitions().size();
+      int incomingFieldSize = object.getFieldDefinition().size();
+      //No need to check types with same field size and with different fields b/c it would conflict earlier on and would fail to stitch
+      if(cachedFieldSize != incomingFieldSize && !typesWithInaccessibleFields.contains(me)) {
+        String conflictingNamespace = (cachedFieldSize > incomingFieldSize) ? ((GraphQLObjectType) graphQLType).getDescription() : object.getDesc();
+        throw new StitchingException(String.format(ERRMSG_REUSED_CONFLICTING_TYPE, conflictingNamespace, me));
+      }
       return graphQLType;
     }
 
@@ -604,6 +615,7 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
     private Map<String, GraphQLType> graphQLObjectTypes = new HashMap<>();
     private Map<String, GraphQLDirective> directiveDefinitions = new HashMap<>();
     private HashSet<String> blacklistedTypes = new HashSet<>();
+    private Set<String> typesWithInaccessibleFields = new HashSet<>();
 
     private Builder() {
     }
@@ -615,6 +627,10 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
     public Builder graphqlBlackList(Set<String> blacklistedTypes) {
       this.blacklistedTypes.addAll(blacklistedTypes);
+      return this;
+    }
+    public Builder typesWithInaccessibleFields(Set<String> typesWithInaccessibleFields) {
+      this.typesWithInaccessibleFields.addAll(typesWithInaccessibleFields);
       return this;
     }
 
