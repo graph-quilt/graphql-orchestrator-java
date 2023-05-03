@@ -49,6 +49,7 @@ public class UnifiedXtextGraph {
   private final Map<String, FederationMetadata> federationMetadataByNamespace;
   private final Map<String, RenamedMetadata> renamedMetadataByNamespace;
   private final Set<String> blacklistedTypes = new HashSet<>();
+  private final Set<String> typesWithInaccessibleFields = new HashSet<>();
 
   UnifiedXtextGraph(Builder builder) {
     //TODO: Research on all Providers having an XtextResource instead of a ResourceSet

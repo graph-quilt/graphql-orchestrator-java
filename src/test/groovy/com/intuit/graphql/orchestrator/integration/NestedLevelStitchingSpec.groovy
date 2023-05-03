@@ -1,7 +1,9 @@
 package com.intuit.graphql.orchestrator.integration
 
+import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.datafetcher.ServiceDataFetcher
 import com.intuit.graphql.orchestrator.schema.Operation
+import com.intuit.graphql.orchestrator.stitching.StitchingException
 import graphql.schema.FieldCoordinates
 import graphql.schema.GraphQLCodeRegistry
 import graphql.schema.GraphQLSchema
@@ -17,6 +19,40 @@ class NestedLevelStitchingSpec extends BaseIntegrationTestSpecification {
     def v4osService, turboService
 
     def mockServiceResponse = new HashMap()
+
+    def conflictingSchema = """
+        type Query {
+            root: RootType
+            topLevelField: NestedType
+        }
+
+        type RootType {
+            nestedField: NestedType
+        }
+        
+        type NestedType {
+            fieldA: String
+            fieldB: String
+        }
+    """
+
+    def conflictingSchema2 = """
+        type Query {
+            root: RootType
+        }
+
+        type RootType {
+            nestedField: NestedType
+        }
+        
+        type NestedType {
+            fieldC: String
+            fieldD: String
+        }
+    """
+    ServiceProvider topLevelDeprecatedService1
+    ServiceProvider topLevelDeprecatedService2
+
 
     @Subject
     def specUnderTest
@@ -61,7 +97,6 @@ class NestedLevelStitchingSpec extends BaseIntegrationTestSpecification {
         codeRegistry?.getDataFetcher(FieldCoordinates.coordinates("ConsumerType", "financialProfile"), financeField) instanceof ServiceDataFetcher
         codeRegistry?.getDataFetcher(FieldCoordinates.coordinates("ConsumerType", "turboExperiences"), turboExperiences) instanceof ServiceDataFetcher
     }
-
 
     def "Nested Type Description With Namespace And Empty Description"() {
         given:
@@ -142,5 +177,16 @@ class NestedLevelStitchingSpec extends BaseIntegrationTestSpecification {
         aType.description.contains("description for schema2")
     }
 
+    def "deprecated fields can not be referenced again"() {
+        given:
+        topLevelDeprecatedService1 = createSimpleMockService("test1", conflictingSchema, new HashMap<String, Object>())
+        topLevelDeprecatedService2 = createSimpleMockService("test2", conflictingSchema2, new HashMap<String, Object>())
 
+        when:
+        specUnderTest = createGraphQLOrchestrator([topLevelDeprecatedService1, topLevelDeprecatedService2])
+
+        then:
+        def exception = thrown(StitchingException)
+        exception.message == "FORBIDDEN: Subgraphs [test2,test1] are reusing type NestedType with different field definitions."
+    }
 }

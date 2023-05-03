@@ -41,7 +41,7 @@ class FederationTransformerPostMergeSpec extends Specification {
         return entitiesByTypeName
     }
 
-    Map<String, Map<String, TypeSystemDefinition>> getEntityExtensions() {
+    Map<String, Map<String, TypeSystemDefinition>> getEntityExtensions()  {
         ObjectTypeDefinition objectTypeExtension =
                 buildObjectTypeDefinition("EntityType", singletonList(EXTENSION_FIELD_DEFINITION))
 
@@ -146,6 +146,43 @@ class FederationTransformerPostMergeSpec extends Specification {
 
         then:
         actual.is(unifiedXtextGraphMock)
+    }
+
+    def "transform adds inaccessible info"() {
+        given:
+        def unifiedXtextGraphMock = Mock(UnifiedXtextGraph)
+
+        Directive inaccessibleDirective = buildDirective(buildDirectiveDefinition("inaccessible"), new ArrayList<Argument>())
+        FieldDefinition inaccessibleField = buildFieldDefinition("inactiveField", singletonList(inaccessibleDirective))
+        FieldDefinition accessibleField = buildFieldDefinition("activeField")
+
+        List<FieldDefinition> inaccessibleFieldList = new ArrayList<>()
+        inaccessibleFieldList.add(accessibleField)
+        inaccessibleFieldList.add(inaccessibleField)
+
+        List<FieldDefinition> fieldList = new ArrayList<>()
+        fieldList.add(accessibleField)
+
+        ObjectTypeDefinition objectTypeDefinition = buildObjectTypeDefinition("TestObject", fieldList)
+        ObjectTypeDefinition InaccessibleObjectDefinition = buildObjectTypeDefinition("InaccessibleTestObject", inaccessibleFieldList)
+
+        def valueTypesByName = new HashMap()
+        valueTypesByName.put("TestObject", objectTypeDefinition)
+        valueTypesByName.put("InaccessibleTestObject", InaccessibleObjectDefinition)
+
+        Set<String> inaccessibleTypes = new HashSet()
+
+        unifiedXtextGraphMock.getTypesWithInaccessibleFields() >> inaccessibleTypes
+        unifiedXtextGraphMock.getEntityExtensionsByNamespace() >> new HashMap<>()
+        unifiedXtextGraphMock.getEntityExtensionMetadatas() >> []
+        unifiedXtextGraphMock.getValueTypesByName() >> valueTypesByName
+
+        when:
+        UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock)
+
+        then:
+        actual.getTypesWithInaccessibleFields().size() == 1
+        actual.getTypesWithInaccessibleFields().getAt(0) == "InaccessibleTestObject"
     }
 
     def "transform fails extension key not subset"() {
