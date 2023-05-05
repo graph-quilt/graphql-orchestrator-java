@@ -18,11 +18,11 @@ import static java.util.Collections.singletonList
 
 class FederationTransformerPostMergeSpec extends Specification {
 
-    private final FieldDefinition BASE_FIELD_DEFINITION = buildFieldDefinition("testField1")
+    private FieldDefinition BASE_FIELD_DEFINITION = buildFieldDefinition("testField1")
 
-    private final Directive EXTERNAL_DIRECTIVE = buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null)
+    private Directive EXTERNAL_DIRECTIVE = buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null)
 
-    private final FieldDefinition EXTENSION_FIELD_DEFINITION = buildFieldDefinition("testField1", singletonList(EXTERNAL_DIRECTIVE))
+    private FieldDefinition EXTENSION_FIELD_DEFINITION = buildFieldDefinition("testField1", singletonList(EXTERNAL_DIRECTIVE))
 
     @Subject
     private FederationTransformerPostMerge subjectUnderTest

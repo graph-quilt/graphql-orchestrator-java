@@ -18,18 +18,18 @@ import static java.util.Collections.singletonList
 
 class FieldResolverTransformerPostMergeSpec extends Specification {
 
-    private static final String EXTENDED_OBJECT_TYPENAME = "AObjectType"
-    private static final String EXTERNAL_OBJECT_TYPENAME = "BObjectType"
-    private static final String EXTERNAL_INTERFACE_TYPENAME = "BInterfaceType"
-    private static final String EXTERNAL_UNION_TYPENAME = "BUnionType"
-    private static final String EXTERNAL_ENUM_TYPENAME = "BEnumType"
+    private static  String EXTENDED_OBJECT_TYPENAME = "AObjectType"
+    private static  String EXTERNAL_OBJECT_TYPENAME = "BObjectType"
+    private static  String EXTERNAL_INTERFACE_TYPENAME = "BInterfaceType"
+    private static  String EXTERNAL_UNION_TYPENAME = "BUnionType"
+    private static  String EXTERNAL_ENUM_TYPENAME = "BEnumType"
 
     private static ObjectTypeDefinition externalObjectTypeDefinition
     private static InterfaceTypeDefinition externalInterfaceTypeDefinition
     private static UnionTypeDefinition externalUnionTypeDefinition
     private static EnumTypeDefinition externalEnumTypeDefinition
 
-    private final Transformer<UnifiedXtextGraph, UnifiedXtextGraph> transformer = new FieldResolverTransformerPostMerge()
+    private Transformer<UnifiedXtextGraph, UnifiedXtextGraph> transformer = new FieldResolverTransformerPostMerge()
 
     def setup() {
         List<FieldDefinition> fieldDefinitions = singletonList(buildFieldDefinition("fieldA"))

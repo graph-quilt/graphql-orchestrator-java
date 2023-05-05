@@ -5,8 +5,8 @@ import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
 import spock.lang.Specification
 
 class ResolverArgumentDefinitionSpec extends Specification {
-    private final String TEST_NAME = "testName"
-    private final String TEST_VALUE = "testValue"
+    private String TEST_NAME = "testName"
+    private String TEST_VALUE = "testValue"
 
     def "Builder with no Params is accessible"() {
         given:

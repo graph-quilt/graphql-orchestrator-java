@@ -12,9 +12,9 @@ import static com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate.creat
 
 class FieldResolverDirectiveUtilSpec extends Specification {
 
-    private final String TEST_FIELD_REFERENCE_NAME = "testFieldReferenceName"
-    private final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
-    private final String TEST_SERVICE_NAME = "testServiceName"
+    private String TEST_FIELD_REFERENCE_NAME = "testFieldReferenceName"
+    private String TEST_PARENT_TYPE_NAME = "testParentTypeName"
+    private String TEST_SERVICE_NAME = "testServiceName"
 
     def "is Reference To Field In Parent Type Success"() {
         given:

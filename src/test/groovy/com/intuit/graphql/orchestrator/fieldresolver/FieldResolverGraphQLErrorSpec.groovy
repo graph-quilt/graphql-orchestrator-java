@@ -6,10 +6,10 @@ import spock.lang.Specification
 
 class FieldResolverGraphQLErrorSpec extends Specification {
 
-    private final String TEST_ERROR_MESSAGE = "testErrorMessage"
-    private final String TEST_SERVICE_NAME = "testServiceName"
-    private final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
-    private final String TEST_FIELD_NAME = "testFieldName"
+    private String TEST_ERROR_MESSAGE = "testErrorMessage"
+    private String TEST_SERVICE_NAME = "testServiceName"
+    private String TEST_PARENT_TYPE_NAME = "testParentTypeName"
+    private String TEST_FIELD_NAME = "testFieldName"
 
     private ResolverDirectiveDefinition mockResolverDirectiveDefinition
 

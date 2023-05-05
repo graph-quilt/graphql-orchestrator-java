@@ -12,9 +12,9 @@ import spock.lang.Specification
 import static com.intuit.graphql.orchestrator.batch.EntityFetcherBatchResultTransformer.NO_ENTITY_FIELD
 
 class EntityFetcherBatchResultTransformerSpec extends Specification {
-    private final String serviceProviderName = "MockProvider"
-    private final String entityTypeName = "MockEntity"
-    private final String requestedField = "ExtEntityField"
+    private String serviceProviderName = "MockProvider"
+    private String entityTypeName = "MockEntity"
+    private String requestedField = "ExtEntityField"
     private EntityFetcherBatchResultTransformer specUnderTest
 
     def setup() {

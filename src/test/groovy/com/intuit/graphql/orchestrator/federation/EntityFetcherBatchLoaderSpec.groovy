@@ -33,7 +33,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
     private FederationMetadata.EntityExtensionMetadata metadataMock
     private ServiceMetadata serviceMetadata
 
-    final private String extEntityField = "requestedExtEntityField"
+    private String extEntityField = "requestedExtEntityField"
 
     private EntityFetcherBatchLoader specUnderTest
 

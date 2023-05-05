@@ -4,10 +4,10 @@ import spock.lang.Specification
 
 class ResolverArgumentNotAFieldOfParentExceptionSpec extends Specification {
 
-    private final String TEST_RESOLVER_ARG_VALUE = "testResolverArgValue"
-    private final String TEST_PARENT_TYPE_NAME = "testParentTypeName"
-    private final String TEST_REQUIRED_FIELD_NAME = "testReqdFieldName"
-    private final String TEST_SERVICE_NAME = "testServiceName"
+    private String TEST_RESOLVER_ARG_VALUE = "testResolverArgValue"
+    private String TEST_PARENT_TYPE_NAME = "testParentTypeName"
+    private String TEST_REQUIRED_FIELD_NAME = "testReqdFieldName"
+    private String TEST_SERVICE_NAME = "testServiceName"
 
     def "ResolverArgumentNotAFieldOfParentException with resolverArgValue and parentTypeName parameter forms a correct error message"() {
         given:

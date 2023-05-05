@@ -22,8 +22,8 @@ class XTextGraphSpec extends Specification {
     private FieldContext fieldContextMock
     private DataFetcherContext dataFetcherContextMock
 
-    private final String TYPE_NAME_1 = "TypeName1"
-    private final String TYPE_NAME_2 = "TypeName2"
+    private String TYPE_NAME_1 = "TypeName1"
+    private String TYPE_NAME_2 = "TypeName2"
 
     def setup() {
         FieldDefinition fieldDefinition = buildFieldDefinition("someOTHERFieldName")
