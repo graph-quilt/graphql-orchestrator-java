@@ -35,11 +35,11 @@ class FieldResolverBatchSelectionSetSupplierLiteralsSpec extends Specification {
 
     private RenamedMetadata renamedMetadataMock
 
-    private final Map<String, Object> testDFEDataSource = new HashMap<>()
+    private Map<String, Object> testDFEDataSource = new HashMap<>()
 
     private FieldResolverContext testFieldResolverContext
 
-    private final List<DataFetchingEnvironment> dataFetchingEnvironments = new ArrayList<>()
+    private List<DataFetchingEnvironment> dataFetchingEnvironments = new ArrayList<>()
 
     private FieldResolverBatchSelectionSetSupplier subject
 

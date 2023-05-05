@@ -13,11 +13,11 @@ import static com.intuit.graphql.orchestrator.batch.DataLoaderKeyUtil.createData
 
 class EntityDataFetcherSpec extends Specification {
 
-    private final String entityName = "MockEntity"
+    private String entityName = "MockEntity"
 
-    private final String namespace = "testNamespace"
+    private String namespace = "testNamespace"
 
-    private final ServiceProvider.ServiceType serviceType = ServiceProvider.ServiceType.FEDERATION_SUBGRAPH
+    private ServiceProvider.ServiceType serviceType = ServiceProvider.ServiceType.FEDERATION_SUBGRAPH
 
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 

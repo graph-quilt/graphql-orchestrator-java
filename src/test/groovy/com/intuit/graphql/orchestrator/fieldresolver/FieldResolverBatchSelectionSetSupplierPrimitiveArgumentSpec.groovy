@@ -23,7 +23,7 @@ import static java.util.Collections.singletonList
 
 class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specification {
 
-    private static final String[] RESOLVER_SELECTED_FIELDS = ["targetField"];
+    private static String[] RESOLVER_SELECTED_FIELDS = ["targetField"];
 
     private DataFetchingEnvironment dataFetchingEnvironmentMock
 
@@ -39,11 +39,11 @@ class FieldResolverBatchSelectionSetSupplierPrimitiveArgumentSpec extends Specif
 
     private RenamedMetadata renamedMetadataMock
 
-    private final Map<String, Object> testDFEDataSource = new HashMap<>()
+    private Map<String, Object> testDFEDataSource = new HashMap<>()
 
     private FieldResolverContext testFieldResolverContext
 
-    private final List<DataFetchingEnvironment> dataFetchingEnvironments = new ArrayList<>()
+    private List<DataFetchingEnvironment> dataFetchingEnvironments = new ArrayList<>()
 
     private FieldResolverBatchSelectionSetSupplier subject
 

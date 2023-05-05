@@ -9,7 +9,7 @@ import static com.intuit.graphql.orchestrator.schema.transform.FieldResolverTran
 
 class FieldResolverTransformerPreMergeSpec extends Specification {
 
-    private final Transformer<XtextGraph, XtextGraph> transformer = new FieldResolverTransformerPreMerge()
+    private Transformer<XtextGraph, XtextGraph> transformer = new FieldResolverTransformerPreMerge()
 
     def "transform With No Field Resolver Success No Transformation"() {
         given:
