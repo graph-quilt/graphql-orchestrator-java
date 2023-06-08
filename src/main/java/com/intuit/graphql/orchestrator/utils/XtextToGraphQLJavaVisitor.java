@@ -197,12 +197,14 @@ public class XtextToGraphQLJavaVisitor extends GraphQLSwitch<GraphQLSchemaElemen
 
     GraphQLType graphQLType = graphQLObjectTypes.get(me);
     if (Objects.nonNull(graphQLType)) {
-      int cachedFieldSize = ((GraphQLObjectType) graphQLType).getFieldDefinitions().size();
-      int incomingFieldSize = object.getFieldDefinition().size();
-      //No need to check types with same field size and with different fields b/c it would conflict earlier on and would fail to stitch
-      if(cachedFieldSize != incomingFieldSize && !typesWithInaccessibleFields.contains(me)) {
-        String conflictingNamespace = (cachedFieldSize > incomingFieldSize) ? ((GraphQLObjectType) graphQLType).getDescription() : object.getDesc();
-        throw new StitchingException(String.format(ERRMSG_REUSED_CONFLICTING_TYPE, conflictingNamespace, me));
+      if(graphQLType instanceof GraphQLObjectType) {
+        int cachedFieldSize = ((GraphQLObjectType) graphQLType).getFieldDefinitions().size();
+        int incomingFieldSize = object.getFieldDefinition().size();
+        //No need to check types with same field size and with different fields b/c it would conflict earlier on and would fail to stitch
+        if(cachedFieldSize != incomingFieldSize && !typesWithInaccessibleFields.contains(me)) {
+          String conflictingNamespace = (cachedFieldSize > incomingFieldSize) ? ((GraphQLObjectType) graphQLType).getDescription() : object.getDesc();
+          throw new StitchingException(String.format(ERRMSG_REUSED_CONFLICTING_TYPE, conflictingNamespace, me));
+        }
       }
       return graphQLType;
     }
