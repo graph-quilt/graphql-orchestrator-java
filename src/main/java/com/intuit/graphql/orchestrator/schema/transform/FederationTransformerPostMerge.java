@@ -183,7 +183,9 @@ public class FederationTransformerPostMerge implements Transformer<UnifiedXtextG
 
       List<FieldDefinition> baseFields = getFieldDefinitions(entityMergingContext.getBaseType());
       List<String> baseFieldNames = baseFields.stream()
-              .map(FieldDefinition::getName).collect(Collectors.toList());
+              .filter(field -> !definitionContainsDirective(field, "deprecated"))
+              .map(FieldDefinition::getName)
+              .collect(Collectors.toList());
 
       List<String> baseFieldResolvers = baseFields.stream()
               .filter(fieldDefinition -> definitionContainsDirective(fieldDefinition, RESOLVER_DIRECTIVE_NAME))

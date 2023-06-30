@@ -181,6 +181,80 @@ class EntityTypeMergerSpec extends Specification {
         actualFieldNames containsInAnyOrder("requiredField", "testField2", "ExternalFieldResolver", "testField1")
     }
 
+    def "merge Into Base Type prunes deprecated base field success"(){
+        given:
+
+        TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition()
+
+        FieldDefinition requiredField = buildFieldDefinition("requiredField")
+
+        FieldDefinition entityRequiredField = buildFieldDefinition("requiredField")
+        entityRequiredField.getDirectives().add(buildDirective(buildDirectiveDefinition("external"), emptyList()))
+
+        FieldDefinition deprecatedField = buildFieldDefinition("deprecatedField")
+        deprecatedField.getDirectives().add(buildDirective(buildDirectiveDefinition("deprecated"), emptyList()))
+
+        FieldDefinition extField = buildFieldDefinition("deprecatedField")
+
+
+        ObjectTypeDefinition baseObjectType =
+                buildObjectTypeDefinition("EntityType", Arrays.asList(
+                        requiredField,
+                        deprecatedField,
+                ))
+
+        ObjectTypeExtensionDefinition objectTypeExtension =
+                buildObjectTypeExtensionDefinition("EntityType", Arrays.asList(
+                        entityRequiredField,
+                        extField
+                ))
+
+        typeSystemDefinition.setTypeExtension(objectTypeExtension)
+
+        entityMergingContextMock.getBaseType() >> baseObjectType
+        entityMergingContextMock.getExtensionSystemDefinition() >> typeSystemDefinition
+
+        unifiedXtextGraphMock.getFieldResolverContexts() >> fieldResolverContexts
+
+        Map<String, FederationMetadata> federationMetadataMap = new HashMap<>()
+
+        FederationMetadata baseFederationMetadataMock = Mock(FederationMetadata.class)
+        FederationMetadata extFederationMetadataMock = Mock(FederationMetadata.class)
+
+        FederationMetadata.EntityMetadata baseEntityMetaDataMock = Mock(FederationMetadata.EntityMetadata.class)
+        Set<String> baseFields = Sets.newHashSet("requiredField", "deprecatedField")
+        baseEntityMetaDataMock.getFields() >> baseFields
+
+        FederationMetadata.EntityMetadata extEntityMetaDataMock = Mock(FederationMetadata.EntityMetadata.class)
+        Set<String> extFields = Sets.newHashSet( "deprecatedField")
+        extEntityMetaDataMock.getFields() >> extFields
+
+        baseFederationMetadataMock.getEntityMetadataByName("EntityType") >> baseEntityMetaDataMock
+        extFederationMetadataMock.getEntityMetadataByName("EntityType") >> extEntityMetaDataMock
+
+        federationMetadataMap.put("baseService", baseFederationMetadataMock)
+        federationMetadataMap.put("extService", extFederationMetadataMock)
+
+        unifiedXtextGraphMock.getFederationMetadataByNamespace() >> federationMetadataMap
+        entityMergingContextMock.getTypename() >> "EntityType"
+
+        when:
+        TypeDefinition actual = subjectUnderTest.mergeIntoBaseType(entityMergingContextMock, unifiedXtextGraphMock)
+
+        then:
+        actual == baseObjectType
+        List<FieldDefinition> actualFieldDefinitions = getFieldDefinitions(actual)
+        actualFieldDefinitions.size() == 2
+
+        baseFields.size() == 1
+        baseFields containsInAnyOrder("requiredField")
+
+        List<String> actualFieldNames = actualFieldDefinitions.stream()
+                .map({ fieldDefinition -> fieldDefinition.getName() })
+                .collect(Collectors.toList())
+        actualFieldNames containsInAnyOrder("requiredField", "deprecatedField")
+    }
+
     def "merge Into Base Type interface Type Definition success"() {
         // TODO
     }
