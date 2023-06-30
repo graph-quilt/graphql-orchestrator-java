@@ -45,7 +45,7 @@ public class EntityTypeMerger {
     .filter(entityFieldDefinition-> !definitionContainsDirective(entityFieldDefinition, FEDERATION_EXTERNAL_DIRECTIVE))
     .forEach(newEntityField -> {
       getFieldDefinitions(entityMergingContext.getBaseType()).removeIf(preexistingField ->
-        definitionContainsDirective(preexistingField, RESOLVER_DIRECTIVE_NAME)
+        (definitionContainsDirective(preexistingField, RESOLVER_DIRECTIVE_NAME) || definitionContainsDirective(preexistingField, "deprecated"))
         && preexistingField.getName().equals(newEntityField.getName())
       );
 

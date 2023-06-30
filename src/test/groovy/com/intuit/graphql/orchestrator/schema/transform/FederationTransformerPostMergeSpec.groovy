@@ -20,6 +20,10 @@ class FederationTransformerPostMergeSpec extends Specification {
 
     private FieldDefinition BASE_FIELD_DEFINITION = buildFieldDefinition("testField1")
 
+    private Directive DEPRECATED_DIRECTIVE = buildDirective(buildDirectiveDefinition("deprecated"), null)
+
+    private FieldDefinition BASE_DEPRECATED_FIELD_DEFINITION = buildFieldDefinition("deprecatedField", singletonList(DEPRECATED_DIRECTIVE))
+
     private Directive EXTERNAL_DIRECTIVE = buildDirective(buildDirectiveDefinition(FEDERATION_EXTERNAL_DIRECTIVE), null)
 
     private FieldDefinition EXTENSION_FIELD_DEFINITION = buildFieldDefinition("testField1", singletonList(EXTERNAL_DIRECTIVE))
@@ -34,8 +38,10 @@ class FederationTransformerPostMergeSpec extends Specification {
     Map<String, TypeDefinition> getEntities() {
         Map<String, TypeDefinition> entitiesByTypeName = new HashMap<>()
 
+        List<FieldDefinition> baseFields = Arrays.asList(BASE_FIELD_DEFINITION, BASE_DEPRECATED_FIELD_DEFINITION)
+
         ObjectTypeDefinition baseObjectType =
-                buildObjectTypeDefinition("EntityType", singletonList(BASE_FIELD_DEFINITION))
+                buildObjectTypeDefinition("EntityType", baseFields)
         entitiesByTypeName.put("EntityType", baseObjectType)
 
         return entitiesByTypeName
@@ -140,6 +146,32 @@ class FederationTransformerPostMergeSpec extends Specification {
         2 * unifiedXtextGraphMock.getEntityExtensionsByNamespace() >> extensionsByNamespace
         unifiedXtextGraphMock.getValueTypesByName() >> new HashMap<>()
         unifiedXtextGraphMock.getEntityExtensionMetadatas() >> []
+
+        when:
+        UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock)
+
+        then:
+        actual.is(unifiedXtextGraphMock)
+    }
+
+    def "transform success shared field with deprecated field"(){
+        given:
+        def unifiedXtextGraphMock = Mock(UnifiedXtextGraph)
+
+        Map<String, Map<String, TypeSystemDefinition>> entityExtensionsByNamespace = new HashMap<>()
+        TypeSystemDefinition typeSystemDefinition = createTypeSystemDefinition()
+
+        ObjectTypeDefinition objectTypeExtension =
+                buildObjectTypeDefinition("EntityType", singletonList(buildFieldDefinition("deprecatedField")))
+        typeSystemDefinition.setType(objectTypeExtension)
+        entityExtensionsByNamespace.put("testNamespace", ImmutableMap.of("EntityType", typeSystemDefinition))
+
+        1 * unifiedXtextGraphMock.getEntitiesByTypeName() >> getEntities()
+        1 * unifiedXtextGraphMock.getFieldResolverContexts() >> Collections.emptyList()
+        2 * unifiedXtextGraphMock.getEntityExtensionsByNamespace() >> entityExtensionsByNamespace
+        unifiedXtextGraphMock.getEntityExtensionMetadatas() >> []
+        unifiedXtextGraphMock.getFederationMetadataByNamespace() >> new HashMap<>()
+        unifiedXtextGraphMock.getValueTypesByName() >> new HashMap<>()
 
         when:
         UnifiedXtextGraph actual = subjectUnderTest.transform(unifiedXtextGraphMock)
