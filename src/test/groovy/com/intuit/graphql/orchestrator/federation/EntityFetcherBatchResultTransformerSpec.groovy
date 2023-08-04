@@ -6,6 +6,7 @@ import graphql.ErrorType
 import graphql.GraphQLError
 import graphql.GraphqlErrorBuilder
 import graphql.execution.DataFetcherResult
+import graphql.language.Field
 import graphql.schema.DataFetchingEnvironment
 import spock.lang.Specification
 
@@ -102,6 +103,8 @@ class EntityFetcherBatchResultTransformerSpec extends Specification {
                 .build()
 
         DataFetchingEnvironment keyFieldDFEMock = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock.getField() >> Field.newField("ExtEntityField")
+            .build();
 
         List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock)
 
@@ -139,8 +142,18 @@ class EntityFetcherBatchResultTransformerSpec extends Specification {
                 .build()
 
         DataFetchingEnvironment keyFieldDFEMock = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock.getField() >> Field.newField("ExtEntityField")
+                .build();
 
-        List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock)
+        DataFetchingEnvironment keyFieldDFEMock2 = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock2.getField() >> Field.newField("ExtEntityField")
+                .build();
+
+        DataFetchingEnvironment keyFieldDFEMock3 = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock3.getField() >> Field.newField("ExtEntityField")
+                .build();
+
+        List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock, keyFieldDFEMock3, keyFieldDFEMock3)
 
         when:
         List<DataFetcherResult<Object>> batchResult = specUnderTest.toBatchResult(providerResult, dfeList)
@@ -191,8 +204,18 @@ class EntityFetcherBatchResultTransformerSpec extends Specification {
                 .build()
 
         DataFetchingEnvironment keyFieldDFEMock = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock.getField() >> Field.newField("ExtEntityField")
+                .build();
 
-        List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock)
+        DataFetchingEnvironment keyFieldDFEMock2 = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock2.getField() >> Field.newField("ExtEntityField")
+                .build();
+
+        DataFetchingEnvironment keyFieldDFEMock3 = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock3.getField() >> Field.newField("ExtEntityField")
+                .build();
+
+        List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock, keyFieldDFEMock3, keyFieldDFEMock3)
 
         when:
         List<DataFetcherResult<Object>> batchResult = specUnderTest.toBatchResult(providerResult, dfeList)
@@ -247,8 +270,18 @@ class EntityFetcherBatchResultTransformerSpec extends Specification {
                 .build()
 
         DataFetchingEnvironment keyFieldDFEMock = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock.getField() >> Field.newField("ExtEntityField")
+                .build();
 
-        List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock)
+        DataFetchingEnvironment keyFieldDFEMock2 = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock2.getField() >> Field.newField("ExtEntityField")
+                .build();
+
+        DataFetchingEnvironment keyFieldDFEMock3 = Mock(DataFetchingEnvironment.class)
+        keyFieldDFEMock3.getField() >> Field.newField("ExtEntityField")
+                .build();
+
+        List<DataFetchingEnvironment> dfeList = Arrays.asList(keyFieldDFEMock, keyFieldDFEMock3, keyFieldDFEMock3)
 
         when:
         List<DataFetcherResult<Object>> batchResult = specUnderTest.toBatchResult(providerResult, dfeList)

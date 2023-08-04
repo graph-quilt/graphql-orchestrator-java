@@ -3,18 +3,10 @@ package com.intuit.graphql.orchestrator.integration.federation
 import com.google.common.collect.ImmutableMap
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import com.intuit.graphql.orchestrator.ServiceProvider
-import com.intuit.graphql.orchestrator.testhelpers.MockServiceProvider
-import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
-import com.intuit.graphql.orchestrator.utils.GraphQLUtil
-import com.intuit.graphql.orchestrator.utils.SelectionSetUtil
 import graphql.ExecutionInput
-import graphql.language.Document
-import graphql.language.Field
-import graphql.language.OperationDefinition
-import graphql.parser.Parser
 import helpers.BaseIntegrationTestSpecification
 
-class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecification {
+class FederatedQueryWithEntityKeyAliasedSimpleCaseSpec extends BaseIntegrationTestSpecification {
 
     GraphQLOrchestrator specUnderTest
 
@@ -50,9 +42,8 @@ class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecific
     def setup() {
     }
 
-    def "test Query"() {
+    def "test Federated query single field in entity extension with entity key aliased in query"() {
         given:
-        //def BOOK_QUERY = "query QUERY {bookById(id:\"12345\") {id name pageCount author {authorId:id}}}"
         def bookResponse = [
                 data: [
                         bookById: [
@@ -67,7 +58,7 @@ class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecific
                 ]
         ]
 
-        SimpleMockServiceProvider bookService = createSimpleMockService("bookService",
+        ServiceProvider bookService = createSimpleMockService("bookService",
                 ServiceProvider.ServiceType.FEDERATION_SUBGRAPH, bookSchema, bookResponse)
 
 
@@ -82,7 +73,7 @@ class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecific
                         ]
                 ]
         ]
-        SimpleMockServiceProvider authorService = createSimpleMockService("authorService",
+        ServiceProvider authorService = createSimpleMockService("authorService",
                 ServiceProvider.ServiceType.FEDERATION_SUBGRAPH, authorSchema, authorResponse)
 
 
