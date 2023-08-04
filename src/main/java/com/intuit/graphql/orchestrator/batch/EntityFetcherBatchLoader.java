@@ -58,7 +58,8 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         GraphQLContext graphQLContext = dfeTemplate.getContext();
 
         List<Map<String, Object>> representations = dataFetchingEnvironments.stream()
-            .map(DataFetchingEnvironment::getSource)
+            //.map(DataFetchingEnvironment::getSource)
+            .map(dataFetchingEnvironment -> getSource(dataFetchingEnvironment))
             .map(source -> createRepresentation((Map<String, Object>) source))
             .collect(Collectors.toList());
 
@@ -75,6 +76,12 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         .query(entityQuery.createExecutionInput(), graphQLContext)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, dataFetchingEnvironments));
+    }
+
+    private Map<String, Object> getSource(DataFetchingEnvironment dataFetchingEnvironment) {
+        // TODO
+        // return a POJO with source, and metadata about alias mapping.
+        return dataFetchingEnvironment.getSource();
     }
 
     private List<String> generateRepresentationTemplate(FederationMetadata.EntityExtensionMetadata metadata, String fieldName) {
