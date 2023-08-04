@@ -14,6 +14,7 @@ import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
+import graphql.execution.MergedField;
 import graphql.introspection.Introspection;
 import graphql.language.Field;
 import graphql.language.InlineFragment;
@@ -58,9 +59,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         GraphQLContext graphQLContext = dfeTemplate.getContext();
 
         List<Map<String, Object>> representations = dataFetchingEnvironments.stream()
-            //.map(DataFetchingEnvironment::getSource)
-            .map(dataFetchingEnvironment -> getSource(dataFetchingEnvironment))
-            .map(source -> createRepresentation((Map<String, Object>) source))
+            .map(dataFetchingEnvironment -> createRepresentation(dataFetchingEnvironment))
             .collect(Collectors.toList());
 
         List<InlineFragment> inlineFragments = new ArrayList<>();
@@ -76,12 +75,6 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         .query(entityQuery.createExecutionInput(), graphQLContext)
         .thenApply(queryResponseModifier::modify)
         .thenApply(result -> batchResultTransformer.toBatchResult(result, dataFetchingEnvironments));
-    }
-
-    private Map<String, Object> getSource(DataFetchingEnvironment dataFetchingEnvironment) {
-        // TODO
-        // return a POJO with source, and metadata about alias mapping.
-        return dataFetchingEnvironment.getSource();
     }
 
     private List<String> generateRepresentationTemplate(FederationMetadata.EntityExtensionMetadata metadata, String fieldName) {
@@ -140,20 +133,43 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                                 newField()
                                         .selectionSet(fieldSelectionSet)
                                         .name(originalField.getName())
+                                        .alias(originalField.getAlias())
                                         .build())
                         .build());
         return inlineFragmentBuilder.build();
     }
 
     private Map<String, Object> createRepresentation(
-            Map<String, Object> dataSource
+        DataFetchingEnvironment dataFetchingEnvironment
     ){
+        Map<String, Object> dataSource = dataFetchingEnvironment.getSource();
+        Map<String, String> fieldToAliasMap = buildFieldToAliasMap(dataFetchingEnvironment);
+
         Map<String, Object> entityRepresentation = new HashMap<>();
         entityRepresentation.put(Introspection.TypeNameMetaFieldDef.getName(), this.entityTypeName);
 
         this.representationFieldTemplate
-                .forEach(fieldName -> entityRepresentation.put(fieldName, dataSource.get(fieldName)));
+            .forEach(fieldName -> {
+                String dataSourceKey = fieldToAliasMap.get(fieldName);
+                entityRepresentation.put(fieldName, dataSource.get(dataSourceKey));
+            });
 
         return entityRepresentation;
+    }
+
+    /**
+     * builds mapping of fieldName-alias.  If fieldName has no alias, it will be mapped to itself.
+     *
+     * @param dataFetchingEnvironment
+     * @return
+     */
+    private Map<String, String> buildFieldToAliasMap(DataFetchingEnvironment dataFetchingEnvironment) {
+        MergedField parentField = dataFetchingEnvironment.getExecutionStepInfo().getParent().getField();
+        return parentField.getSingleField().getSelectionSet().getSelections()
+            .stream()
+            .filter(selection -> selection instanceof Field)
+            .map(selection -> (Field) selection)
+            .filter(field -> this.representationFieldTemplate.contains(field.getName()))
+            .collect(Collectors.toMap(field -> field.getName(), field -> field.getAlias() == null? field.getName() : field.getAlias()));
     }
 }

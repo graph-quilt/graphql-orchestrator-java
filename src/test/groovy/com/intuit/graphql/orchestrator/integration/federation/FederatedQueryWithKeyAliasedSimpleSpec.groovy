@@ -16,8 +16,6 @@ import helpers.BaseIntegrationTestSpecification
 
 class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecification {
 
-    Parser parser = GraphQLUtil.parser
-
     GraphQLOrchestrator specUnderTest
 
     private def bookSchema = '''
@@ -62,7 +60,7 @@ class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecific
                                 name     : "GraphQuilt: The future of Schema Stitching",
                                 pageCount: 100,
                                 author   : [
-                                        "author": "12345"
+                                        "authorId": "12345"
                                 ]
                         ]
 
@@ -79,8 +77,7 @@ class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecific
                                 [
                                         __typename: "Author",
                                         id        : "12345",
-                                        firstName : "Charles",
-                                        lastName  : "Wayne"
+                                        authorName : "Charles"
                                 ]
                         ]
                 ]
@@ -113,7 +110,7 @@ class FederatedQueryWithKeyAliasedSimpleSpec extends BaseIntegrationTestSpecific
 
         then:
 
-        def AUTHOR_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Author {firstName}}}"
+        def AUTHOR_QUERY = "query (\$REPRESENTATIONS:[_Any!]!) {_entities(representations:\$REPRESENTATIONS) {... on Author {authorName:firstName}}}"
 
         executionResult.get("errors") == null
         executionResult.get("data") != null
