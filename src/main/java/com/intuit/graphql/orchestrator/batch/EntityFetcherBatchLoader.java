@@ -28,9 +28,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.dataloader.BatchLoader;
 
 public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
@@ -143,15 +145,17 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         DataFetchingEnvironment dataFetchingEnvironment
     ){
         Map<String, Object> dataSource = dataFetchingEnvironment.getSource();
-        Map<String, String> fieldToAliasMap = buildFieldToAliasMap(dataFetchingEnvironment);
+        Map<String, String> keyToAliasMap = buildkeyToAliasMap(dataFetchingEnvironment);
 
         Map<String, Object> entityRepresentation = new HashMap<>();
         entityRepresentation.put(Introspection.TypeNameMetaFieldDef.getName(), this.entityTypeName);
 
         this.representationFieldTemplate
             .forEach(fieldName -> {
-                String dataSourceKey = fieldToAliasMap.get(fieldName);
-                entityRepresentation.put(fieldName, dataSource.get(dataSourceKey));
+                String keyAlias = keyToAliasMap.get(fieldName);
+                String dataSourceKey = keyAlias != null ? keyAlias : fieldName;
+                Object value = Objects.requireNonNull(dataSource.get(dataSourceKey), "Entity Fetch failed.  Key " + dataSourceKey + " not found in source");
+                entityRepresentation.put(fieldName, value);
             });
 
         return entityRepresentation;
@@ -163,7 +167,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
      * @param dataFetchingEnvironment
      * @return
      */
-    private Map<String, String> buildFieldToAliasMap(DataFetchingEnvironment dataFetchingEnvironment) {
+    private Map<String, String> buildkeyToAliasMap(DataFetchingEnvironment dataFetchingEnvironment) {
         MergedField parentField = dataFetchingEnvironment.getExecutionStepInfo().getParent().getField();
         return parentField.getSingleField().getSelectionSet().getSelections()
             .stream()
