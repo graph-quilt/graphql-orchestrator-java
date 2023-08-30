@@ -38,7 +38,7 @@
     <awssdk2.version>2.7.2</awssdk2.version>
     <graphql-sdl-version>3.0.1</graphql-sdl-version>
     <xtextVersion>2.26.0</xtextVersion>
-    <graphQLVersion>17.4</graphQLVersion>
+    <graphQLVersion>17.5</graphQLVersion>
   </properties>
 
   <profiles>
