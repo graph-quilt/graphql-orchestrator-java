@@ -3,6 +3,7 @@ package com.intuit.graphql.orchestrator.batch;
 import com.intuit.graphql.orchestrator.federation.EntityFetchingException;
 import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
+import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -54,8 +55,13 @@ public class EntityFetcherBatchResultTransformer  implements BatchResultTransfor
 
         //using IntStream instead of regular for loop or atomic reference, so we can parallelize this if we want
         IntStream.range(0, _entities.size()).forEach( idx -> {
+
+            DataFetchingEnvironment dataFetchingEnvironment = dataFetchingEnvironments.get(idx);
+            Field field = dataFetchingEnvironment.getField();
+            String fieldNameOrAlias = field.getAlias() == null ? field.getName() : field.getAlias();
+
             Map<String, Object> entityInfo = _entities.get(idx);
-            Object fieldData = (entityInfo != null) ? entityInfo.get(this.extFieldName) : null;
+            Object fieldData = (entityInfo != null) ? entityInfo.get(fieldNameOrAlias) : null;
             List<GraphQLError> graphQLErrors = (List<GraphQLError>) entityInfo.getOrDefault("errors", new ArrayList<>());
 
             dataFetcherResults.add(DataFetcherResult.newResult()

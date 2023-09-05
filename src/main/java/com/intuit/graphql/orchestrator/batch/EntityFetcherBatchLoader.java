@@ -12,8 +12,10 @@ import com.intuit.graphql.orchestrator.federation.EntityQuery;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
+import graphql.execution.MergedField;
 import graphql.introspection.Introspection;
 import graphql.language.Field;
 import graphql.language.InlineFragment;
@@ -27,6 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
@@ -58,8 +61,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         GraphQLContext graphQLContext = dfeTemplate.getContext();
 
         List<Map<String, Object>> representations = dataFetchingEnvironments.stream()
-            .map(DataFetchingEnvironment::getSource)
-            .map(source -> createRepresentation((Map<String, Object>) source))
+            .map(this::createRepresentation)
             .collect(Collectors.toList());
 
         List<InlineFragment> inlineFragments = new ArrayList<>();
@@ -95,6 +97,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                     .additionalInfo("No Key Directive Found")
                     .build();
         }
+
 
         if(CollectionUtils.isNotEmpty(metadata.getRequiredFields(fieldName))) {
             metadata.getRequiredFields(fieldName)
@@ -133,20 +136,44 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                                 newField()
                                         .selectionSet(fieldSelectionSet)
                                         .name(originalField.getName())
+                                        .alias(originalField.getAlias())
                                         .build())
                         .build());
         return inlineFragmentBuilder.build();
     }
 
     private Map<String, Object> createRepresentation(
-            Map<String, Object> dataSource
+        DataFetchingEnvironment dataFetchingEnvironment
     ){
+        Map<String, Object> dataSource = dataFetchingEnvironment.getSource();
+        Map<String, String> keyToAliasMap = buildkeyToAliasMap(dataFetchingEnvironment);
+
         Map<String, Object> entityRepresentation = new HashMap<>();
         entityRepresentation.put(Introspection.TypeNameMetaFieldDef.getName(), this.entityTypeName);
 
         this.representationFieldTemplate
-                .forEach(fieldName -> entityRepresentation.put(fieldName, dataSource.get(fieldName)));
+            .forEach(fieldName -> {
+                String keyAlias = keyToAliasMap.get(fieldName);
+                String dataSourceKey = keyAlias != null ? keyAlias : fieldName;
+                Object value = Objects.requireNonNull(dataSource.get(dataSourceKey), "Entity Fetch failed.  Key " + dataSourceKey + " not found in source");
+                entityRepresentation.put(fieldName, value);
+            });
 
         return entityRepresentation;
     }
+
+    /**
+     * builds mapping of fieldName-alias.  If fieldName has no alias, it will be mapped to itself.
+     */
+    private Map<String, String> buildkeyToAliasMap(DataFetchingEnvironment dataFetchingEnvironment) {
+        MergedField parentField = dataFetchingEnvironment.getExecutionStepInfo().getParent().getField();
+
+        SelectionCollector selectionCollector = new SelectionCollector(dataFetchingEnvironment.getFragmentsByName());
+        return selectionCollector.collectFields(parentField.getSingleField().getSelectionSet())
+            .values()
+            .stream()
+            .filter(field -> this.representationFieldTemplate.contains(field.getName()))
+            .collect(Collectors.toMap(Field::getName, field -> field.getAlias() == null? field.getName() : field.getAlias()));
+    }
+
 }

@@ -16,8 +16,12 @@ import graphql.ExecutionInput
 import graphql.GraphQLContext
 import graphql.Scalars
 import graphql.execution.DataFetcherResult
+import graphql.execution.ExecutionStepInfo
+import graphql.execution.MergedField
 import graphql.language.Field
+import graphql.language.SelectionSet
 import graphql.schema.DataFetchingEnvironment
+import graphql.schema.GraphQLObjectType
 import org.powermock.reflect.Whitebox
 import spock.lang.Specification
 
@@ -33,11 +37,24 @@ class EntityFetcherBatchLoaderSpec extends Specification {
     private FederationMetadata.EntityExtensionMetadata metadataMock
     private ServiceMetadata serviceMetadata
 
-    private String extEntityField = "requestedExtEntityField"
+    private String extEntityFieldName = "requestedExtEntityField"
+    private Field entityField = Field.newField().name(extEntityFieldName).build()
+
+    private String entityKeyField1Name = "keyField1"
+    private String entityKeyFieldValue = "keyValue1"
+
+    Field keyField = Field.newField().name(entityKeyField1Name).build()
+
+    Field parentField = Field.newField().name("parentField")
+            .selectionSet(SelectionSet.newSelectionSet()
+                    .selection(keyField)
+                    .selection(entityField)
+                    .build())
+            .build()
 
     private EntityFetcherBatchLoader specUnderTest
 
-    def setup(){
+    def setup() {
         serviceProviderMock = Mock(ServiceProvider)
         metadataMock = Mock(FederationMetadata.EntityExtensionMetadata)
         serviceMetadata = Mock(ServiceMetadata)
@@ -47,12 +64,12 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         serviceProviderMock.getNameSpace() >> "MOCK_PROVIDER"
     }
 
-    def "batchloader throws exception if no key directive"(){
+    def "batchloader throws exception if no key directive"() {
         given:
         metadataMock.getKeyDirectives() >> Collections.emptyList()
 
         when:
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         then:
         def exception = thrown(RuntimeException)
@@ -60,16 +77,16 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         exception.getMessage().contains("No Key Directive Found")
     }
 
-    def "batchloader creates singular representation request"(){
+    def "batchloader creates singular representation request"() {
         given:
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         when:
-        ServiceProvider  entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
-        String  entityTypeNameField = Whitebox.getInternalState(specUnderTest, "entityTypeName")
+        ServiceProvider entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
+        String entityTypeNameField = Whitebox.getInternalState(specUnderTest, "entityTypeName")
         List<String> representationFieldTemplateField = Whitebox.getInternalState(specUnderTest, "representationFieldTemplate")
         BatchResultTransformer batchResultTransformerField = Whitebox.getInternalState(specUnderTest, "batchResultTransformer")
 
@@ -81,7 +98,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         representationFieldTemplateField.get(0) == "keyField1"
     }
 
-    def "batchLoader required fields are added"(){
+    def "batchLoader required fields are added"() {
         given:
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
@@ -91,13 +108,13 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         requiredFields.add(Field.newField().name("requiredField1").build())
         requiredFields.add(Field.newField().name("requiredField2").build())
 
-        metadataMock.getRequiredFields(extEntityField) >> requiredFields
+        metadataMock.getRequiredFields(extEntityFieldName) >> requiredFields
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         when:
-        ServiceProvider  entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
-        String  entityTypeNameField = Whitebox.getInternalState(specUnderTest, "entityTypeName")
+        ServiceProvider entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
+        String entityTypeNameField = Whitebox.getInternalState(specUnderTest, "entityTypeName")
         List<String> representationFieldTemplateField = Whitebox.getInternalState(specUnderTest, "representationFieldTemplate")
         BatchResultTransformer batchResultTransformerField = Whitebox.getInternalState(specUnderTest, "batchResultTransformer")
 
@@ -112,7 +129,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         representationFieldTemplateField.stream().anyMatch({ templateField -> templateField.equals("requiredField2") })
     }
 
-    def "batchloader creates multiple required fields as single template"(){
+    def "batchloader creates multiple required fields as single template"() {
         given:
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(
                 KeyDirectiveMetadata.from(generateKeyDirective("keyField1")),
@@ -123,11 +140,11 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         when:
-        ServiceProvider  entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
-        String  entityTypeNameField = Whitebox.getInternalState(specUnderTest, "entityTypeName")
+        ServiceProvider entityServiceProviderField = Whitebox.getInternalState(specUnderTest, "entityServiceProvider")
+        String entityTypeNameField = Whitebox.getInternalState(specUnderTest, "entityTypeName")
         List<String> representationFieldTemplateField = Whitebox.getInternalState(specUnderTest, "representationFieldTemplate")
         BatchResultTransformer batchResultTransformerField = Whitebox.getInternalState(specUnderTest, "batchResultTransformer")
 
@@ -147,16 +164,17 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         DataFetchingEnvironment dfeMock = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfeDataSource = new HashMap<>()
-        dfeDataSource.put("keyField1", "keyValue")
+        dfeDataSource.put(entityKeyField1Name, entityKeyFieldValue)
 
         dfeMock.getSource() >> dfeDataSource
-        dfeMock.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock.getField() >> entityField
         dfeMock.getFieldType() >> Scalars.GraphQLString
         dfeMock.getContext() >> GraphQLContext.newContext().build()
+        dfeMock.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         AtomicReference<ExecutionInput> queryToProviderRef = new AtomicReference<>()
 
@@ -166,7 +184,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
             HashMap<String, Object> data = new HashMap<>()
             List<HashMap<String, Object>> entities = new ArrayList<>()
             HashMap<String, Object> entity = new HashMap<>()
-            entity.put(extEntityField, "ENTITY1_FIELD")
+            entity.put(extEntityFieldName, "ENTITY1_FIELD")
             entities.add(entity)
             data.put("data", ImmutableMap.of("_entities", entities))
             return CompletableFuture.completedFuture(data)
@@ -194,7 +212,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
 
         representationVariables.size() == 1
         representationVariables.get(0).get("__typename") == "MOCK_ENTITY"
-        representationVariables.get(0).get("keyField1") == "keyValue"
+        representationVariables.get(0).get(entityKeyField1Name) == "keyValue1"
     }
 
     def "batchloader retrieves entity for singular dfe null result"() {
@@ -202,16 +220,17 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         DataFetchingEnvironment dfeMock = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfeDataSource = new HashMap<>()
         dfeDataSource.put("keyField1", "keyValue")
 
         dfeMock.getSource() >> dfeDataSource
-        dfeMock.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock.getFieldType() >> Scalars.GraphQLString
         dfeMock.getContext() >> GraphQLContext.newContext().build()
+        dfeMock.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         AtomicReference<ExecutionInput> queryToProviderRef = new AtomicReference<>()
 
@@ -221,7 +240,7 @@ class EntityFetcherBatchLoaderSpec extends Specification {
             HashMap<String, Object> data = new HashMap<>()
             List<HashMap<String, Object>> entities = new ArrayList<>()
             HashMap<String, Object> entity = new HashMap<>()
-            entity.put(extEntityField, null)
+            entity.put(extEntityFieldName, null)
             entities.add(entity)
             data.put("data", ImmutableMap.of("_entities", entities))
             return CompletableFuture.completedFuture(data)
@@ -253,33 +272,36 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         DataFetchingEnvironment dfeMock1 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe1DataSource = new HashMap<>()
         dfe1DataSource.put("keyField1", "dfeKey1")
 
         dfeMock1.getSource() >> dfe1DataSource
-        dfeMock1.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock1.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock1.getFieldType() >> Scalars.GraphQLString
         dfeMock1.getContext() >> GraphQLContext.newContext().build()
+        dfeMock1.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         DataFetchingEnvironment dfeMock2 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe2DataSource = new HashMap<>()
         dfe2DataSource.put("keyField1", "dfeKey2")
 
         dfeMock2.getSource() >> dfe2DataSource
-        dfeMock2.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock2.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock2.getFieldType() >> Scalars.GraphQLString
         dfeMock2.getContext() >> GraphQLContext.newContext().build()
+        dfeMock2.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         DataFetchingEnvironment dfeMock3 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe3DataSource = new HashMap<>()
         dfe3DataSource.put("keyField1", "dfeKey3")
 
         dfeMock3.getSource() >> dfe3DataSource
-        dfeMock3.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock3.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock3.getContext() >> GraphQLContext.newContext().build()
+        dfeMock3.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         AtomicReference<ExecutionInput> queryToProviderRef = new AtomicReference<>()
 
@@ -289,9 +311,9 @@ class EntityFetcherBatchLoaderSpec extends Specification {
             Map<String, Object> data = new HashMap<>()
             List<Map<String, Object>> entities = new ArrayList<>()
 
-            Map<String, Object> entity1 = ImmutableMap.of(extEntityField, "ENTITY1_FIELD")
-            Map<String, Object> entity2 = ImmutableMap.of(extEntityField, "ENTITY2_FIELD")
-            Map<String, Object> entity3 = ImmutableMap.of(extEntityField, "ENTITY3_FIELD")
+            Map<String, Object> entity1 = ImmutableMap.of(extEntityFieldName, "ENTITY1_FIELD")
+            Map<String, Object> entity2 = ImmutableMap.of(extEntityFieldName, "ENTITY2_FIELD")
+            Map<String, Object> entity3 = ImmutableMap.of(extEntityFieldName, "ENTITY3_FIELD")
 
             entities.add(entity1)
             entities.add(entity2)
@@ -337,33 +359,36 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         List<KeyDirectiveMetadata> keyDirectives = Arrays.asList(KeyDirectiveMetadata.from(generateKeyDirective("keyField1")))
         metadataMock.getKeyDirectives() >> keyDirectives
 
-        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityField)
+        specUnderTest = new EntityFetcherBatchLoader(metadataMock, serviceMetadata, extEntityFieldName)
 
         DataFetchingEnvironment dfeMock1 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe1DataSource = new HashMap<>()
         dfe1DataSource.put("keyField1", "dfeKey1")
 
         dfeMock1.getSource() >> dfe1DataSource
-        dfeMock1.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock1.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock1.getFieldType() >> Scalars.GraphQLString
         dfeMock1.getContext() >> GraphQLContext.newContext().build()
+        dfeMock1.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         DataFetchingEnvironment dfeMock2 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe2DataSource = new HashMap<>()
         dfe2DataSource.put("keyField1", "dfeKey2")
 
         dfeMock2.getSource() >> dfe2DataSource
-        dfeMock2.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock2.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock2.getFieldType() >> Scalars.GraphQLString
         dfeMock2.getContext() >> GraphQLContext.newContext().build()
+        dfeMock2.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         DataFetchingEnvironment dfeMock3 = Mock(DataFetchingEnvironment.class)
         Map<String, Object> dfe3DataSource = new HashMap<>()
         dfe3DataSource.put("keyField1", "dfeKey3")
 
         dfeMock3.getSource() >> dfe3DataSource
-        dfeMock3.getField() >> Field.newField().name(extEntityField).build()
+        dfeMock3.getField() >> Field.newField().name(extEntityFieldName).build()
         dfeMock3.getContext() >> GraphQLContext.newContext().build()
+        dfeMock3.getExecutionStepInfo() >> createExecutionStepInfo(keyField, parentField)
 
         AtomicReference<ExecutionInput> queryToProviderRef = new AtomicReference<>()
 
@@ -373,11 +398,11 @@ class EntityFetcherBatchLoaderSpec extends Specification {
             Map<String, Object> data = new HashMap<>()
             List<Map<String, Object>> entities = new ArrayList<>()
 
-            Map<String, Object> entity1 = ImmutableMap.of(extEntityField, "ENTITY1_FIELD")
+            Map<String, Object> entity1 = ImmutableMap.of(extEntityFieldName, "ENTITY1_FIELD")
             Map<String, Object> entity2 = new HashMap()
-            entity2.put(extEntityField, null)
+            entity2.put(extEntityFieldName, null)
 
-            Map<String, Object> entity3 = ImmutableMap.of(extEntityField, "ENTITY3_FIELD")
+            Map<String, Object> entity3 = ImmutableMap.of(extEntityFieldName, "ENTITY3_FIELD")
 
             entities.add(entity1)
             entities.add(entity2)
@@ -433,5 +458,20 @@ class EntityFetcherBatchLoaderSpec extends Specification {
         keyDir.setDefinition(keyDefinition)
         keyDir.getArguments().add(fieldsArgument)
         return keyDir
+    }
+
+    private ExecutionStepInfo createExecutionStepInfo(Field field, Field parentField) {
+        return ExecutionStepInfo.newExecutionStepInfo()
+                .type(Scalars.GraphQLString)
+                .field(MergedField.newMergedField()
+                        .addField(field)
+                        .build())
+                .parentInfo(ExecutionStepInfo.newExecutionStepInfo()
+                        .field(MergedField.newMergedField()
+                                .addField(parentField)
+                                .build())
+                        .type(GraphQLObjectType.newObject().name("ParentType").build())
+                        .build())
+                .build()
     }
 }
