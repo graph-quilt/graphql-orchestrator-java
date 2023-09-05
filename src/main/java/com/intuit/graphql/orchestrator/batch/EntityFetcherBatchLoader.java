@@ -12,11 +12,13 @@ import com.intuit.graphql.orchestrator.federation.EntityQuery;
 import com.intuit.graphql.orchestrator.federation.metadata.FederationMetadata;
 import com.intuit.graphql.orchestrator.federation.metadata.KeyDirectiveMetadata;
 import com.intuit.graphql.orchestrator.schema.ServiceMetadata;
+import com.intuit.graphql.orchestrator.utils.SelectionCollector;
 import graphql.GraphQLContext;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.MergedField;
 import graphql.introspection.Introspection;
 import graphql.language.Field;
+import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
 import graphql.language.SelectionSet;
 import graphql.language.TypeName;
@@ -25,6 +27,7 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +35,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.dataloader.BatchLoader;
 
 public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnvironment, DataFetcherResult<Object>> {
@@ -97,6 +99,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
                     .additionalInfo("No Key Directive Found")
                     .build();
         }
+
 
         if(CollectionUtils.isNotEmpty(metadata.getRequiredFields(fieldName))) {
             metadata.getRequiredFields(fieldName)
@@ -169,11 +172,13 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
      */
     private Map<String, String> buildkeyToAliasMap(DataFetchingEnvironment dataFetchingEnvironment) {
         MergedField parentField = dataFetchingEnvironment.getExecutionStepInfo().getParent().getField();
-        return parentField.getSingleField().getSelectionSet().getSelections()
+
+        SelectionCollector selectionCollector = new SelectionCollector(dataFetchingEnvironment.getFragmentsByName());
+        return selectionCollector.collectFields(parentField.getSingleField().getSelectionSet())
+            .values()
             .stream()
-            .filter(selection -> selection instanceof Field)
-            .map(selection -> (Field) selection)
             .filter(field -> this.representationFieldTemplate.contains(field.getName()))
             .collect(Collectors.toMap(field -> field.getName(), field -> field.getAlias() == null? field.getName() : field.getAlias()));
     }
+
 }

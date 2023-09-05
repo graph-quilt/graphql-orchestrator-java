@@ -117,8 +117,6 @@ class FederationQueryWithFieldSelectionsOnlySpec extends BaseIntegrationTestSpec
                 data: [
                         _entities: [
                                 [
-                                        __typename  : "Author",
-                                        id          : "12345",
                                         (fnameField): "Charles"
                                 ]
                         ]
@@ -212,8 +210,6 @@ class FederationQueryWithFieldSelectionsOnlySpec extends BaseIntegrationTestSpec
                 (FNAME_ENTITY_FETCH_QUERY): [data: [
                         _entities: [
                                 [
-                                        __typename: "Author",
-                                        id        : "12345",
                                         firstName : "Charles"
                                 ]
                         ]
@@ -221,8 +217,6 @@ class FederationQueryWithFieldSelectionsOnlySpec extends BaseIntegrationTestSpec
                 (LNAME_ENTITY_FETCH_QUERY): [data: [
                         _entities: [
                                 [
-                                        __typename: "Author",
-                                        id        : "12345",
                                         lastName  : "Charles-LastName"
                                 ]
                         ]
