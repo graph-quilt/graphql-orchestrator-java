@@ -18,7 +18,6 @@ import graphql.execution.DataFetcherResult;
 import graphql.execution.MergedField;
 import graphql.introspection.Introspection;
 import graphql.language.Field;
-import graphql.language.FragmentDefinition;
 import graphql.language.InlineFragment;
 import graphql.language.SelectionSet;
 import graphql.language.TypeName;
@@ -27,7 +26,6 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeUtil;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +61,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
         GraphQLContext graphQLContext = dfeTemplate.getContext();
 
         List<Map<String, Object>> representations = dataFetchingEnvironments.stream()
-            .map(dataFetchingEnvironment -> createRepresentation(dataFetchingEnvironment))
+            .map(this::createRepresentation)
             .collect(Collectors.toList());
 
         List<InlineFragment> inlineFragments = new ArrayList<>();
@@ -166,9 +164,6 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
 
     /**
      * builds mapping of fieldName-alias.  If fieldName has no alias, it will be mapped to itself.
-     *
-     * @param dataFetchingEnvironment
-     * @return
      */
     private Map<String, String> buildkeyToAliasMap(DataFetchingEnvironment dataFetchingEnvironment) {
         MergedField parentField = dataFetchingEnvironment.getExecutionStepInfo().getParent().getField();
@@ -178,7 +173,7 @@ public class EntityFetcherBatchLoader implements BatchLoader<DataFetchingEnviron
             .values()
             .stream()
             .filter(field -> this.representationFieldTemplate.contains(field.getName()))
-            .collect(Collectors.toMap(field -> field.getName(), field -> field.getAlias() == null? field.getName() : field.getAlias()));
+            .collect(Collectors.toMap(Field::getName, field -> field.getAlias() == null? field.getName() : field.getAlias()));
     }
 
 }
