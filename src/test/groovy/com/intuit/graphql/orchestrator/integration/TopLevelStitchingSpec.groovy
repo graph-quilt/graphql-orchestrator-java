@@ -4,7 +4,9 @@ import com.google.common.collect.ImmutableMap
 import com.intuit.graphql.orchestrator.ServiceProvider
 import com.intuit.graphql.orchestrator.TestHelper
 import com.intuit.graphql.orchestrator.TestServiceProvider
+import com.intuit.graphql.orchestrator.schema.Operation
 import com.intuit.graphql.orchestrator.stitching.StitchingException
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
@@ -85,6 +87,8 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(Operation.QUERY, graphqlQuery, (SimpleMockServiceProvider) personService)
+        compareQueryToExecutionInput(null, null, (SimpleMockServiceProvider) epsService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.person?.name instanceof String && data.person?.name == "Test Name"
@@ -104,18 +108,22 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(Operation.QUERY, graphqlQuery, (SimpleMockServiceProvider) epsService)
+        compareQueryToExecutionInput(null, null, (SimpleMockServiceProvider) personService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.Profile?.prefFirstName instanceof String && data.Profile?.prefFirstName == "First Name"
         data.Profile?.prefLastName instanceof String && data.Profile?.prefLastName == "Last Name"
         data.Profile?.version instanceof Integer && data.Profile?.version == Short.MAX_VALUE
+
     }
 
     def "Eps service is stitched and mutation query is successful"() {
         given:
         specUnderTest = createGraphQLOrchestrator([epsMutationService, personService])
 
-        def graphqlQuery = "mutation { upsertProfile(corpId: \"test corp\", input: {version: ${Short.MAX_VALUE}}) { prefFirstName prefLastName version } }"
+        def baseGraphqlQuery = "{ upsertProfile(corpId: \"test corp\", input: {version: ${Short.MAX_VALUE}}) { prefFirstName prefLastName version } }"
+        def graphqlQuery = "mutation " + baseGraphqlQuery
 
         ExecutionInput executionInput = createExecutionInput(graphqlQuery)
 
@@ -123,6 +131,8 @@ class TopLevelStitchingSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(Operation.MUTATION, baseGraphqlQuery, (SimpleMockServiceProvider) epsMutationService)
+        compareQueryToExecutionInput(null, null, (SimpleMockServiceProvider) personService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.upsertProfile?.prefFirstName instanceof String && data.upsertProfile?.prefFirstName == "First Name"

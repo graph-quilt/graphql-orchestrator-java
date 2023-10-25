@@ -2,6 +2,7 @@ package helpers
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
 import com.intuit.graphql.orchestrator.ServiceProvider
+import com.intuit.graphql.orchestrator.schema.Operation
 import com.intuit.graphql.orchestrator.schema.RuntimeGraph
 import com.intuit.graphql.orchestrator.stitching.SchemaStitcher
 import com.intuit.graphql.orchestrator.testhelpers.MockServiceProvider
@@ -108,6 +109,43 @@ class BaseIntegrationTestSpecification extends Specification {
 
     static ExecutionInput createExecutionInput(String graphqlQuery) {
         createExecutionInput(graphqlQuery, Collections.emptyMap())
+    }
+
+    static boolean compareQueryToExecutionInput(Operation operation, String query,
+                                                SimpleMockServiceProvider simpleMockServiceProvider) {
+        if (query == null) {
+            return getExecutionInputQueryNoSpace(simpleMockServiceProvider) == null
+        }
+        else {
+            String graphQuery = (operation != null) ? operation.toString().toLowerCase() +
+                                                      operation.toString().toUpperCase() + query
+                                                    : query
+            graphQuery = graphQuery.replaceAll("\\s", "");
+            return (graphQuery) == getExecutionInputQueryNoSpace(simpleMockServiceProvider)
+        }
+    }
+
+    static String getExecutionInputQueryNoSpace(SimpleMockServiceProvider simpleMockServiceProvider) {
+        String query = getExecutionInputQuery(simpleMockServiceProvider)
+        return query != null ? query.replaceAll("\\s", "") : null
+    }
+
+    static String getExecutionInputQuery(SimpleMockServiceProvider simpleMockServiceProvider) {
+        try {
+            Object executionInputArgs = simpleMockServiceProvider.executionInputArgumentCaptor.capturingMatcher.arguments
+            return (executionInputArgs != null && !executionInputArgs.isEmpty())
+                    ? executionInputArgs.get(0).query
+                    : null;
+        } catch (NullPointerException e) {
+            return null;    // NPE hidden as its expected to be thrown
+        }
+    }
+
+    static String checkIfKeyExistsInDataFetcherMap(GraphQLOrchestrator graphQLOrchestrator, String key){
+        return graphQLOrchestrator.runtimeGraph.codeRegistry.dataFetcherMap.entrySet().stream().anyMatch(
+                { entry ->
+                    (String.format("%s.%s", entry.getKey().getTypeName(), entry.getKey().getFieldName().toString())
+                            != key) })
     }
 
     ExecutionInput getCapturedDownstreamExecutionInput() {
