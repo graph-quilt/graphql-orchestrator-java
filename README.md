@@ -147,7 +147,7 @@ type Address {
 
 ### Graph Quilt Gateway
 
-[Graph Quilt Gateway](https://github.com/graph-quilt/graph-quilt-gateway) is a SpringBoot application that uses the graphql-orchestrator-java.
+[Graph Quilt Gateway](https://github.com/graph-quilt/graphql-gateway-java) is a SpringBoot application that uses the graphql-orchestrator-java.
 
 ### Documentation
 
