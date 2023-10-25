@@ -120,6 +120,14 @@ class NestedFieldResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        specUnderTest.runtimeGraph.codeRegistry.dataFetcherMap.size() == 6
+        checkIfKeyExistsInDataFetcherMap(specUnderTest, "BObjectType.bObjectField")
+        checkIfKeyExistsInDataFetcherMap(specUnderTest, "Query.cTopField")
+        checkIfKeyExistsInDataFetcherMap(specUnderTest, "Query._namespace")
+        checkIfKeyExistsInDataFetcherMap(specUnderTest, "Query.arootField")
+        checkIfKeyExistsInDataFetcherMap(specUnderTest, "Query.bTopField")
+        checkIfKeyExistsInDataFetcherMap(specUnderTest, "AObjectType.cTopField")
+
         executionResult.getErrors().isEmpty()
         executionResult?.data?.bTopField?.size() == 2
         executionResult?.data?.bTopField[0]?.size() == 2

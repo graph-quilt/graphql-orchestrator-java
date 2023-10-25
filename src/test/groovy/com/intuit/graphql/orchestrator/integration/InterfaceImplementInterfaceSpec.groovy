@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import graphql.schema.GraphQLInterfaceType
@@ -130,6 +131,9 @@ class InterfaceImplementInterfaceSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                "queryQUERY{pets{edges{...onDogEdge{node{idnameisServiceDog__typename}__typename}__typename}__typename}}",
+                (SimpleMockServiceProvider) testService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
 

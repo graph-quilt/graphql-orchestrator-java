@@ -1,6 +1,8 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
+import com.intuit.graphql.orchestrator.schema.Operation
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
@@ -57,6 +59,7 @@ class JavaPrimitiveScalarSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(Operation.QUERY, graphqlQuery, (SimpleMockServiceProvider) testService);
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.a instanceof Long && data.a == Long.MAX_VALUE

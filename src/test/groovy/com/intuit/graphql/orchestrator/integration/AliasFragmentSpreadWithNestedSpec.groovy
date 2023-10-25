@@ -59,15 +59,19 @@ class AliasFragmentSpreadWithNestedSpec extends BaseIntegrationTestSpecification
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        //query QUERY {
+        //      a {b {foo:c(a:"foo") {d {f1}}}}
+        //      a {b {bar:c(a:"bar") {d {f2}}}}
+        // }
+        compareQueryToExecutionInput(null,
+                                    "queryQUERY{a{b{foo:c(a:\"foo\"){d{f1}}bar:c(a:\"bar\"){d{f2}}}}}", service1)
+        compareQueryToExecutionInput(null,null, service2)
+
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.a?.b?.foo?.d?.f1 instanceof String && data.a?.b?.foo?.d?.f1 == "foo1"
         data.a?.b?.bar?.d?.f2 instanceof String && data.a?.b?.bar?.d?.f2 == "bar2"
 
-        //query QUERY {
-        //      a {b {foo:c(a:"foo") {d {f1}}}}
-        //      a {b {bar:c(a:"bar") {d {f2}}}}
-        // }
     }
 
     def "Fragments used at the type-merge level with arguments"() {
@@ -92,6 +96,15 @@ class AliasFragmentSpreadWithNestedSpec extends BaseIntegrationTestSpecification
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        //    fragment fr on C {d {f1 f2}}
+        //
+        //    query QUERY {
+        //        a {b {foo:c(a:"foo") {...fr}}}
+        //        a {b {bar:c(a:"bar") {...fr}}}
+        //    }
+        compareQueryToExecutionInput(null,
+                "fragmentfronC{d{f1f2}}queryQUERY{a{b{foo:c(a:\"foo\"){...fr}bar:c(a:\"bar\"){...fr}}}}", service1)
+        compareQueryToExecutionInput(null,null, service2)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.a?.b?.foo?.d?.f1 instanceof String && data.a?.b?.foo?.d?.f1 == "foo1"
@@ -100,12 +113,7 @@ class AliasFragmentSpreadWithNestedSpec extends BaseIntegrationTestSpecification
         data.a?.b?.bar?.d?.f2 instanceof String && data.a?.b?.bar?.d?.f2 == "bar2"
     }
 
-//    fragment fr on C {d {f1 f2}}
-//
-//    query QUERY {
-//        a {b {foo:c(a:"foo") {...fr}}}
-//        a {b {bar:c(a:"bar") {...fr}}}
-//    }
+
     def "Basic Nested"() {
         given:
         def mockServiceResponseBasic1 = [
@@ -150,6 +158,15 @@ class AliasFragmentSpreadWithNestedSpec extends BaseIntegrationTestSpecification
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        //    fragment fr on C {d {f1 f2}}
+        //
+        //    query QUERY {
+        //        a {b {foo:c(a:"foo") {...fr}}}
+        //        a {b {bar:c(a:"bar") {...fr}}}
+        //    }
+        compareQueryToExecutionInput(null,
+                "queryQUERY{a{b{c(a:\"foo\"){d{f1f2}}}e{f1}}}", service1)
+        compareQueryToExecutionInput(null,"queryQUERY{a{b{c(a:\"foo\"){f{f1f2}}}}}", service2)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.a?.b?.c?.d?.f1 instanceof String && data.a?.b?.c?.d?.f1 == "foo1"
@@ -158,11 +175,5 @@ class AliasFragmentSpreadWithNestedSpec extends BaseIntegrationTestSpecification
         data.a?.b?.c?.f?.f2 instanceof String && data.a?.b?.c?.f?.f2 == "bar2"
         data.a?.e?.f1 instanceof String && data.a?.e?.f1 == "eoo"
     }
-
-//    fragment fr on C {d {f1 f2}}
-//
-//    query QUERY {
-//        a {b {foo:c(a:"foo") {...fr}}}
-//        a {b {bar:c(a:"bar") {...fr}}}
-//    }
+    
 }
