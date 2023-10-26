@@ -1,6 +1,8 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
+import com.intuit.graphql.orchestrator.schema.Operation
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import graphql.schema.GraphQLArgument
@@ -64,6 +66,8 @@ class CustomScalarsSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                "query QUERY { uuid url }", (SimpleMockServiceProvider) testService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.uuid instanceof String && data.uuid == "123e4567-e89b-12d3-a456-426614174000"
