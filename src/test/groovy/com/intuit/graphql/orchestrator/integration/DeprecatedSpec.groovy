@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
@@ -53,6 +54,9 @@ class DeprecatedSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                'query TestQuery($a1: String, $a2: InputType) {x(arg1: $a1, arg2: $a2)}',
+                (SimpleMockServiceProvider) testService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.x instanceof String && data.x == "some value for x"

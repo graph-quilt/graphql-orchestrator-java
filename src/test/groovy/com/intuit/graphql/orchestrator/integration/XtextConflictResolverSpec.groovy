@@ -178,6 +178,10 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                "query QUERY { a { test alpha } }", (SimpleMockServiceProvider) serviceA)
+        compareQueryToExecutionInput(null,
+                null, (SimpleMockServiceProvider) serviceB)
         executionResult.getErrors().isEmpty()
 
         specUnderTest.runtimeGraph?.getType("MyType1") != null
@@ -215,6 +219,10 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                null, (SimpleMockServiceProvider) serviceA)
+        compareQueryToExecutionInput(null,
+                "query QUERY { b { test beta } }", (SimpleMockServiceProvider) serviceB)
         executionResult.getErrors().isEmpty()
 
         specUnderTest.runtimeGraph?.getType("MyType1") != null
@@ -305,6 +313,10 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                "query QUERY { a { test alpha } }", (SimpleMockServiceProvider) serviceA)
+        compareQueryToExecutionInput(null,
+                null, (SimpleMockServiceProvider) serviceB)
         executionResult.getErrors().isEmpty()
 
         specUnderTest.runtimeGraph?.getExecutableSchema().getType("Query").getFieldDefinition("b") == null
@@ -342,6 +354,10 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                null, (SimpleMockServiceProvider) serviceA)
+        compareQueryToExecutionInput(null,
+                "query QUERY { bb { test beta } }", (SimpleMockServiceProvider) serviceB)
         executionResult.getErrors().isEmpty()
 
         specUnderTest.runtimeGraph?.getExecutableSchema().getType("Query").getFieldDefinition("b") == null
@@ -450,6 +466,10 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                "fragment NameFragment on IName { name } query QUERY { a {...NameFragment test alpha}}", (SimpleMockServiceProvider) serviceA)
+        compareQueryToExecutionInput(null,
+                null, (SimpleMockServiceProvider) serviceB)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.a?.name instanceof String && data.a?.name == "A A"
@@ -487,6 +507,10 @@ class XtextConflictResolverSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                null, (SimpleMockServiceProvider) serviceA)
+        compareQueryToExecutionInput(null,
+                "fragment NameFragment on ITheName { name } query QUERY { b {...NameFragment test beta}}", (SimpleMockServiceProvider) serviceB)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.b?.name instanceof String && data.b?.name == "B B"

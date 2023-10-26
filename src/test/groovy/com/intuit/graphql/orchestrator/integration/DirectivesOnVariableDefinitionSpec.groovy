@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import graphql.language.Directive
@@ -51,6 +52,9 @@ class DirectivesOnVariableDefinitionSpec extends BaseIntegrationTestSpecificatio
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                'query TestQuery($stringVar: String @directiveOnVar(dirArg : "dirArgValue")){field(stringArg: $stringVar)}',
+                (SimpleMockServiceProvider) testService)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.field instanceof String && data.field == "SomeString"

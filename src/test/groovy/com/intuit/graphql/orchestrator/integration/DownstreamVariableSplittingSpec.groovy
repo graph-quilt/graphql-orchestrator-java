@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.integration
 
 import com.intuit.graphql.orchestrator.GraphQLOrchestrator
+import com.intuit.graphql.orchestrator.testhelpers.SimpleMockServiceProvider
 import graphql.ExecutionInput
 import graphql.ExecutionResult
 import helpers.BaseIntegrationTestSpecification
@@ -69,6 +70,12 @@ class DownstreamVariableSplittingSpec extends BaseIntegrationTestSpecification {
         ExecutionResult executionResult = specUnderTest.execute(executionInput).get()
 
         then:
+        compareQueryToExecutionInput(null,
+                'query TestQuery($objectVarA: InputA){fieldA(objectArgA: $objectVarA)}',
+                (SimpleMockServiceProvider) testServiceA)
+        compareQueryToExecutionInput(null,
+                'query TestQuery($stringVarB: String){fieldB(stringArgB: $stringVarB)}',
+                (SimpleMockServiceProvider) testServiceB)
         executionResult.getErrors().isEmpty()
         Map<String, Object> data = executionResult.getData()
         data.fieldA instanceof String && data.fieldA == "SomeStringA"
