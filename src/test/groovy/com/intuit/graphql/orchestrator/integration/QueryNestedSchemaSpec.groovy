@@ -195,6 +195,7 @@ class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
         personQuery.contains("person")
         personQuery.contains("id")
         personQuery.contains("name")
+        compareQueryToExecutionInput(null, "query QUERY {person {name id}}", personService)
 
         //  bookService
         ExecutionInput bookServiceExecutionInput = getCapturedDownstreamExecutionInput(bookService)
@@ -206,6 +207,7 @@ class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
         bookQuery.contains("book")
         bookQuery.contains("id")
         bookQuery.contains("name")
+        compareQueryToExecutionInput(null, "query QUERY {person {book {id name}}}", bookService)
 
         //  petsService
         ExecutionInput petsServiceExecutionInput = getCapturedDownstreamExecutionInput(petsService)
@@ -216,6 +218,7 @@ class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
         petsQuery.contains("person")
         petsQuery.contains("pets")
         petsQuery.contains("name")
+        compareQueryToExecutionInput(null, "query QUERY {person {pets {name}}}", petsService)
     }
 
 }

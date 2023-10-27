@@ -239,6 +239,8 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
         pet_type_field.getDirectives().get(0).getName() == "include"
         pet_type_field.getDirectives().get(0).getArgument("if") != null
 
+        compareQueryToExecutionInput(null, """query BooksPetsAndUsers(\$includeType:Boolean!) {pets {id name type @include(if:\$includeType)}}""", petsService)
+
         //  userService
         ExecutionInput userServiceExecutionInput = getCapturedDownstreamExecutionInput(userService)
         Map<String, Object> userServiceVariables = userServiceExecutionInput.getVariables()
@@ -254,6 +256,8 @@ class QueryDirectiveSpec extends BaseIntegrationTestSpecification {
         users_lastName_field.getDirectives().size() == 1
         users_lastName_field.getDirectives().get(0).getName() == "include"
         users_lastName_field.getDirectives().get(0).getArgument("if") != null
+
+        compareQueryToExecutionInput(null, "query BooksPetsAndUsers(\$includeType:Boolean!) {users {id firstName lastName @include(if:\$includeType)}}", userService)
     }
 
 }

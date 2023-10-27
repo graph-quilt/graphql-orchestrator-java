@@ -134,6 +134,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         query.contains("charIdName")
         query.contains("appearsIn")
         query.contains("Character")
+        compareQueryToExecutionInput(null, "fragment charIdName on Character {id name} query QUERY {hero {__typename ...charIdName appearsIn ... on Droid {primaryFunction}}}", starWarsService)
 
         Document document = parser.parseDocument(serviceExecutionInput.getQuery())
         document.getDefinitions().size() == 2
@@ -193,6 +194,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         query.contains("name")
         query.contains("appearsIn")
         query.contains("homePlanet")
+        compareQueryToExecutionInput(null, "query QUERY {human {name appearsIn homePlanet}}", starWarsService)
 
         Document document = parser.parseDocument(serviceExecutionInput.getQuery())
         document.getDefinitions().size() == 1
@@ -258,6 +260,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         query.contains("characters")
         query.contains("name")
         query.contains("appearsIn")
+        compareQueryToExecutionInput(null, "query QUERY {characters {name appearsIn __typename}}", starWarsService)
 
         Document document = parser.parseDocument(serviceExecutionInput.getQuery())
         document.getDefinitions().size() == 1
@@ -317,6 +320,7 @@ class QueryInterfaceSpec extends BaseIntegrationTestSpecification {
         query.contains("QueryHuman")
         query.contains("human")
         query.contains("name")
+        compareQueryToExecutionInput(null, "query QueryHuman(\$humanId:String) {human(id:\$humanId) {name homePlanet}}", starWarsService)
     }
 
 }
