@@ -167,6 +167,8 @@ class QueryNestedSchemaSpec extends BaseIntegrationTestSpecification {
         Map<String, Object> executionResult = specUnderTest.execute(personEI).get().toSpecification()
 
         then:
+        compareQueryToExecutionInput(null, "queryQUERY{person{pets{name}}}",
+                (SimpleMockServiceProvider) petsService)
         executionResult.get("errors") == null
         executionResult.get("data") != null
 
