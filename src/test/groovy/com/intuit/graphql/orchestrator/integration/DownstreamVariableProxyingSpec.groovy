@@ -65,6 +65,8 @@ class DownstreamVariableProxyingSpec extends BaseIntegrationTestSpecification {
         OperationDefinition operationDefinition = document.getOperationDefinition("TestQuery").get()
         operationDefinition.getVariableDefinitions().size() == 0
         serviceAExecutionInput.getVariables().size() == 0
+
+        compareQueryToExecutionInput(null, "query TestQuery {fieldA(objectArgA:null)}", testServiceA)
     }
 
     def "No Variable Definitions but with Variable Data, variable data not proxied"() {
@@ -96,6 +98,8 @@ class DownstreamVariableProxyingSpec extends BaseIntegrationTestSpecification {
         OperationDefinition operationDefinition = document.getOperationDefinition("TestQuery").get()
         operationDefinition.getVariableDefinitions().size() == 0
         serviceAExecutionInput.getVariables().size() == 0
+
+        compareQueryToExecutionInput(null, "query TestQuery {fieldA(objectArgA:null)}", testServiceA)
     }
 
     def "With variable definitions and variable data, variables are proxied"() {
@@ -127,6 +131,8 @@ class DownstreamVariableProxyingSpec extends BaseIntegrationTestSpecification {
         OperationDefinition operationDefinition = document.getOperationDefinition("TestQuery").get()
         operationDefinition.getVariableDefinitions().get(0).getName() == "varDef"
         serviceAExecutionInput.getVariables()["varDef"] == [ s : "String Input" ]
+
+        compareQueryToExecutionInput(null, "query TestQuery(\$varDef:InputA) {fieldA(objectArgA:\$varDef)}", testServiceA)
     }
 
     def "With variable definitions but no variable Data, variables definitions are proxied"() {
@@ -156,6 +162,8 @@ class DownstreamVariableProxyingSpec extends BaseIntegrationTestSpecification {
         OperationDefinition operationDefinition = document.getOperationDefinition("TestQuery").get()
         operationDefinition.getVariableDefinitions().get(0).getName() == "varDef"
         serviceAExecutionInput.getVariables().size() == 0
+
+        compareQueryToExecutionInput(null, "query TestQuery(\$varDef:InputA) {fieldA(objectArgA:\$varDef)}", testServiceA)
     }
 
 }
