@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.intuit.graphql.orchestrator.resolverdirective.ResolverDirectiveDefinition.extractRequiredFieldsFrom;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.getFieldDefinitions;
@@ -125,35 +124,37 @@ public class FieldResolverDirectiveUtil {
 
   public static List<FieldResolverContext> createFieldResolverContexts(
       TypeDefinition typeDefinition, XtextGraph xtextGraph) {
+
     List<FieldDefinition> childFields = getFieldDefinitions(typeDefinition);
+    return childFields.stream()
+        .map(childFieldDefinition -> {
+          List<Directive> directives = getResolverDirective(childFieldDefinition);
 
-    List<FieldResolverContext> contexts = childFields.stream()
-            .flatMap(childFieldDefinition -> {
-              List<Directive> directives = getResolverDirective(childFieldDefinition);
+          if (CollectionUtils.size(directives) > 1) {
+            throw new MultipleResolverDirectiveDefinition(CollectionUtils.size(directives));
+          }
 
-              if (CollectionUtils.size(directives) < 1) {
-                return Stream.empty();
-              }
+          if (CollectionUtils.size(directives) < 1) {
+            return Optional.<FieldResolverContext>empty();
+          }
 
-              return directives.stream().map(directive -> {
-                ResolverDirectiveDefinition resolverDirectiveDefinition = ResolverDirectiveDefinition.from(directive);
+          ResolverDirectiveDefinition resolverDirectiveDefinition = ResolverDirectiveDefinition.from(directives.get(0));
 
-                FieldResolverContext fieldResolverContext = FieldResolverContext.builder()
-                        //.fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
-                        .fieldDefinition(childFieldDefinition)
-                        .parentTypeDefinition(typeDefinition)
-                        .requiresTypeNameInjection(xtextGraph.requiresTypenameInjection())
-                        .serviceNamespace(xtextGraph.getServiceProvider().getNameSpace())
-                        .resolverDirectiveDefinition(resolverDirectiveDefinition)
-                        .requiredFields(extractRequiredFieldsFrom(resolverDirectiveDefinition))
-                        .build();
+          FieldResolverContext fieldResolverContext = FieldResolverContext.builder()
+              //.fieldContext(new FieldContext(typeDefinition.getName(), childFieldDefinition.getName()))
+              .fieldDefinition(childFieldDefinition)
+              .parentTypeDefinition(typeDefinition)
+              .requiresTypeNameInjection(xtextGraph.requiresTypenameInjection())
+              .serviceNamespace(xtextGraph.getServiceProvider().getNameSpace())
+              .resolverDirectiveDefinition(resolverDirectiveDefinition)
+              .requiredFields(extractRequiredFieldsFrom(resolverDirectiveDefinition))
+              .build();
 
-                return fieldResolverContext;
-              });
-            })
-            .collect(Collectors.toList());
-
-    return contexts;
+          return Optional.of(fieldResolverContext);
+        })
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
   }
 
   private static List<Directive> getResolverDirective(FieldDefinition fieldDefinition) {

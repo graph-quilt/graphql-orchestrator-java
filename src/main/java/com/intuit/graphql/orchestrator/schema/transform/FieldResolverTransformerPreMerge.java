@@ -3,20 +3,16 @@ package com.intuit.graphql.orchestrator.schema.transform;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.canContainFieldResolverDirective;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.createFieldResolverContexts;
 
-import com.intuit.graphql.graphQL.Directive;
 import com.intuit.graphql.graphQL.FieldDefinition;
 import com.intuit.graphql.orchestrator.resolverdirective.ArgumentDefinitionNotAllowed;
 import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil;
-import com.intuit.graphql.orchestrator.resolverdirective.InvalidDirectivePairingException;
 import com.intuit.graphql.orchestrator.resolverdirective.NotAValidLocationForFieldResolverDirective;
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
-import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.collections4.CollectionUtils;
-import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 
 public class FieldResolverTransformerPreMerge implements Transformer<XtextGraph, XtextGraph> {
@@ -43,37 +39,21 @@ public class FieldResolverTransformerPreMerge implements Transformer<XtextGraph,
   }
 
   private void validateFieldWithResolver(List<FieldResolverContext> fieldResolverContexts) {
-      fieldResolverContexts
-              .forEach(fieldResolverContext -> {
-                  FieldDefinition fieldDefinition = fieldResolverContext.getFieldDefinition();
-                  String fieldName = fieldDefinition.getName();
-                  String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
+    fieldResolverContexts
+        .forEach(fieldResolverContext -> {
+          FieldDefinition fieldDefinition = fieldResolverContext.getFieldDefinition();
+          String fieldName = fieldDefinition.getName();
+          String parentTypeName = XtextTypeUtils.getParentTypeName(fieldDefinition);
 
-                  EObject parentType = fieldDefinition.eContainer();
-                  if (!(canContainFieldResolverDirective(parentType))) {
-                      throw new NotAValidLocationForFieldResolverDirective(fieldName, parentTypeName);
-                  }
+          EObject parentType = fieldDefinition.eContainer();
+          if (!(canContainFieldResolverDirective(parentType))) {
+            throw new NotAValidLocationForFieldResolverDirective(fieldName, parentTypeName);
+          }
 
-                  if (hasArguments(fieldDefinition)) {
-                      throw new ArgumentDefinitionNotAllowed(fieldName, parentTypeName);
-                  }
-
-                  EList<Directive> directives = fieldDefinition.getDirectives();
-
-                  boolean[] properDirectivesDefs = {false};
-
-                  XtextUtils.getDirectivesWithNameFromDefinition((FieldDefinition) directives, "external")
-                          .forEach(directive -> properDirectivesDefs[0] = true);
-                  XtextUtils.getDirectivesWithNameFromDefinition((FieldDefinition) directives, "provides")
-                          .forEach(directive -> properDirectivesDefs[0] = true);
-                  XtextUtils.getDirectivesWithNameFromDefinition((FieldDefinition) directives, "requires")
-                          .forEach(directive -> properDirectivesDefs[0] = true);
-
-                  if(properDirectivesDefs[0]) {
-                      throw new InvalidDirectivePairingException(fieldName, parentTypeName);
-                  }
-
-              });
+          if (hasArguments(fieldDefinition)) {
+            throw new ArgumentDefinitionNotAllowed(fieldName, parentTypeName);
+          }
+        });
   }
 
   private boolean hasArguments(FieldDefinition fieldDefinition) {
