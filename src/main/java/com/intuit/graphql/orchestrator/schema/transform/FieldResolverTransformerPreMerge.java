@@ -10,6 +10,7 @@ import com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveU
 import com.intuit.graphql.orchestrator.resolverdirective.InvalidDirectivePairingException;
 import com.intuit.graphql.orchestrator.resolverdirective.NotAValidLocationForFieldResolverDirective;
 import com.intuit.graphql.orchestrator.utils.XtextTypeUtils;
+import com.intuit.graphql.orchestrator.utils.XtextUtils;
 import com.intuit.graphql.orchestrator.xtext.XtextGraph;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,34 +59,20 @@ public class FieldResolverTransformerPreMerge implements Transformer<XtextGraph,
                   }
 
                   EList<Directive> directives = fieldDefinition.getDirectives();
-                  boolean hasResolverDirective = false;
-                  boolean hasExternalDirective = false;
-                  boolean hasProvidesDirective = false;
-                  boolean hasRequiresDirective = false;
 
-                  for (Directive directive : directives) {
-                      String directiveName = directive.getDefinition().getName();
-                      switch (directiveName) {
-                          case "resolver":
-                              hasResolverDirective = true;
-                              break;
-                          case "external":
-                              hasExternalDirective = true;
-                              break;
-                          case "provides":
-                              hasProvidesDirective = true;
-                              break;
-                          case "requires":
-                              hasRequiresDirective = true;
-                              break;
-                      }
+                  boolean[] properDirectivesDefs = {false};
+
+                  XtextUtils.getDirectivesWithNameFromDefinition((FieldDefinition) directives, "external")
+                          .forEach(directive -> properDirectivesDefs[0] = true);
+                  XtextUtils.getDirectivesWithNameFromDefinition((FieldDefinition) directives, "provides")
+                          .forEach(directive -> properDirectivesDefs[0] = true);
+                  XtextUtils.getDirectivesWithNameFromDefinition((FieldDefinition) directives, "requires")
+                          .forEach(directive -> properDirectivesDefs[0] = true);
+
+                  if(properDirectivesDefs[0]) {
+                      throw new InvalidDirectivePairingException(fieldName, parentTypeName);
                   }
 
-                  if (hasResolverDirective) {
-                      if (hasExternalDirective || hasProvidesDirective || hasRequiresDirective) {
-                          throw new InvalidDirectivePairingException(fieldName, parentTypeName);
-                      }
-                  }
               });
   }
 
