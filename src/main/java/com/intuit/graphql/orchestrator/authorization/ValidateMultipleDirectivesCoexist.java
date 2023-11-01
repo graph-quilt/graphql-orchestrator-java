@@ -10,21 +10,24 @@ import java.util.stream.Collectors;
 
 public class ValidateMultipleDirectivesCoexist {
 
+        public ValidateMultipleDirectivesCoexist() {
+        }
+
         public void validate(List<Directive> directives) {
             List<String> directiveNames = directives.stream()
                     .map(d -> d.getDefinition().getName())
                     .collect(Collectors.toList());
 
             if (CollectionUtils.containsAll(directiveNames, Arrays.asList("resolver", "external"))) {
-                throw new InvalidDirectivePairingException("resolver", "external");
+                throw new InvalidDirectivePairingException(Arrays.asList("resolver", "external"));
             }
 
             if (CollectionUtils.containsAll(directiveNames, Arrays.asList("resolver", "provides"))) {
-                throw new InvalidDirectivePairingException("resolver", "provides");
+                throw new InvalidDirectivePairingException(Arrays.asList("resolver", "external"));
             }
 
             if (CollectionUtils.containsAll(directiveNames, Arrays.asList("resolver", "requires"))) {
-                throw new InvalidDirectivePairingException("resolver", "requires");
+                throw new InvalidDirectivePairingException(Arrays.asList("resolver", "external"));
             }
 
         }
