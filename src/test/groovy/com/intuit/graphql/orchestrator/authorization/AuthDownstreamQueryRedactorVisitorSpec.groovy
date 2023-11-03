@@ -54,6 +54,34 @@ class AuthDownstreamQueryRedactorVisitorSpec extends Specification {
         }
     """
 
+    def skipQuery = """ query skipQuery(\$shouldSkip: Boolean) {
+                a {
+                    b1 @skip(if: \$shouldSkip) {
+                        c1 { 
+                            s1 
+                        }
+                    }
+                    b2 {
+                        i1
+                    } 
+                }
+    }
+    """
+
+    def includesQuery = """ query includesQuery(\$shouldInclude: Boolean) {
+                a {
+                    b1 {
+                        c1 { 
+                            s1 
+                        }
+                    }
+                    b2 @include(if: \$shouldInclude) {
+                        i1
+                    } 
+                }
+    }
+    """
+
     static final Object TEST_AUTH_DATA = "TestAuthDataCanBeAnyObject"
 
     Field mockField = Mock()
@@ -132,6 +160,171 @@ class AuthDownstreamQueryRedactorVisitorSpec extends Specification {
 
     def setup() {
         argumentValueResolver.resolve(_, _, _) >> Collections.emptyMap()
+    }
+
+    def "skip query with skip directive true removes selection set"() {
+        given:
+        Document document = new Parser().parseDocument(skipQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+
+        Map<String, Object> queryVariables = new HashMap<>()
+        queryVariables.put("shouldSkip", true)
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(queryVariables)
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragmentsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        transformedField.getName() == "a"
+        Object[] selectionSet = transformedField.getSelectionSet()
+            .getSelections()
+            .asList()
+        selectionSet.size() == 1
+        ((Field)selectionSet.first()).getName() == ("b2")
+
+        1 * mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "skip query with skip directive false keeps selection set"() {
+        given:
+        Document document = new Parser().parseDocument(skipQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+
+        Map<String, Object> queryVariables = new HashMap<>()
+        queryVariables.put("shouldSkip", false)
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(queryVariables)
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragmentsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        transformedField.getName() == "a"
+        Object[] selectionSet = transformedField.getSelectionSet()
+                .getSelections()
+                .asList()
+        selectionSet.size() == 2
+        ((Field)selectionSet[0]).getName() == "b1"
+        ((Field)selectionSet[1]).getName() == "b2"
+
+        1 * mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "includes query with include directive true keeps selection set"() {
+        given:
+        Document document = new Parser().parseDocument(includesQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+
+        Map<String, Object> queryVariables = new HashMap<>()
+        queryVariables.put("shouldInclude", true)
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(queryVariables)
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragmentsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        transformedField.getName() == "a"
+        Object[] selectionSet = transformedField.getSelectionSet()
+                .getSelections()
+                .asList()
+        selectionSet.size() == 2
+        ((Field)selectionSet[0]).getName() == "b1"
+        ((Field)selectionSet[1]).getName() == "b2"
+
+        1 * mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(aB2) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(b2i1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
+    }
+
+    def "includes query with include directive false removes selection set"() {
+        given:
+        Document document = new Parser().parseDocument(includesQuery)
+        OperationDefinition operationDefinition = document.getDefinitionsOfType(OperationDefinition.class).get(0)
+        Field rootField = SelectionSetUtil.getFieldByPath(Arrays.asList("a"), operationDefinition.getSelectionSet())
+        GraphQLFieldsContainer rootFieldParentType = (GraphQLFieldsContainer) testGraphQLSchema.getType("Query")
+
+        Map<String, Object> queryVariables = new HashMap<>()
+        queryVariables.put("shouldInclude", false)
+
+        AuthDownstreamQueryModifier specUnderTest = AuthDownstreamQueryModifier.builder()
+                .rootParentType((GraphQLFieldsContainer) rootFieldParentType)
+                .fieldAuthorization(mockFieldAuthorization)
+                .graphQLContext(mockGraphQLContext)
+                .queryVariables(queryVariables)
+                .graphQLSchema(testGraphQLSchema)
+                .selectionCollector(new SelectionCollector(fragmentsByName))
+                .serviceMetadata(mockServiceMetadata)
+                .authData(TEST_AUTH_DATA)
+                .build()
+
+        when:
+        Field transformedField =  (Field) astTransformer.transform(rootField, specUnderTest)
+
+        then:
+        transformedField.getName() == "a"
+        Object[] selectionSet = transformedField.getSelectionSet()
+                .getSelections()
+                .asList()
+        selectionSet.size() == 1
+        ((Field)selectionSet[0]).getName() == "b1"
+
+        1 * mockFieldAuthorization.authorize(queryA) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(aB1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(b1C1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        1 * mockFieldAuthorization.authorize(c1S1) >> FieldAuthorizationResult.ALLOWED_FIELD_AUTH_RESULT
+        mockRenamedMetadata.getOriginalFieldNamesByRenamedName() >>  Collections.emptyMap()
+        mockServiceMetadata.getRenamedMetadata() >>  mockRenamedMetadata
     }
 
     def "redact query, results to empty selection set"() {

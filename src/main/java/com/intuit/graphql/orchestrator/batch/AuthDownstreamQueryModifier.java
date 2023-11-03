@@ -1,17 +1,5 @@
 package com.intuit.graphql.orchestrator.batch;
 
-import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
-import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getNodesAsPathList;
-import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
-import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
-import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
-import static graphql.schema.FieldCoordinates.coordinates;
-import static graphql.util.TreeTransformerUtil.changeNode;
-import static graphql.util.TreeTransformerUtil.deleteNode;
-import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
-
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorization;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationEnvironment;
 import com.intuit.graphql.orchestrator.authorization.FieldAuthorizationResult;
@@ -40,6 +28,11 @@ import graphql.schema.GraphQLTypeUtil;
 import graphql.schema.GraphQLUnionType;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
+import lombok.Builder;
+import lombok.NonNull;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,10 +40,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Builder;
-import lombok.NonNull;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
+
+import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.hasResolverDirective;
+import static com.intuit.graphql.orchestrator.utils.QueryDirectivesUtil.shouldIgnoreNode;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.getNodesAsPathList;
+import static com.intuit.graphql.orchestrator.utils.QueryPathUtils.pathListToFQN;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.convertGraphqlFieldWithOriginalName;
+import static com.intuit.graphql.orchestrator.utils.RenameDirectiveUtil.getRenameKey;
+import static graphql.introspection.Introspection.TypeNameMetaFieldDef;
+import static graphql.schema.FieldCoordinates.coordinates;
+import static graphql.util.TreeTransformerUtil.changeNode;
+import static graphql.util.TreeTransformerUtil.deleteNode;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class modifies for query for a downstream provider.
@@ -91,6 +93,12 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + node.getName());
 
       context.setVar(GraphQLType.class, fieldDefinition.getType());
+
+      if(shouldIgnoreNode(node, this.queryVariables)) {
+        decreaseParentSelectionSetCount(context.getParentContext());
+        return deleteNode(context);
+      }
+
       FieldAuthorizationResult fieldAuthorizationResult = authorize(node, fieldDefinition, parentType, context);
       if (!fieldAuthorizationResult.isAllowed()) {
         decreaseParentSelectionSetCount(context.getParentContext());
@@ -112,8 +120,10 @@ public class AuthDownstreamQueryModifier extends NodeVisitorStub {
       GraphQLFieldDefinition fieldDefinition = getFieldDefinition(node.getName(), parentType);
       requireNonNull(fieldDefinition, "Failed to get Field Definition for " + node.getName());
 
-      if (serviceMetadata.shouldModifyDownStreamQuery() && (hasResolverDirective(fieldDefinition)
-          || isExternalField(parentType.getName(), node.getName()))) {
+      boolean shouldRemoveNode = (serviceMetadata.shouldModifyDownStreamQuery() && (hasResolverDirective(fieldDefinition)
+              || isExternalField(parentType.getName(), node.getName())))
+              || shouldIgnoreNode(node, this.queryVariables);
+      if (shouldRemoveNode) {
         decreaseParentSelectionSetCount(context.getParentContext());
         return deleteNode(context);
       } else {
