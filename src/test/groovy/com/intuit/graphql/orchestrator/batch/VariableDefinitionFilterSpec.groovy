@@ -47,6 +47,17 @@ class VariableDefinitionFilterSpec extends Specification {
         directive @field_directive_argument(arg: InputObject) on FIELD_DEFINITION
     '''
 
+    private String schema2 = '''
+        type Query { person: Person }
+
+        type Person {
+            address : Address
+            id: String
+        }
+        
+        type Address { city: String state: String zip: String }
+    '''
+
     private GraphQLSchema graphQLSchema
 
     private VariableDefinitionFilter variableDefinitionFilter
@@ -60,6 +71,12 @@ class VariableDefinitionFilterSpec extends Specification {
     private GraphQLSchema inputArgumentSchema() {
         return new SchemaGenerator()
                 .makeExecutableSchema(new SchemaParser().parse(nestedArgumentObjectValueSchema),
+                        RuntimeWiring.newRuntimeWiring().build())
+    }
+
+    private GraphQLSchema getSchema2() {
+        return new SchemaGenerator()
+                .makeExecutableSchema(new SchemaParser().parse(schema2),
                         RuntimeWiring.newRuntimeWiring().build())
     }
 
@@ -177,6 +194,62 @@ class VariableDefinitionFilterSpec extends Specification {
         then:
         results.size() == 2
         results.containsAll("int_arg", "string_arg")
+    }
+
+    def "variable References In Built in Query Directive includes"() {
+        given:
+        String query = '''
+            query($includeContext: Boolean!) { 
+                consumer {
+                    liabilities(arg: 1) @include(if: $includeContext) {
+                        totalDebt(arg: 1)
+                    }
+                    income
+                }
+            }
+        '''
+
+        Document document = parser.parseDocument(query)
+        HashMap<String, Object> variables = new HashMap<>()
+        variables.put("includeContext", false)
+
+        when:
+        final Set<String> results = variableDefinitionFilter
+                .getVariableReferencesFromNode(graphQLSchema, graphQLSchema.getQueryType(), Collections.emptyMap(),
+                        variables, document)
+
+        then:
+        results.size() == 1
+
+        results.containsAll("includeContext")
+    }
+
+    def "variable References In Built in Query Directive skip"() {
+        given:
+        String query = '''
+            query($includeContext: Boolean!) { 
+                consumer {
+                    liabilities(arg: 1) @skip(if: $includeContext) {
+                        totalDebt(arg: 1)
+                    }
+                    income
+                }
+            }
+        '''
+
+        Document document = parser.parseDocument(query)
+        HashMap<String, Object> variables = new HashMap<>()
+        variables.put("includeContext", true)
+
+        when:
+        final Set<String> results = variableDefinitionFilter
+                .getVariableReferencesFromNode(graphQLSchema, graphQLSchema.getQueryType(), Collections.emptyMap(),
+                        variables, document)
+
+        then:
+        results.size() == 1
+
+        results.containsAll("includeContext")
     }
 
     def "test Negative Cases"() {
