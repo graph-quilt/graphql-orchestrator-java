@@ -6,29 +6,37 @@ import graphql.analysis.QueryVisitorFragmentSpreadEnvironment;
 import graphql.analysis.QueryVisitorInlineFragmentEnvironment;
 import graphql.analysis.QueryVisitorStub;
 import graphql.language.Argument;
+import graphql.language.AstTransformer;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.FragmentSpread;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
+import graphql.language.NodeVisitorStub;
 import graphql.language.OperationDefinition;
 import graphql.language.Value;
 import graphql.language.VariableReference;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
+import graphql.util.TraversalControl;
+import graphql.util.TraverserContext;
+import lombok.Getter;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
 
 /**
  * This class provides assistance in extracting all VariableReference names used in GraphQL nodes.
  */
 public class VariableDefinitionFilter {
+
+  private static AstTransformer astTransformer = new AstTransformer();
 
   /**
    * Traverses a GraphQL Node and returns all VariableReference names used in all nodes in the graph.
@@ -67,8 +75,20 @@ public class VariableDefinitionFilter {
 
     Set<VariableReference> additionalReferences = operationDirectiveVariableReferences(operationDefinitions);
 
-    return Stream.concat(variableReferenceVisitor.getVariableReferences().stream(), additionalReferences.stream())
-        .map(VariableReference::getName).collect(Collectors.toSet());
+    Stream<VariableReference> variableReferenceStream;
+    if((variableReferenceVisitor.getVariableReferences().size() + additionalReferences.size()) != variables.size()) {
+      NodeTraverser nodeTraverser = new NodeTraverser();
+      astTransformer.transform(rootNode, nodeTraverser);
+
+      variableReferenceStream = Stream.of(variableReferenceVisitor.getVariableReferences(),
+                                          additionalReferences,
+                                          nodeTraverser.getVariableReferenceExtractor().getVariableReferences())
+                                .flatMap(Collection::stream);
+    } else {
+      variableReferenceStream = Stream.concat(variableReferenceVisitor.getVariableReferences().stream(), additionalReferences.stream());
+    }
+      return variableReferenceStream.map(VariableReference::getName).collect(Collectors.toSet());
+
   }
 
   private Set<VariableReference> operationDirectiveVariableReferences(List<OperationDefinition> operationDefinitions) {
@@ -161,6 +181,21 @@ public class VariableDefinitionFilter {
           .collect(Collectors.toList());
 
       variableReferenceExtractor.captureVariableReferences(values);
+    }
+  }
+
+  static class NodeTraverser extends NodeVisitorStub {
+
+    @Getter
+    private final VariableReferenceExtractor variableReferenceExtractor = new VariableReferenceExtractor();
+
+    public TraversalControl visitArgument(Argument node, TraverserContext<Node> context) {
+      return this.visitNode(node, context);
+    }
+
+    public TraversalControl visitVariableReference(VariableReference node, TraverserContext<Node> context) {
+      variableReferenceExtractor.captureVariableReference(node);
+      return this.visitValue(node, context);
     }
   }
 }

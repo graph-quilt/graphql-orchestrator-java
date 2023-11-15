@@ -19,8 +19,12 @@ public class VariableReferenceExtractor {
 
   public void captureVariableReferences(List<Value> values) {
     for (final Value value : values) {
-      doSwitch(value);
+      captureVariableReference(value);
     }
+  }
+
+  public void captureVariableReference(Value value) {
+    doSwitch(value);
   }
 
   private void doSwitch(Value value) {
