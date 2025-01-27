@@ -1,0 +1,2 @@
+directive @authzPolicy(id: String, ruleInputs:[RuleInput]!) on FIELD_DEFINITION
+input RuleInput { key: String! value: [String]!}

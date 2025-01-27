@@ -1,6 +1,7 @@
 package com.intuit.graphql.orchestrator.utils
 
 import com.intuit.graphql.graphQL.*
+import com.intuit.graphql.orchestrator.schema.type.conflict.resolver.TypeConflictException
 import com.intuit.graphql.orchestrator.xtext.GraphQLFactoryDelegate
 import spock.lang.Specification
 
@@ -436,5 +437,174 @@ class XtextTypeUtilsSpec extends Specification {
 
         then:
         thrown(IllegalArgumentException.class)
+    }
+
+    def "compare two equal InputObjectTypes Test"() {
+        given:
+        PrimitiveType stringType = GraphQLFactoryDelegate.createPrimitiveType().setType("String")
+        // Input Type 1
+        InputValueDefinition inputValueDefinition1key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition1key.setName("key")
+        inputValueDefinition1key.setNamedType(stringType)
+
+        InputValueDefinition inputValueDefinition1value = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition1value.setName("value")
+        inputValueDefinition1value.setNamedType(stringType)
+
+        InputObjectTypeDefinition inputObjectTypeDefinition1 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition1.setName("TestInput")
+        inputObjectTypeDefinition1.getInputValueDefinition().add(inputValueDefinition1key)
+        inputObjectTypeDefinition1.getInputValueDefinition().add(inputValueDefinition1value)
+
+        // Input Type 2
+        InputValueDefinition inputValueDefinition2key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition2key.setName("key")
+        inputValueDefinition2key.setNamedType(stringType)
+
+        InputValueDefinition inputValueDefinition2value = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition2value.setName("value")
+        inputValueDefinition2value.setNamedType(stringType)
+
+        InputObjectTypeDefinition inputObjectTypeDefinition2 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition2.setName("TestInput")
+        inputObjectTypeDefinition2.getInputValueDefinition().add(inputValueDefinition2key)
+        inputObjectTypeDefinition2.getInputValueDefinition().add(inputValueDefinition2value)
+
+
+        when:
+        checkInputObjectTypeCompatibility(inputObjectTypeDefinition1, inputObjectTypeDefinition2)
+
+        then:
+        noExceptionThrown()
+    }
+
+    def "compare two InputObjectTypes with different InputValueDefinition Test"() {
+        given:
+        PrimitiveType stringType = GraphQLFactoryDelegate.createPrimitiveType().setType("String")
+        // Input Type 1
+        InputValueDefinition inputValueDefinition1key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition1key.setName("key")
+        inputValueDefinition1key.setNamedType(stringType)
+
+        InputValueDefinition inputValueDefinition1value = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition1value.setName("value")
+        inputValueDefinition1value.setNamedType(stringType)
+
+        InputObjectTypeDefinition inputObjectTypeDefinition1 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition1.setName("TestInput")
+        inputObjectTypeDefinition1.getInputValueDefinition().add(inputValueDefinition1key)
+        inputObjectTypeDefinition1.getInputValueDefinition().add(inputValueDefinition1value)
+
+        // Input Type 2
+        InputValueDefinition inputValueDefinition2key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition2key.setName("anotherKey")
+        inputValueDefinition2key.setNamedType(stringType)
+
+        InputValueDefinition inputValueDefinition2value = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition2value.setName("anotherValue")
+        inputValueDefinition2value.setNamedType(stringType)
+
+        InputObjectTypeDefinition inputObjectTypeDefinition2 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition2.setName("TestInput")
+        inputObjectTypeDefinition2.getInputValueDefinition().add(inputValueDefinition2key)
+        inputObjectTypeDefinition2.getInputValueDefinition().add(inputValueDefinition2value)
+
+
+        when:
+        checkInputObjectTypeCompatibility(inputObjectTypeDefinition1, inputObjectTypeDefinition2)
+
+        then:
+        def e = thrown(TypeConflictException)
+        e.message.contains("Both types much have the same InputValueDefinition")
+    }
+
+    def "compare two InputObjectTypes with different InputValueDefinitions Size Test"() {
+        given:
+        PrimitiveType stringType = GraphQLFactoryDelegate.createPrimitiveType().setType("String")
+        // Input Type 1
+        InputValueDefinition inputValueDefinition1key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition1key.setName("key")
+        inputValueDefinition1key.setNamedType(stringType)
+
+        InputValueDefinition inputValueDefinition1value = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition1value.setName("value")
+        inputValueDefinition1value.setNamedType(stringType)
+
+        InputObjectTypeDefinition inputObjectTypeDefinition1 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition1.setName("TestInput")
+        inputObjectTypeDefinition1.getInputValueDefinition().add(inputValueDefinition1key)
+        inputObjectTypeDefinition1.getInputValueDefinition().add(inputValueDefinition1value)
+
+        // Input Type 2
+        InputValueDefinition inputValueDefinition2key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition2key.setName("anotherKey")
+        inputValueDefinition2key.setNamedType(stringType)
+
+        // only one InputValueDefinition
+
+        InputObjectTypeDefinition inputObjectTypeDefinition2 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition2.setName("TestInput")
+        inputObjectTypeDefinition2.getInputValueDefinition().add(inputValueDefinition2key)
+
+
+        when:
+        checkInputObjectTypeCompatibility(inputObjectTypeDefinition1, inputObjectTypeDefinition2)
+
+        then:
+        def e = thrown(TypeConflictException)
+        e.message.contains("Both types must be of the same size")
+    }
+
+    def "compare incoming InputObjectType to an existing non InputObjectType test"() {
+        given:
+        PrimitiveType stringType = GraphQLFactoryDelegate.createPrimitiveType().setType("String")
+        // Object Type
+        ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
+
+        // Input Type
+        InputValueDefinition inputValueDefinition2key = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinition2key.setName("anotherKey")
+        inputValueDefinition2key.setNamedType(stringType)
+
+        // only one InputValueDefinition
+
+        InputObjectTypeDefinition inputObjectTypeDefinition2 = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition2.setName("TestInput")
+        inputObjectTypeDefinition2.getInputValueDefinition().add(inputValueDefinition2key)
+
+
+        when:
+        checkInputObjectTypeCompatibility(objectTypeDefinition, inputObjectTypeDefinition2)
+
+        then:
+        def e = thrown(TypeConflictException)
+        e.message.contains("Both types must be of the same type")
+    }
+
+    def "compare incoming non InputObjectType to an existing InputObjectType test"() {
+        given:
+        PrimitiveType stringType = GraphQLFactoryDelegate.createPrimitiveType().setType("String")
+        // Input Type
+        InputValueDefinition inputValueDefinitionkey = GraphQLFactoryDelegate.createInputValueDefinition()
+        inputValueDefinitionkey.setName("key")
+        inputValueDefinitionkey.setNamedType(stringType)
+
+        // only one InputValueDefinition
+
+        InputObjectTypeDefinition inputObjectTypeDefinition = GraphQLFactoryDelegate.createInputObjectTypeDefinition()
+        inputObjectTypeDefinition.setName("TestInput")
+        inputObjectTypeDefinition.getInputValueDefinition().add(inputValueDefinitionkey)
+
+        // Object Type
+        ObjectTypeDefinition objectTypeDefinition = GraphQLFactoryDelegate.createObjectTypeDefinition()
+
+
+
+        when:
+        checkInputObjectTypeCompatibility(inputObjectTypeDefinition, objectTypeDefinition)
+
+        then:
+        def e = thrown(TypeConflictException)
+        e.message.contains("Both types must be of the same type")
     }
 }

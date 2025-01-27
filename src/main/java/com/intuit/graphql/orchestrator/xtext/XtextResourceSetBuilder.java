@@ -36,7 +36,8 @@ public class XtextResourceSetBuilder {
   private Map<String, String> files = new ConcurrentHashMap<>();
   private boolean isFederatedResourceSet = false;
 
-  public static final String FEDERATION_DIRECTIVES = getFederationDirectives();
+  public static final String FEDERATION_DIRECTIVES = getDirectiveDefinitions("federation_built_in_directives.graphqls");
+  public static final String AUTHZPOLICY_DIRECTIVES = getDirectiveDefinitions("authzpolicy_directive_definition.graphqls");
 
   private XtextResourceSetBuilder() {
   }
@@ -79,13 +80,17 @@ public class XtextResourceSetBuilder {
 
     if(isFederatedResourceSet) {
       String content = FEDERATION_DIRECTIVES + "\n" + StringUtils.join(files.values(), "\n");
-
+      content = addAuthzPolicyDirectiveDefinition(content);
       try {
         createGraphqlResourceFromString(content, "appended_federation");
       } catch (IOException e) {
         throw new SchemaParseException("Unable to parse file: appended federation file", e);
       }
     } else {
+      if (isUsingAuthzPolicy(files)) {
+        files.put("authzpolicy_directive_definition.graphqls", AUTHZPOLICY_DIRECTIVES);
+      }
+      
       files.forEach((fileName, content) -> {
         try {
           createGraphqlResourceFromString(content, fileName);
@@ -100,6 +105,18 @@ public class XtextResourceSetBuilder {
       throw new SchemaParseException(issues, files.keySet());
     }
     return graphqlResourceSet;
+  }
+
+  private boolean isUsingAuthzPolicy(Map<String, String> files) {
+    return files.values().stream()
+        .anyMatch(content -> StringUtils.contains(content, "@authzPolicy"));
+  }
+
+  public String addAuthzPolicyDirectiveDefinition(String content) {
+    if (StringUtils.contains(content, "@authzPolicy")) {
+      return content + "\n" + AUTHZPOLICY_DIRECTIVES;
+    }
+    return content;
   }
 
   private XtextResource createResourceFrom(InputStream input, URI uri, Injector injector) throws IOException {
@@ -143,12 +160,12 @@ public class XtextResourceSetBuilder {
             .build();
   }
 
-  private static String getFederationDirectives() {
+  private static String getDirectiveDefinitions(String file) {
     String directives = "";
     try {
       directives = IOUtils.toString(
               XtextResourceSetBuilder.class.getClassLoader()
-                      .getResourceAsStream( "federation_built_in_directives.graphqls"),
+                      .getResourceAsStream( file),
               Charset.defaultCharset()
       );
     } catch (IOException ex) {

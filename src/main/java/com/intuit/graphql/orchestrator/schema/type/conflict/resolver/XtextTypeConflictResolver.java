@@ -3,13 +3,16 @@ package com.intuit.graphql.orchestrator.schema.type.conflict.resolver;
 import static com.intuit.graphql.orchestrator.resolverdirective.FieldResolverDirectiveUtil.RESOLVER_ARGUMENT_INPUT_NAME;
 import static com.intuit.graphql.orchestrator.utils.FederationConstants.FEDERATION_EXTENDS_DIRECTIVE;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.checkFieldsCompatibility;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.checkInputObjectTypeCompatibility;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isEntity;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInaccessible;
+import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isInputObjectType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.isScalarType;
 import static com.intuit.graphql.orchestrator.utils.XtextTypeUtils.toDescriptiveString;
 import static com.intuit.graphql.orchestrator.utils.XtextUtils.definitionContainsDirective;
 
 import com.intuit.graphql.graphQL.EnumTypeDefinition;
+import com.intuit.graphql.graphQL.InputObjectTypeDefinition;
 import com.intuit.graphql.graphQL.InterfaceTypeDefinition;
 import com.intuit.graphql.graphQL.ObjectTypeDefinition;
 import com.intuit.graphql.graphQL.TypeDefinition;
@@ -38,6 +41,13 @@ public class XtextTypeConflictResolver {
   }
 
   private void checkSameType(final TypeDefinition conflictingType, final TypeDefinition existingType) {
+    boolean isInputObjectTypeComparison = isInputObjectType(conflictingType) || isInputObjectType(existingType);
+    if (isInputObjectTypeComparison) {
+      // need before checkFieldsCompatibility which supports fieldContainers.  InputObjectTypeComparison does not have field containers
+      checkInputObjectTypeCompatibility(existingType, conflictingType);
+      return;
+    }
+
     if (!(isSameType(conflictingType, existingType) && isScalarType(conflictingType))) {
       throw new TypeConflictException(
           String.format("Type %s is conflicting with existing type %s", toDescriptiveString(conflictingType),
@@ -52,6 +62,7 @@ public class XtextTypeConflictResolver {
       boolean entityComparison =  conflictingTypeisEntity && existingTypeIsEntity;
       boolean isInaccessibleComparison = isInaccessible(conflictingType) || isInaccessible(existingType);
       boolean baseExtensionComparison = definitionContainsDirective(existingType, FEDERATION_EXTENDS_DIRECTIVE) || definitionContainsDirective(conflictingType, FEDERATION_EXTENDS_DIRECTIVE);
+      boolean isInputObjectTypeComparison = isInputObjectType(conflictingType) || isInputObjectType(existingType);
 
       if(!isInaccessibleComparison) {
         if(isEntity(conflictingType) != isEntity(existingType)) {
@@ -65,6 +76,13 @@ public class XtextTypeConflictResolver {
           throw new TypeConflictException(
                   String.format("Type %s is conflicting with existing type %s. Two schemas cannot own an entity.", toDescriptiveString(conflictingType),
                           toDescriptiveString(existingType)));
+        }
+
+        if (isInputObjectTypeComparison) {
+          // need before checkFieldsCompatibility which supports fieldContainers.  InputObjectTypeComparison does not have field containers
+          checkInputObjectTypeCompatibility(existingType, conflictingType);
+          return;
+
         }
 
         if(!(conflictingType instanceof UnionTypeDefinition || isScalarType(conflictingType) || conflictingType instanceof EnumTypeDefinition)) {

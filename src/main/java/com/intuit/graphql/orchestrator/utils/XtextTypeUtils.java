@@ -211,6 +211,58 @@ public class XtextTypeUtils {
     return StringUtils.EMPTY;
   }
 
+  public static void  checkInputObjectTypeCompatibility(TypeDefinition existingType, TypeDefinition incomingType) {
+    if (!(existingType instanceof InputObjectTypeDefinition)) {
+      throw new TypeConflictException(
+          format("Type %s is conflicting with Input Type %s. Both types must be of the same type",
+              toDescriptiveString(existingType),
+              toDescriptiveString(incomingType)
+          )
+      );
+    }
+
+    if (!(incomingType instanceof InputObjectTypeDefinition)) {
+      throw new TypeConflictException(
+          format("Type %s is conflicting with Input Type %s. Both types must be of the same type",
+              toDescriptiveString(incomingType),
+              toDescriptiveString(existingType)
+          )
+      );
+    }
+
+
+    InputObjectTypeDefinition existingTypeDefinition = (InputObjectTypeDefinition) existingType;
+    InputObjectTypeDefinition incomingTypeDefinition = (InputObjectTypeDefinition) incomingType;
+
+    if (existingTypeDefinition.getInputValueDefinition().size() != incomingTypeDefinition.getInputValueDefinition().size()) {
+      throw new TypeConflictException(
+          format("Type %s is conflicting with Input Type %s. Both types must be of the same size",
+              toDescriptiveString(incomingType),
+              toDescriptiveString(existingType)
+          )
+      );
+    }
+
+    incomingTypeDefinition.getInputValueDefinition()
+        .forEach(incomingInputValueDefinition -> {
+          boolean found = existingTypeDefinition.getInputValueDefinition()
+            .stream()
+            .anyMatch(existingTnputValueDefinition -> StringUtils.equals(incomingInputValueDefinition.getName(),
+                existingTnputValueDefinition.getName()));
+
+          if (!found) {
+            throw new TypeConflictException(
+                format("Type %s is conflicting with Input Type %s. Both types much have the same InputValueDefinition",
+                    toDescriptiveString(incomingType),
+                    toDescriptiveString(existingType)
+                )
+            );
+          }
+
+        });
+    //
+  }
+
   public static void checkFieldsCompatibility(final TypeDefinition existingTypeDefinition, final TypeDefinition conflictingTypeDefinition,
                                               boolean existingTypeIsEntity, boolean conflictingTypeisEntity, boolean federatedComparison) {
     List<FieldDefinition> existingFieldDefinitions = getFieldDefinitions(existingTypeDefinition);
@@ -289,6 +341,10 @@ public class XtextTypeUtils {
               (objectType instanceof EnumTypeDefinition);
     }
     return true;
+  }
+
+  public static boolean isInputObjectType(TypeDefinition typeDefinition) {
+    return typeDefinition instanceof InputObjectTypeDefinition;
   }
 
   public static boolean isEntity(final TypeDefinition type) {
